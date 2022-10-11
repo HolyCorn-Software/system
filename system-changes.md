@@ -1,1 +1,1 @@
-Initialized repository with existing HolyCorn Software code
+Removed html-hc from old path (public/lib/hc)
