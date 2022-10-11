@@ -1,1 +1,1 @@
-Removed html-hc from old path (public/lib/hc)
+Removed erroneous duplicate files
