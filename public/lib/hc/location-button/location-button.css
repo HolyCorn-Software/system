@@ -1,0 +1,69 @@
+/*
+Copyright 2021 HolyCorn Software
+Location Button module
+Part of SaveMyMoMo Project
+This module allows users to share their location with the tap of a Button
+
+*/
+
+
+.hc-savemymomo-location-button >.container >*{
+    display:flex;
+    flex-direction:column;
+    
+    transition:0.25s 0.15s;
+
+    border-radius:10%;
+
+
+    padding:0.25em;
+    padding-left:0.75em;
+    padding-right:0.5em;
+
+    cursor:pointer;
+    
+}
+
+.hc-savemymomo-location-button >.container >*:hover{
+    background-color:#b5dcf3;
+    color:rgb(15, 17, 54);
+
+}
+
+.hc-savemymomo-location-button > .container{
+    display:inline-grid;
+    width:max-content;
+    grid-auto-flow:column;
+    grid-auto-columns: max-content;
+}
+
+
+
+
+
+.hc-savemymomo-location-button >.container img{
+    display:inline;
+    max-width:5em;
+}
+
+
+
+/* The spinner */
+.hc-savemymomo-location-button.loading >.container img{
+    display:none;
+}
+.hc-savemymomo-location-button .hc-infinite-spinner{
+    display:none;
+}
+
+.hc-savemymomo-location-button.loading .hc-infinite-spinner{
+    display:block;
+}
+
+.hc-savemymomo-location-button.loading .text{
+    display:none;
+}
+
+.hc-savemymomo-location-button.loading >.container{
+    pointer-events:none;
+}

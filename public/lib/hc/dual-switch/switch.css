@@ -1,0 +1,83 @@
+/*
+Copyright 2021 HolyCorn Software
+This widget creates a switch with two states 
+*/
+
+.hc-dual-switch >.container {
+    font-size:0.75em;
+}
+
+.hc-dual-switch >.container >.track{
+    display:flex;
+    box-shadow:0px 0px 2px #A3ABEF;
+    border-radius:5px;
+    background-color:rgb(16, 138, 209);
+    color:white;
+    min-width:8em;
+    min-height:3em;
+    border-radius:2em;
+    position:relative;
+    transition:0.25s 0.125s;
+}
+
+.hc-dual-switch >.container >.track:before{
+    opacity:0;
+    content:attr(positive);
+}
+.hc-dual-switch >.container >.track:after{
+    opacity:1;
+    content:attr(negative);
+}
+
+.hc-dual-switch.positive >.container >.track:before{
+    opacity:1;
+}
+.hc-dual-switch.hc-dual-switch.positive >.container >.track:after{
+    opacity:0;
+}
+
+.hc-dual-switch >.container >.track:before, .hc-dual-switch >.container >.track:after {
+    transition:0.25s 0.25s;
+    position:absolute;
+    font-family:robotoBold;
+    top:calc(50% - 0.65em);
+    display:grid;
+    width:100%;
+    left:-0.175em;
+    place-items:center;
+}
+
+
+
+.hc-dual-switch >.container >.track .thumb{
+    width:0px;
+    padding:1.5em;
+    border-radius:100%;
+    background-color:orange;
+    z-index:1;
+
+    transition:0.25s 0.125s;
+}
+
+.hc-dual-switch.positive >.container >.track .thumb{
+    
+    margin-left:calc(100% - 3em);
+}
+
+.hc-dual-switch.positive >.container >.track {
+    background-color: rgb(255, 0, 136);
+}
+
+.hc-dual-switch >.container >.track .thumb:hover{
+    filter:brightness(110%);
+}
+
+.hc-dual-switch .hc-infinite-spinner{
+    font-size:0.35em;
+    margin-top:0.5em;
+}
+
+
+
+
+

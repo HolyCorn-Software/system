@@ -1,0 +1,82 @@
+/*
+Copyright 2021 HolyCorn Software
+Spinner Widget
+
+*/
+
+.hc-infinite-spinner{
+    --hc-spinner-color:red;
+    
+}
+
+.hc-infinite-spinner, .hc-infinite-spinner >.container {
+    display:inline-grid;
+    place-items:center;
+}
+
+
+.hc-infinite-spinner .container .unit{
+    border: 0.5em solid transparent;
+    border-radius:50%;
+    border-top-color:var(--hc-spinner-color);
+    content:'';
+
+    width:5em;
+    height:5em;
+
+    position:absolute;
+    animation:1.5s spin infinite;
+
+    font-size:0.75em;
+}
+
+.hc-infinite-spinner >.container{
+    animation:1s spin infinite;
+}
+
+.hc-infinite-spinner.paused .unit, .hc-infinite-spinner.paused >.container{
+    animation:none!important;
+}
+
+@keyframes spin{
+    0%{
+        transform:rotate(0deg);
+    }
+    100%{
+        transform:rotate(355deg);
+    }
+}
+
+
+
+
+
+/*Functionality for blocking another element with a spinner logo */
+.hc-infinite-spinner-blocker {
+    display:grid;
+    justify-content:center;
+    align-content:center;
+    --hc-spinner-blocker-bg:rgba(255, 255, 255, 0.8);
+    background-color:var(--hc-spinner-blocker-bg);
+
+    position:absolute;
+    top:0px;
+    left:0px;
+    width:100%;
+    height:100%;
+
+    z-index:2;
+
+}
+
+
+.hc-infinite-spinner-blocker .hc-infinite-spinner {
+    margin:-2.5em;
+}
+
+
+
+/* For any element that has been blocked by the infinite spinner */
+*.hc-infinite-spinner-blocker-attached{
+    pointer-events:none;
+}

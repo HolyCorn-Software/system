@@ -1,0 +1,33 @@
+/*
+Copyright 2021 HolyCorn Software
+The InlineSelect widget
+The SelectOption sub-widget
+The widget that represents a single selectable option
+*/
+
+.hc-v2-inline-select-option>.container {
+    padding: 0.25em;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+
+    cursor: default;
+    cursor: pointer;
+    
+}
+
+
+.hc-v2-inline-select-option>.container:before {
+    content: ' ';
+    height: 0.125em;
+    border-radius: 5px;
+    width: 00%;
+    position:absolute;
+    top:calc(100% - 0.25em);
+    background-color: black;
+    transition: 0.25s 0.125s;
+}
+
+.hc-v2-inline-select-option>.container:hover:before {
+    
+    width: 100%;
+}

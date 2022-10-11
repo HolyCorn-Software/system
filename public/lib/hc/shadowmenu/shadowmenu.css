@@ -1,0 +1,31 @@
+/*
+Copyright 2021 HolyCorn Software LLC
+Instant Purchase of gift cards using crypto
+This module provides a dropdown menu that is activated when the user hovers on an element
+*/
+
+.hc-shadowmenu{
+	position:fixed;
+	transform:translateY(5em);
+	background-color:white;
+	min-width:100px;
+	min-height:100px;
+	z-index:5;
+	pointer-events:none;
+	opacity:0;
+	transition:0.25s;
+	padding:0.25em;
+}
+
+.hc-shadowmenu.active{
+	min-width:50px;
+	border-radius:5px;
+	box-shadow:0px 0px 10px grey;
+
+	opacity:1;
+	transform:translateY(32px);
+	pointer-events:all;
+	transition:0.25s;
+
+	z-index:5;
+}

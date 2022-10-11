@@ -1,0 +1,43 @@
+/*
+Copyright 2021 HolyCorn Software
+This button is a standard button with responsive features such as loaders and animations
+
+The hover animation of the button can be set or removed when the 'hoverAnimate' class is set
+*/
+
+.hc-action-button{
+    position:relative;
+    display:inline;
+}
+
+.hc-action-button >.container {
+    border-radius:5px;
+    display:inline-grid;
+    place-items:center;
+    padding:0.5em;
+    padding-right:0.6em;
+    min-width:6.5em;
+    cursor:pointer;
+    font-family:roboto;
+    background-color:#2965DA;
+    transition:0.125s 0.125s;
+
+    color:white;
+    position:relative;
+}
+
+.hc-action-button >.container >.overlay{
+    left:calc(100% - 0.95em);
+    margin-top:0.25em;
+    position:absolute;
+}
+
+.hc-action-button .hc-infinite-spinner{
+    --hc-spinner-color:orange;
+    font-size:0.35em;
+}
+
+.hc-action-button.hoverAnimate:hover >.container{
+    padding-left:0.75em;
+    transition:0.25s 0.125s;
+}

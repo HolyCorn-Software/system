@@ -1,0 +1,69 @@
+/*
+Copyright 2021 HolyCorn Software
+The ActionButton module
+This sub-module allows for messages to be shown by the button
+*/
+
+.hc-action-button-message{
+    font-family:conduit;
+    position:absolute;
+    max-width:125%;
+    min-width:calc(100% - 1.5em);
+    font-size:1.3em;
+    top:calc(1em );
+    left:0.0625em;
+    z-index:1;
+    pointer-events: none;
+}
+
+.hc-action-button-message >.container >.main{
+    display:flex;
+    transition:0.25s;
+    justify-content:center;
+    width:100%;
+    border:1px solid rgb(245, 194, 118);
+    background-color:rgba(240, 240, 20, 0.486);
+    border-radius:5px;
+    color: rgb(53, 53, 56);
+    padding:0.5em;
+}
+
+.hc-action-button-message >.container >.main >.message{
+    display:inline;
+}
+.hc-action-button-message >.container >.main >.message >.content{
+    word-break:normal;
+    overflow-wrap:anywhere;
+}
+
+
+
+.hc-action-button-message >.container{
+    top:-1em;
+    height:1px;
+    opacity:0;
+    transition:0.35s 0.125s;
+}
+
+.hc-action-button-message.visible >.container{
+    top:1.65em;
+    height:auto;
+    opacity:1;
+}
+
+
+.hc-action-button-message .icon{
+    height:100%;
+    width:100%;
+    position:absolute;
+    display:grid;
+    place-items:center;
+    z-index:-1;
+    top:-0.25em;
+    opacity:0.6;
+}
+.hc-action-button-message .icon img{
+    max-width:100%;
+    max-height:100%;
+    opacity:0;
+}

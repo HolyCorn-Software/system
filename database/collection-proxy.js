@@ -1,0 +1,74 @@
+/**
+ * Copyright 2021 HolyCorn Software
+ * This module allows faculties to centralized and standardize names of database collections
+ * It also prevents the possibility of duplicated collection names
+ * 
+ * How to use
+ * 
+ * // collections.js
+ * let collections = new CollectionProxy({
+ *      'user':'user',
+ *      'widget':'ui.wigets',
+ *      'pages':'ui.pages',
+ *      'loginProviderCredentials':'login.proviers.credentials'
+ * })
+ * module.exports = collections
+ * 
+ * //Now, in some other module
+ * import collections  from 'collections.js'
+ * collections.widgets.find() //Just like that (No need to pass through Db.collection() function with mongodb)
+ * 
+ * This module also appends the faculty name to the name of the collection.
+ * So, in a faculty abc, the collection 'user' will be called abc.user
+ * 
+ * Finally, do well do use jsDoc to document the fields found in the collection. 
+ * 
+ * To fully understand these concepts, check <faculty of users>/drivers/collections.js
+ * 
+ */
+
+import { FacultyPlatform } from '../lib/libFaculty/platform.mjs'
+import { Platform } from '../platform.mjs';
+
+export class CollectionProxy {
+
+    /**
+     * Pass a parameter such as 
+     * ```
+     * {
+     * users:'user_profiles',
+     * credentials:'settings_and_credentials.credentials'
+     * }
+     * ```
+     * In the above, users is the object we'll have access to at runtime. 'user_profiles' is the name of the collection
+     * @param {Object<string,string>} values 
+     * @param {string} prefix - This defines the prefix before all collection names. By default, the module will use the name of the platform
+     * @returns 
+     */
+    constructor(values = {}, prefix) {
+
+        //The whole idea is, providers.credentials becomes collection('providers.credentials')
+        return new Proxy(this, {
+            /**
+             * 
+             * @param {CollectionsClass} target 
+             * @param {string} property 
+             * @returns {Collection}
+             */
+            get: (target, property) => {
+                if (typeof values[property] == 'string') {
+                    let platform = Platform.get(); //Either get a FacultyPlatform or BasePlatform
+                    //If faculty platform, use platform.descriptor.name, or just use system
+                    if (platform instanceof FacultyPlatform) {
+                        return platform.database.collection(`${prefix || (platform.descriptor.name)}.${values[property]}`)
+                    } else {
+                        return platform.database.connection.collection(`${prefix || 'base'}.${values[property]}`)
+                    }
+                }
+            }
+        })
+
+    }
+
+
+}

@@ -1,0 +1,28 @@
+/*
+Copyright 2021 HolyCorn Software
+hoverline module
+A simple widget that produces an animated line underneath when hovered
+*/
+
+.hc-hoverline .content, .hc-hoverline .content > *{
+    display:inline;
+    position:relative;
+    cursor:default;
+}
+
+.hc-hoverline .content:after{
+	content:'';
+	width:100%;
+	position:absolute;
+	top:1.25em;
+	left:0px;
+	height:0.15em;
+	background:linear-gradient(45deg, orange, darkorange);
+	width:0px;
+	transition:0.25s;
+}
+.hc-hoverline .content:hover:after{
+	width:100%;
+	transition:0.25s;
+	transition-delay:0.125s;
+}

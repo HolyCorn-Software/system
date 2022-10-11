@@ -1,0 +1,79 @@
+
+/*
+Copyright 2021 HolyCorn Software
+This module is a button that displays a forward arrow when the user hovers on it
+*/
+
+.hc-continue-button{
+    display:inline;
+}
+.hc-continue-button >.content{
+    border:1px lightblue solid;
+    border-radius:5px;
+    padding-top:0.5em;
+    padding-bottom:0.5em;
+    font-size:1.5em;
+    display:flex;
+    justify-content:center;
+    font-family:aaargh;
+    font-weight:bold;
+    background-color:white;
+    color:rgb(119, 212, 243);;
+    cursor:pointer;
+    position:relative;
+}
+
+.hc-continue-button >.content .arrow{
+    position:absolute;
+    top:calc(50% - 0.5em - 1em);
+    left:calc(100% - 1em);
+    pointer-events:none;
+
+    opacity:0;
+    transition:0.1s;
+}
+
+
+.hc-continue-button >.content:hover .arrow{
+    opacity:1;
+    transform:translateY(0em);
+
+    top:calc(50% - 0.5em - 0em);
+    transition:0.5s;
+}
+
+
+
+/* The Loading Behaviour */
+
+.hc-continue-button.loading .content .arrow{
+    border:0.135em solid lightblue;
+    border-left-width:0.185em;
+    border-left-color:rgb(158, 213, 231);
+    width:1.5em;
+    height:1.5em;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    border-radius:100%;
+    animation:0.5s hc-continue-button-load forwards infinite linear;
+    opacity:1;
+    left:calc(100% - 2em);
+    top:calc(50% - 0.5em - 0.25em);
+
+    color:transparent;
+    transition:0s;
+
+    filter:drop-shadow(0px 0px 15px blue);
+}
+
+
+@keyframes hc-continue-button-load{
+    0%{
+        transform:rotate(0deg);
+    }
+    100%{
+        transform:rotate(360deg);
+    }
+}

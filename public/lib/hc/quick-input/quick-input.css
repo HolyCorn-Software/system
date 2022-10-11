@@ -1,0 +1,124 @@
+/*
+Copyright 2021 HolyCorn Software
+This module controls an input field with programmatically set quick values
+*/
+
+.hc-quick-input{
+    position:relative;
+}
+
+.hc-quick-input >.content{
+    position:relative;
+    display:grid;
+    grid-template-columns:1fr;
+    min-height:50px;
+    font-family:aaargh;
+}
+
+.hc-quick-input >.content >.triangle{
+    display:inline;
+    width:0px;
+    height:0px;
+    background-color:transparent;
+
+    border:1em solid transparent;
+    border-bottom:0px solid transparent;
+    border-top-color:#c0c3f7;
+    border-radius:5px;
+    cursor:pointer;
+
+    position:absolute;
+    top:calc(50% + 0.15em);
+    left:calc(100% - 2em);
+
+    opacity:0.5;
+    transition:0.5s;
+}
+
+.hc-quick-input >.content >.triangle:hover{
+    opacity:1;
+}
+
+
+.hc-quick-input input{
+    border:1px solid lightblue;
+    border-radius:5px;
+    padding-top:0.65em;
+    height:100%;
+    width:calc(100% - 2.75em);
+
+    font-size:1.5em;
+    text-align:center;
+    padding-left:1em;
+    padding-right:1.75em;
+
+    outline:lightblue;
+    color:lightblue;
+}
+
+
+.hc-quick-input > .content >.label{
+    position:absolute;
+    top:0.35em;
+    left:0.35em;
+    color:rgb(10, 90, 114);
+}
+
+
+.hc-quick-input .drop-down{
+    box-shadow:0px 0px 5px grey;
+    border-radius:3px;
+    background-color:white;
+    position:absolute;
+    top:calc(100% + 1.5em);
+    width:calc(100% - 2em);
+    padding:1em;
+    
+    opacity:0;
+    transform:translateY(2em);
+    pointer-events:none;
+
+    max-height:var(--max-height);
+    overflow-y:auto;
+    height:0px;
+}
+
+
+.hc-quick-input.active .drop-down{
+    transform:translateY(0em);
+    opacity:1;
+    transition:0.5s;
+    z-index:5;
+    pointer-events:all;
+    height:auto;
+}
+
+.hc-quick-input.active .drop-down .options{
+    position:relative;
+    display:flex;
+    flex-wrap:wrap-reverse;
+    flex-direction:column;
+    justify-content:flex-end;
+
+    min-height:100px;
+    gap:1em;
+
+}
+
+
+
+.hc-quick-input.active .drop-down .hc-quick-input-option{
+    padding:0.35em;
+    padding-top:0.5em;
+    padding-bottom:0.5em;
+    border-radius:5px;
+    font-family:blogger;
+    font-size:1.2em;
+
+    cursor:pointer;
+}
+
+.hc-quick-input .drop-down .hc-quick-input-option:hover{
+    background-color:#f0f0f0;
+    transition:0.15s;
+}

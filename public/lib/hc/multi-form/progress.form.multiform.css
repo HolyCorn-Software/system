@@ -1,0 +1,82 @@
+/*
+Copyright 2021 HolyCorn Software
+Progress sub-module of multiform module
+This module is responsible for showing numbers like '1', '2', '3' or letters like 'a', 'b', 'c'
+*/
+
+
+
+
+/* Style rules for the overall progress widget */
+.hc-multiform-progress{
+    --active-color-bg:#7b113a;
+    --active-color:#fff;
+    --main-color:#99154e;
+    font-family:archive; /*fonts.css*/
+    position:relative;
+
+
+}
+
+
+.hc-multiform-progress > .container .points{
+    display:grid;
+    grid-auto-flow:column;
+    justify-content:stretch;
+    gap:1.5em;
+}
+
+
+
+/* Style rules for the progress dots */
+
+/*Allow for spacing between points */
+.hc-multiform-progress-point >.container{
+    display:flex;
+    gap:1em;
+}
+
+/* The rules for a single point. roundness and spacing */
+.hc-multiform-progress-point > .container .data{
+    padding:0.5em;
+    border-radius:50%;
+    display:inline-flex;
+    flex-direction:column;
+    justify-content:center;
+    
+    border:2px solid var(--main-color);
+    min-width:1em;
+    height:1em;
+    text-align:center;
+    cursor:pointer;
+}
+
+
+.hc-multiform-progress-point >.container .hold-trailer {
+    display:flex;
+    justify-content:center;
+    flex-direction:column;
+    flex:1;
+}
+
+
+.hc-multiform-progress-point > .container .trailer-bar{
+    min-width:2.5em;
+    height:0.25em;
+    border-radius:15%;
+    background-color:var(--main-color);
+}
+
+
+.hc-multiform-progress-point.active >.container .data{
+    background-color:var(--active-color-bg);
+    color:var(--active-color);
+    transition:0.5s;
+}
+
+
+
+/* Let the last point not have a trailer */
+.hc-multiform-progress-point:last-child >.container >.hold-trailer{
+    display:none;
+}

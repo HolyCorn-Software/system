@@ -1,0 +1,22 @@
+/*
+Copyright 2021 HolyCorn Software
+The animated tick widget
+*/
+
+
+.hc-animated-tick >.container{
+    display:inline-flex;
+    position:relative;
+}
+
+.hc-animated-tick.activated .stroke{
+    stroke-dasharray:50;
+    stroke-dashoffset:50;
+
+}
+
+
+.hc-animated-tick.activated.animated .stroke{
+    stroke-dashoffset:0;
+    transition:0.65s 0.125s;
+}

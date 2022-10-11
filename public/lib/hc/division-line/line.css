@@ -1,0 +1,25 @@
+
+.hc-division-line .container{
+    margin-top:0.75em;
+    display:grid;
+    justify-content:center;
+    grid-auto-flow:row;
+}
+
+.hc-division-line .container .line-stroke{
+    height:1px;
+    width:100%;
+    background-color:rgba(10,10,10, 0.8);
+    border-radius:10%;
+    position:absolute;
+    margin-top:0.75em;
+}
+
+.hc-division-line .container .line-label{
+    text-align:center;
+    z-index:1;
+    background-color:white;
+    position:relative;
+    display:inline;
+    padding:0.25em;
+}

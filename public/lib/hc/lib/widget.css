@@ -1,0 +1,10 @@
+/*
+Copyright 2021 HolyCorn Software
+Just some basic rules that every widget has to follow
+*/
+
+
+.hc-widget >.container{
+    
+    position:relative;
+}
