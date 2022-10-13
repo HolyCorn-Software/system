@@ -1,1 +1,1 @@
-Removed erroneous duplicate files
+Improved logging
