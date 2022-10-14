@@ -41,13 +41,14 @@ export class CollectionProxy {
      * }
      * ```
      * In the above, users is the object we'll have access to at runtime. 'user_profiles' is the name of the collection
-     * @param {Object<string,string>} values 
+     * @param {import('./collection-proxy-types.js').CollectionProxyValues} values 
      * @param {string} prefix - This defines the prefix before all collection names. By default, the module will use the name of the platform
      * @returns 
      */
     constructor(values = {}, prefix) {
 
         //The whole idea is, providers.credentials becomes collection('providers.credentials')
+
         return new Proxy(this, {
             /**
              * 
@@ -64,6 +65,10 @@ export class CollectionProxy {
                     } else {
                         return platform.database.connection.collection(`${prefix || 'base'}.${values[property]}`)
                     }
+                }
+                //Then it's the case where we have nested collections
+                if (typeof values[property] == 'object') {
+                    return new CollectionProxy(values[property], prefix)
                 }
             }
         })
