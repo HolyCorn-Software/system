@@ -1,1 +1,1 @@
-Improved logging
+Corrected minor bug experienced during the first time language data is requested

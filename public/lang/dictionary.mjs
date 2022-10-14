@@ -67,7 +67,7 @@ class StringDictionary {
      */
     constructor(_strings, langs) {
         this[strings] = _strings
-        this[languages] = langs
+        this[languages] = langs || {}
 
 
 
