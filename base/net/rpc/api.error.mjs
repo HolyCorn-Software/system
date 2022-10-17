@@ -9,18 +9,18 @@ import { SocketPublicJSONRPC } from "../../../comm/rpc/socket-public-rpc.mjs";
 
 export class BasePublicErrorAPI {
 
-    constructor(){
+    constructor() {
 
     }
 
     /**
      * The client calls this to report errors to the server
      */
-    async report(...errors){
+    async report(...errors) {
         let [, ...errordata] = arguments;
         /** @type {SocketPublicJSONRPC} */
         let client = arguments[0]
-        console.warn(`${'Client Error'.bold.red}\n\n`, ...errordata, `\n${'.'.repeat(process.stdout.columns*0.75)}\n\t\tAddress: ${client.socketClient.socket.address().address?.blue?.bold}`)
+        console.warn(`${'Client Error'.bold.red}\n\n`, ...errordata, `\n${'.'.repeat(process.stdout.columns * 0.75)}\n\t\tAddress: ${client.socketClient.socket.address().address?.blue?.bold}\n\tTime: ${new Date()}`)
     }
-    
+
 }
