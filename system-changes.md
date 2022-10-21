@@ -1,2 +1,2 @@
-Improved client error reporting
-Updated to the latest version of html-hc, featuring better documentation, and bug fixes
+Updated to the latest version of html-hc featuring new widgets
+exposed more classes to be made globally available to code that run in faculties. For example HTTPServer (system/http/server.js) is now globally available
