@@ -1,2 +1,1 @@
-Updated to the latest version of html-hc featuring new widgets
-exposed more classes to be made globally available to code that run in faculties. For example HTTPServer (system/http/server.js) is now globally available
+Added possibility of dynamically passing parameters during initialization of providers
