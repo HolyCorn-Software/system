@@ -1,1 +1,2 @@
-Added possibility of dynamically passing parameters during initialization of providers
+
+Improved logging
