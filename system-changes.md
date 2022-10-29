@@ -1,2 +1,2 @@
 
-Re-initializing html-hc
+Fixed issue with html-hc submodule
