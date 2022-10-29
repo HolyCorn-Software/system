@@ -196,7 +196,7 @@ export class SessionStorage {
         let final = {}
 
         for (let error in errors) {
-            final[`${this.#errorNamespace}.error`] = {
+            final[`${this.#errorNamespace}.${error}`] = {
                 backend: errors[error].backend || {
                     message: errors[error],
                     httpCode: 500

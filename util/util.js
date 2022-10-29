@@ -24,15 +24,17 @@ const Exception = (await import('../errors/backend/exception.js')).Exception
  * @param {string|undefined} argName This is mandatory only when structure is a string. It is used to construct the resulting error message.
  * That is, ${argName} was supposed to be a ${structure} but a(n) ${typeof args} was passed
  * @param {function({ideal:string, real: string, value:any, field:string})} error_callback An optional parameter that will be called when an error is detected, instead of throwing errors
- * 
+ * @param {('definite'|'exclusive')[]} flags If 'definite' is passed, then type of each item is only checked when the item is not undefined. When 'exclusive' is set, the system will
+ * throw an error if the object has more parameters than the structure
  * Example:
  * ```
  * checkArgs(userInput, 'string')
  * checkArgs(userInput, {name:'string', age:"number"})
- * checkArgs(userInput: {name:/.+ .+/, age:'number'})
+ * checkArgs(userInput, {name:/.+ .+/, age:'number'})
+ * checkArgs(userInput, {gender:"'male'|'female'", id:"number|boolean|'nothing'"})
  * ```
  */
-export function checkArgs(args, structure, argName, error_callback) {
+export function checkArgs(args, structure, argName, error_callback, flags = []) {
 
 
     /**
@@ -51,6 +53,10 @@ export function checkArgs(args, structure, argName, error_callback) {
      * }
      */
     let check = (obj, type, fieldName) => {
+
+        if (flags.indexOf('definite') !== -1 && typeof object == 'undefined') {
+            return
+        }
 
 
         /**
@@ -88,18 +94,40 @@ export function checkArgs(args, structure, argName, error_callback) {
 
         if (typeof type === 'string') {
 
-            if ((typeof obj) != type) {
+            const subTypes = type.split('|')
+
+            let isOkay = false;
+
+            for (let subType of subTypes) {
+
+                const enumRegExp = /^['"](.+)['"]$/
+                if (enumRegExp.test(subType)) {
+                    const enumValue = enumRegExp.exec(subType)[1]
+                    if (obj === enumValue) {
+                        isOkay = true
+                        break
+                    }
+                } else {
+                    if ((typeof obj) == subType) {
+                        isOkay = true
+                        break
+                    }
+
+                }
+
+            }
+
+            if (!isOkay) {
                 throw new Exception(`Please enter a suitable value for ${fieldName}`, {
                     code: `error.input.validation("${fieldName} was supposed to be a ${type} but a(n) ${typeof obj} `
                         + `was passed")`
                 })
             }
 
-            if (type === 'string') {
-                if (obj.length == 0) {
-                    throwError(new Exception(`Please enter a suitable value for ${fieldName}`, { code: `error.input.validation("An empty string was passed for ${fieldName}")` }))
-                }
-            }
+
+
+
+
         } else {
             let constraint = type
 
@@ -115,8 +143,21 @@ export function checkArgs(args, structure, argName, error_callback) {
 
             }
         }
+
+
+        //Now check if the object hasn't passed too much
+        if (flags.indexOf('exclusive') !== -1 && type !== 'object' && typeof obj !== 'string') {
+            for (let objectField in obj) {
+                if (typeof type[objectField] === 'undefined') {
+                    throw new Exception(`Sorry, ${objectField} was passed in ${fieldName}, when it was not needed.`)
+                }
+            }
+        }
     }
 
+    if (typeof structure !== 'undefined' && typeof args === 'undefined') {
+        throw new Exception(`No value was passed for ${argName}`)
+    }
     check(args, structure, argName)
 
 

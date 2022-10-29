@@ -111,7 +111,7 @@ export class BasePlatformErrorAPI extends EventEmitter {
             try {
                 this.setCustomError(error, errorsMap[error])
             } catch (e) {
-                throw new Error(`The error '${error}' is not properly defined\nHere's an example of what to do:\n\t${JSON.stringify(BasePlatformErrorAPI.example)}\n${e}`)
+                throw new Error(`The error '${error}' is not properly defined\nHere's an example of what to do:\n\t${JSON.stringify(BasePlatformErrorAPI.example)}\n`, e)
             }
         }
     }
