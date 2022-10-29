@@ -1,6 +1,3 @@
 [submodule "html-hc"]
 	path = html-hc
 	url = https://github.com/HolyCorn-Software/html-hc
-[submodule "public/html-hc"]
-	path = public/html-hc
-	url = https://github.com/HolyCorn-Software/html-hc
