@@ -1,2 +1,2 @@
 
-Correcting issue with placement of html-hc
+Re-initializing html-hc

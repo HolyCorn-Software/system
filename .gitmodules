@@ -1,0 +1,3 @@
+[submodule "public/html-hc"]
+	path = public/html-hc
+	url = https://github.com/HolyCorn-Software/html-hc.git
