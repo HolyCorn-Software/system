@@ -1,2 +1,2 @@
 
-Fixed issue with html-hc submodule
+Updated to the latest version of html-hc featuring better UI/UX
