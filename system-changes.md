@@ -1,2 +1,2 @@
 
-Updated to the latest version of html-hc featuring better documentation
+Updated to the latest version of html-hc featuring better UX
