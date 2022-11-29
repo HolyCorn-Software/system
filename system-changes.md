@@ -1,2 +1,2 @@
 
-Updated to the latest version of html-hc featuring better UX
+Corrected minor issue with http routing, where headers were set, after they were sent to the client
