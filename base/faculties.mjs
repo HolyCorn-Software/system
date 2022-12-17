@@ -5,8 +5,8 @@ It allows faculties to be added, and removed
 It calls the Faculty object to start the particular faculty
 */
 
-import { JSONRPC }  from '../comm/rpc/json-rpc.mjs';
-import { Faculty }  from '../lib/libFaculty/faculty.mjs';
+import { JSONRPC } from '../comm/rpc/json-rpc.mjs';
+import { Faculty } from '../lib/libFaculty/faculty.mjs';
 
 
 export class BasePlatformFacultiesAPI {
@@ -21,8 +21,8 @@ export class BasePlatformFacultiesAPI {
         /**@type {[Faculty]} */
         this.members = [] //An array containing all the individual faculties
 
-        this[Symbol.iterator] = function*(){
-            for(var member of this.members){
+        this[Symbol.iterator] = function* () {
+            for (var member of this.members) {
                 yield member
             }
         }
@@ -38,9 +38,8 @@ export class BasePlatformFacultiesAPI {
     }
 
     remove(process) {
-        //TODO: Implement this
         //To stop the faculty, and remove from the list of faculties
-        this.process = this.members?.filter(x => x.process != process)
+        this.members = this.members?.filter(x => x.process != process)
     }
 
     find(process) {

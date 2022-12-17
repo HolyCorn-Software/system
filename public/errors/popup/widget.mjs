@@ -31,7 +31,7 @@ export class ErrorUI extends HCTSBrandedPopup {
             innerHTML: `
                 <div class='container'>
                     <div class='error-title'>Sorryyyy!</div>
-                    <div class='error-content'></div>
+                    <div class='error-content hc-branded-popup-blue-scrollbar'></div>
                     <div class='error-data'></div>
                     <div class='help'>
                         If you are unable to solve this error, please report to us.
@@ -82,12 +82,9 @@ export class ErrorUI extends HCTSBrandedPopup {
     set error(error) {
 
         if (error instanceof Error) {
-            this.error_content = `${error.message}`
+            this.error_content = `${error.message.split('\n').join('<br>')}`
             this.error_title = error.name || 'Technical Error'
-            this.error_data = `
-                <br>${error.id ? `id: ${error.id}` : ''}
-                <br>${error.code ? `code: ${error.code}` : ''}
-            `
+            this.error_data = `${error.id ? `<br>id: ${error.id}` : ''}${error.code ? `<br>code: ${error.code}` : ''}`
         } else {
             console.trace(`error is not an 'Error'`)
         }

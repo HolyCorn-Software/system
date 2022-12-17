@@ -5,7 +5,7 @@ This module allows faculty platforms to create HTTP Servers
 */
 
 import { Server } from "../lib/nodeHC/http/server.js";
-import utils from "../comm/utils/utils.js";
+import utils from "../comm/utils/utils.mjs";
 import { BackendHandler } from '../errors/handler.mjs'
 import { Exception } from "../errors/backend/exception.js";
 
@@ -104,14 +104,14 @@ export class HTTPServer extends Server {
                 if (e instanceof Exception) {
                     //Well planned v2 error
                     if(e.code ==='error.system.unplanned'){
-                        console.log(e);
+                        console.error(e);
                     }
                     return res.endJSON(e.userObject, {}, e.userObject.httpCode) || true
                 }
 
                 console.warn(`\n\nInstead of throwing an Error object, throw an Exception with a specific code name, as defined in the faculty.json. For example user.error.authError`)
                 let exception = new Exception(`Unhandled Error during HTTP serving\n${e.stack}`, { code: 'error.system.unplanned' });
-                console.log(exception)
+                console.error(exception)
                 return res.endJSON(exception.userObject, {}, exception.userObject.httpCode) || true
 
             }

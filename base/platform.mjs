@@ -183,7 +183,6 @@ export class BasePlatform extends Platform {
      */
     get urlMap() {
         //Clients need to know which faculty is located at which url endpoint
-        //TODO: Also get url maps from Brother platforms and combine them
         return { ...this.urlMap0 }
     }
 

@@ -27,7 +27,7 @@ export class SocketPublicJSONRPC extends JSONRPC {
             try {
                 this.socketClient.send(d, 'text')
             } catch (e) {
-                console.log(e);
+                console.error(e);
             }
         }
 
@@ -39,6 +39,7 @@ export class SocketPublicJSONRPC extends JSONRPC {
 
 
         this.flags.expose_stack_traces = false;
+        this.flags.stripColors = true;
 
         /** @type {import('./types.js').FacultyPublicJSONRPCMeta} */ this.meta
 

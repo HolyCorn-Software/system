@@ -5,7 +5,9 @@ This module creates an interface for remote clients (faculties) to call methods 
 */
 
 import fs from 'fs'
-import LanguageInternalMethods from '../../../system/base/lang/terminals/internal.mjs';
+import LanguageInternalMethods from '../../base/lang/terminals/internal.mjs';
+import BasePluginAPIMethods from '../../base/plugin/terminal.mjs';
+import FacultyManagementRemote from '../../lib/libFaculty/management/manager.mjs';
 
 /**
  * @typedef BasePlatform
@@ -39,6 +41,7 @@ export class BaseToFacultyRemoteMethods {
         this.errors = new BaseToFacultyErrorAPIMethods(this[basePlatform])
 
         this.lang = new LanguageInternalMethods()
+        this.plugin = new BasePluginAPIMethods()
 
     }
 
@@ -210,9 +213,13 @@ export class FacultyToBaseRemoteMethods {
      */
     constructor(faculty_platform) {
 
-        for (let source of ['internal', 'public']) {
+        /** @type {object} */ this.internal
+        /** @type {object} */ this.public
+        /** @type {FacultyManagementRemote} */ this.management
+
+        for (let source of ['internal', 'public', 'management']) {
             Reflect.defineProperty(this, source, {
-                get: () => faculty_platform.remote[source],
+                get: () => (faculty_platform || FacultyPlatform.get()).remote[source],
                 configurable: true,
                 enumerable: true,
                 set: () => {
@@ -220,6 +227,10 @@ export class FacultyToBaseRemoteMethods {
                 }
             })
         }
+
+
     }
 
 }
+
+const pluginRemote = Symbol()

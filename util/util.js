@@ -71,7 +71,8 @@ export function checkArgs(args, structure, argName, error_callback, flags = []) 
                     field: fieldName,
                     ideal: type,
                     real: typeof obj,
-                    value: obj
+                    value: obj,
+                    error
                 })
             }
             throw error
@@ -118,7 +119,7 @@ export function checkArgs(args, structure, argName, error_callback, flags = []) 
             }
 
             if (!isOkay) {
-                throw new Exception(`Please enter a suitable value for ${fieldName}`, {
+                throw new Exception(`${fieldName} was supposed to be a ${type} but ${obj??'nothing' ? 'nothing' :`a(n) ${typeof obj}`} was passed`, {
                     code: `error.input.validation("${fieldName} was supposed to be a ${type} but a(n) ${typeof obj} `
                         + `was passed")`
                 })

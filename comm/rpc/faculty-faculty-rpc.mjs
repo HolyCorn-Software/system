@@ -13,7 +13,6 @@ import { JSONRPC, JSONRPCRemote } from './json-rpc.mjs';
 import { FacultyDescriptor } from '../../lib/libFaculty/faculty-descriptor.mjs';
 import fs from 'fs'
 import { callWithRetries } from '../../util/util.js';
-import { Exception } from '../../errors/backend/exception.js';
 import { faculty_platform_symbol } from '../../lib/libFaculty/faculty-connection-manager.mjs';
 
 
@@ -115,7 +114,6 @@ export class FacultyFacultyInterface {
             enumerable: true
         })
 
-        /** @type {DataType} */ this.remote
         Reflect.defineProperty(this, 'remote', {
             get: () => this.rpc.remote,
             enumerable: true

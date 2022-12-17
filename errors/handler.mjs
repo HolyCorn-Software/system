@@ -83,7 +83,7 @@ export class BackendHandler {
                         resolve()
                     } else { }
                 } catch (e) {
-                    console.log(e)
+                    console.error(e)
                     clearInterval(error_engine_init_key)
                 }
             }, 50)

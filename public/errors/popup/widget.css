@@ -4,53 +4,60 @@ The HCTS Project
 This stylesheet give shape and colour to the Error UI
 */
 
-.hc-hcts-error-ui >.container{
-    display:flex;
-    flex-direction:column;
-    gap:2em;
-    text-align:left;
-
-    max-width:390px;
-    font-family:robotoLight;
-
-
-
-}
-
-.hc-hcts-error-ui >.container >.error-title{
-    font-size:1.95em;
-    font-family:robotoBold;
-    color:#d75353;
-}
-.hc-hcts-error-ui >.container >.error-content{
-    font-size:1.35em;
-    color:#26345a;
-}
-
-.hc-hcts-error-ui >.container >.help{
-    color:rgb(16, 40, 59);
-}
-
-.hc-hcts-error-ui >.container  >.actions{
-    display:flex;
-    justify-content:center;
+.hc-hcts-error-ui>.container {
+    display: flex;
     flex-direction: column;
-    text-align:center;
-    gap:0.5em;
+    gap: 1.5em;
+    text-align: left;
+
+    max-width: 390px;
+    font-family: robotoLight;
+
+
 
 }
 
-.hc-hcts-error-ui >.container  >.actions .close{
-    color:#2965DA;
-    cursor:default;
+.hc-hcts-error-ui>.container>.error-title {
+    font-size: 1.95em;
+    font-family: robotoBold;
+    color: #d75353;
+}
+
+.hc-hcts-error-ui>.container>.error-content {
+    font-size: 1.25em;
+    color: #c24d83;
+    word-wrap: break-word;
+    max-height: calc(var(--max-height) - 17.5em);
+    overflow-y: auto;
+}
+
+.hc-hcts-error-ui>.container>.help {
+    color: rgb(16, 40, 59);
+}
+
+.hc-hcts-error-ui>.container>.actions {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5em;
+
+}
+
+.hc-hcts-error-ui>.container>.actions .close {
+    color: #2965DA;
+    cursor: default;
 }
 
 
-.hc-hcts-error-ui >.container >.actions .hc-action-button {
-    display:flex;
+.hc-hcts-error-ui>.container>.actions .hc-action-button {
+    display: flex;
 }
 
 
-.hc-v2-choose-popup.hc-hcts-error-popup >.container >.wrapper >.data{
-    background-color:transparent;
+.hc-v2-choose-popup.hc-hcts-error-popup>.container>.wrapper>.data {
+    background-color: transparent;
+}
+.hc-v2-choose-popup.hc-hcts-error-popup.hc-hcts-branded-popup>.container {
+    --max-height: clamp(300px, 100vh - 2em, 750px);
 }

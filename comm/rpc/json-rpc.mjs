@@ -55,7 +55,6 @@ export class JSONRPC {
          * @type {JSONRPCRemote& DataType}
          */
         let remote = new JSONRPCRemote(this);
-        let methodStore = {} //
         /** @type {object} */ this.remote
         Reflect.defineProperty(this, 'remote', {
             get: () => remote
@@ -73,7 +72,8 @@ export class JSONRPC {
         this.flags = {
             //For each method that is called locally, which objects should be inserted as the first argument ?
             first_arguments: [this],
-            expose_stack_traces: true
+            expose_stack_traces: true,
+            stripColors: false
         }
 
         this[defaultStubSymbol] = new JSONRPCDefaultStub(this);
@@ -135,7 +135,7 @@ export class JSONRPC {
                 if (/unexpected token.*JSON/gi.test(e.message)) {
                     // console.log('JSONRPC could not parse ', chunk)
                 } else {
-                    console.log(e, `\nFor input: '${chunk}'`)
+                    console.error(e, `\nFor input: '${chunk}'`)
                     console.log(`this.stub `, this.stub)
                 }
             }
@@ -289,7 +289,7 @@ export class JSONRPCRemoteObject {
                                     {
                                         let exception = new Exception(`The remote method ${methodName.red} is not available!`, { code: 'error.system.unplanned' })
                                         exception.stack = `${exception.stack}\n${creation_stack}`;
-                                        console.log(exception);
+                                        console.error(exception);
                                         failed(exception)
                                         break;
                                     }
@@ -301,10 +301,10 @@ export class JSONRPCRemoteObject {
                                         exception.code = error.message.code
                                         exception.id = error.message.id
                                         exception.message = `${error.message.message}`
-                                        exception.stack = (error.message.stack ? `${error.message.stack}\n-----------------\n` : '') + stack + `\n\t${`Call was made from ` + (Platform.get() instanceof FacultyPlatform ? Platform.get().descriptor.label : 'BasePlatform')}`;
+                                        exception.stack = (error.message.stack ? ` ${error.message.stack}\n-----------------\n` : '') + stack + `\n\t${`Call was made from ` + (Platform.get() instanceof FacultyPlatform ? Platform.get().descriptor.label : 'BasePlatform')}`;
                                         failed(exception)
                                         if(!error.message.code){
-                                            console.log(exception)
+                                            console.error(exception)
                                         }
                                     }
                             }
@@ -399,7 +399,7 @@ class JSONRPCManager extends EventEmitter {
                     throw new Exception(`${object.method} is not a function.\n${`\tCall was made to ` + (Platform.get() instanceof FacultyPlatform ? Platform.get().descriptor.label : 'BasePlatform')}`, { code: `error.system.unplanned` })
                 }
 
-                
+
                 let promise = method.apply(lastPart, args);
 
                 //Now, wait for when
@@ -440,7 +440,7 @@ class JSONRPCManager extends EventEmitter {
                     id: object.id,
                     error: {
                         code: -32000,
-                        message: { ...e, stack: e.stack, message: e.message }
+                        message: { ...e, stack: this.json_rpc.flags.stripColors ? e.stack?.strip : e.stack, message: this.json_rpc.flags.stripColors ? e.message?.strip : e.message }
                     }
                 });
 

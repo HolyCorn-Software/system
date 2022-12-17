@@ -33,6 +33,7 @@ export class FacultyBaseCommInterface extends CommInterface {
         //If in Faculty Platform
         if (process === global.process) {
             this.rpc.flags.first_arguments = [] //Don't inject the default JSON RPC Object as first argument
+            this.rpc.sub = new FacultyToBaseRemoteMethods()
         } else {
             this.rpc.flags.first_arguments = [basePlatform.faculties.findByJSONRPC(this.rpc)]
             Reflect.defineProperty(this.rpc.flags, 'first_arguments', {
@@ -46,7 +47,6 @@ export class FacultyBaseCommInterface extends CommInterface {
                 }
             })
         }
-
     }
     /**
      * This is an interface that you can use to call methods residing on the other end of the communication link (remote methods)

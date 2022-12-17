@@ -19,8 +19,13 @@ export class Utils {
         while (maxTries-- > 0) {
             try {
                 let port = crypto.randomInt(8081, 65535)
-                let server = net.createServer().listen(port);
-                await safe_close(server)
+                await new Promise((resolve, reject) => {
+
+                    let server = net.createServer().listen(port, (e) => {
+                        safe_close(server).then(resolve, reject)
+                    });
+                    server.addListener('error', reject)
+                })
                 return port;
             } catch (e) {
                 //No qualms, port we tried is not working
@@ -41,26 +46,6 @@ function safe_close(server) {
 
     return new Promise(x => {
         server.once('close', x)
-        
-        /*
-        const check = () => {
-            if (!server.listening) {
-                x()
-                return false;
-            }
-            return true;
-        }
-        if (!check()) {
-            return; //Then no need to continue, since the port is already shut down
-        }
-
-        //But if on first try, the server was still listening at that port, then keep checking till the server has stopped listening
-        const interval = setInterval(() => {
-            if (!check()) {
-                clearInterval(interval)
-            }
-        }, 10)
-        */
     })
 }
 
