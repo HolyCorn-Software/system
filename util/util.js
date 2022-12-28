@@ -336,6 +336,15 @@ export function substituteText(string, data) {
 }
 
 
+/**
+ * This method cleans path information, by removing some things such as duplicated slashes
+ * @param {string} path 
+ * @returns {string}
+ */
+function cleanPath(path) {
+    return path.replaceAll(/[^^]\.\//g, '/').replaceAll(/\/\/*/g, '/')
+}
+
 
 export default {
     checkArgs,
@@ -344,5 +353,6 @@ export default {
     callWithRetries,
     pickOnlyDefined,
     substituteText,
-    getCaller
+    getCaller,
+    cleanPath
 }
