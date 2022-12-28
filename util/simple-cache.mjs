@@ -57,4 +57,12 @@ export default class SimpleCache {
         }
 
     }
+    /**
+     * This method invalidates the data stored in the cache
+     */
+    invalidate(){
+        delete this[cacheData]
+        delete this[cacheDataLastRefresh]
+        
+    }
 }
