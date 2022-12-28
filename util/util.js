@@ -5,7 +5,7 @@
 
 // import { Exception } from "../errors/backend/exception.js";
 import { SuperRequest } from "../lib/nodeHC/http/super-request.js";
-
+import vm from 'node:vm'
 
 const Exception = (await import('../errors/backend/exception.js')).Exception
 
@@ -119,7 +119,7 @@ export function checkArgs(args, structure, argName, error_callback, flags = []) 
             }
 
             if (!isOkay) {
-                throw new Exception(`${fieldName} was supposed to be a ${type} but ${obj??'nothing' ? 'nothing' :`a(n) ${typeof obj}`} was passed`, {
+                throw new Exception(`${fieldName} was supposed to be a ${type} but ${obj ?? 'nothing' ? 'nothing' : `a(n) ${typeof obj}`} was passed`, {
                     code: `error.input.validation("${fieldName} was supposed to be a ${type} but a(n) ${typeof obj} `
                         + `was passed")`
                 })
@@ -327,6 +327,17 @@ export function pickOnlyDefined(object, fields, transform = x => x) {
 }
 
 
+/**
+ * This method securely substitutes text data, using parameters provided
+ * @param {string} string 
+ * @param {object} data 
+ * @returns {string}
+ */
+export function substituteText(string, data) {
+    const context = vm.createContext({ ...data })
+    return vm.runInContext(`\`${string}\``, context)
+}
+
 
 
 export default {
@@ -334,5 +345,6 @@ export default {
     getJSONOrBadRequest,
     callWithTimeout,
     callWithRetries,
-    pickOnlyDefined
+    pickOnlyDefined,
+    substituteText
 }

@@ -12,7 +12,6 @@ import tls from 'node:tls'
 import platform_credentials from '../../../secure/credentials.mjs'
 
 import { PlatformHTTPServer } from './platform-http.js';
-import { SuperRequest } from '../../../../system/lib/nodeHC/http/super-request.js';
 
 export class BasePlatformHTTPManager {
 

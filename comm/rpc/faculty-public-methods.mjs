@@ -31,14 +31,6 @@ export class FacultyPublicMethods {
         }
     }
 
-
-    /**
-     * @deprecated Use $session instead of sesssionAPI
-     * @returns {FacultyPublicSessionAPI}
-     */
-    get sessionAPI(){
-        return this.$session
-    }
     /**
      * @returns {FacultyPublicSessionAPI}
      */

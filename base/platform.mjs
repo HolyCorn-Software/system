@@ -190,15 +190,6 @@ export class BasePlatform extends Platform {
         return this.faculty_http_api.map
     }
 
-    /**
-     * @deprecated
-     * Use `errors.map` instead.
-     */
-    get errorMap() {
-        console.warn(`BasePlatform.prototype.errorMap is depreciated.\nUse BasePlatform.prototype.errors.map instead\n${new Error().stack.split('\n').slice(1).join('\n')}`)
-        return this.errors.map
-    }
-
     async exit() {
         console.log(`\nExiting\n`.red)
         //Close faculties

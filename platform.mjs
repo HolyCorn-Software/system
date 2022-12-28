@@ -36,13 +36,45 @@ export class Platform {
         global.platform = this;
 
         //console.log(`Platform init done`)
+
+        //Now, make some classes global
+        import('./http/server.js').then(x => {
+            global.HTTPServer = x.HTTPServer
+        });
+
+        import('./http/strict-file-server.js').then(x => {
+            global.StrictFileServer = x.StrictFileServer
+        })
+
+        import('./util/function-proxy.mjs').then(x => {
+            global.FunctionProxy = x.default
+        });
+
+        import('./util/simple-cache.mjs').then(x => {
+            global.SimpleCache = x.default
+        });
+
+        import('./util/files-check.mjs').then(x => {
+            global.FilesCheck = x.default
+        })
+
+        import('./util/fsUtils.mjs').then(x => {
+            global.fsUtils = x.default
+        });
+
+        import('./util/util.js').then(x => {
+            global.soulUtils = x.default
+        })
+
+
+
     }
 
     /**
      * Refers to the type of platform. Whether FacultyPlatform or BasePlatform
      * @returns {('faculty'|'base')}
      */
-    get type(){
+    get type() {
         return 'faculty'
     }
 

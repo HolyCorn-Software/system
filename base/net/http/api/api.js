@@ -45,5 +45,29 @@ export class BasePlatformHTTPAPI {
     }).bind(this)
 
 
+    /**
+     * This method is used to cancel a routing decision
+     * @param {object} param0 
+     * @param {string} param0.path
+     * @return {Promise<void>}
+     */
+    async deRoute(param0) {
+
+        param0 = arguments[1]
+
+        /** @type {import('system/lib/libFaculty/faculty.mjs').Faculty} */
+        const faculty = arguments[0]
+
+        if (this.map[faculty.descriptor.name]?.serverPath !== param0.path) {
+            throw new Error(`Only the faculty that claimed the path '${param0.point}' may deroute it.`)
+        }
+
+        this.#platform.http_manager.http_server.deRoute({ path: param0.path })
+
+
+
+    }
+
+
 
 }

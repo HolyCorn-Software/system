@@ -4,9 +4,8 @@
  */
 
 import { Exception as _Exception } from "system/errors/backend/exception.js";
-import { HTTPServer as _HTTPServer } from "system/http/server.js";
-import { StrictFileServer as _StrictFileServer } from "system/http/strict-file-server.js";
 import { FacultyPlatform as _FacultyPlatform } from "./platform.mjs";
+
 
 
 declare global {
@@ -16,10 +15,7 @@ declare global {
 
     declare class Exception extends _Exception { }
 
-    declare class HTTPServer extends _HTTPServer { }
-
-    declare class StrictFileServer extends _StrictFileServer { }
-
+    
 
 
 }

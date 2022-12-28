@@ -7,10 +7,10 @@
 
 
 
- import fs from 'node:fs'
- import libPath from 'node:path'
- 
- 
+import fs from 'node:fs'
+import libPath from 'node:path'
+
+
 const path_symbol = Symbol(`DirectoryNavigator.prototype.path`)
 
 
@@ -56,13 +56,40 @@ export default class DirectoryNavigator {
 
     /**
      * This field returns the content of the file
+     * @deprecated Use $.fileContent
      * @returns {Buffer}
      */
     get $fileContent() {
         return fs.readFileSync(this[path_symbol])
     }
+
+    /**
+     * @deprecated Use $.path
+     */
     get $path() {
         return this[path_symbol]
+    }
+
+    get $() {
+        const ret = {
+            fileContent: '',
+            path: this[path_symbol],
+
+            /**
+             * This method tells us if a path is within this current path
+             * @param {string} path 
+             * @returns {boolean}
+             */
+            exists: (path) => fs.existsSync(`${this[path_symbol]}${libPath.sep}${path}`)
+        }
+
+        Reflect.defineProperty(ret, 'fileContent', {
+            get: () => fs.readFileSync(this[path_symbol]),
+            configurable: true,
+            enumerable: true
+        })
+
+        return ret
     }
 
 }

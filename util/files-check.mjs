@@ -50,23 +50,6 @@ export default class FilesCheck {
             //Go through the path, and then check if the files mentioned are found in the path
             //If a folder is found, call the entire process to scan the folde
 
-            let example = {
-                'red.css': true,
-                'blue.css': true,
-                'emptyFolder': {
-
-                },
-
-                'someFolder': {
-                    'template.html': true,
-
-                    'logic.js': true,
-                    'res': {
-                        'image1.png': true,
-                    }
-                }
-            }
-
             if (typeof structure === 'boolean') {
                 if (!fs.existsSync(path)) {
                     throw new Error(`The file ${field} doesn't exist.`)

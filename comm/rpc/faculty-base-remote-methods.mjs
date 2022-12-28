@@ -46,27 +46,6 @@ export class BaseToFacultyRemoteMethods {
     }
 
 
-    /**
-     * @deprecated
-     * Use errors.errorMap() insteads
-     * @returns {Promise<import('system/errors/handler.mjs').ErrorMapV2>}
-     */
-    errorMap() {
-        console.warn(`basePlatform.errorMap() is deprecated. Use basePlatform.errors.getMap() instead`)
-        return platform.errors.map
-    }
-
-
-    /**
-     * This method is used by the client to route over requests
-     * @deprecated
-     * @param {{localPath:string, remotePath:string, remotePort:Number}} param0
-     */
-    courseHTTP(faculty, { serverPath, clientPath, clientPort } = {}) {
-        console.warn(`The BaseToFacultyRemoteMethods.courseHTTP() method is deprecated. Use BaseToFacultyRemoteMethods.http.course()`)
-        platform.faculty_http_api.course(faculty, { remotePort: clientPort, localPath: serverPath, remotePath: clientPath })
-    }
-
 
     get http() {
         return this[basePlatform].faculty_http_api

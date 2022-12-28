@@ -1,12 +1,12 @@
+.
 
-Updated to the latest version of html-hc, featuring better stability, and more developer-friendly code, and slight UI improvements.
-Removed unnecessary code
-Corrected minor issue with removing faculties
-Improved custom error-reporting with the checkArgs() method
-Added support for a new concept known as 'plugins', which allows code to be more easily extended
-Improved stability of the findOpenPort() method
-Changed extension of utils from .js to .mjs to suit modern standards
-Improved error-reporting with the checkArgs method
-Improved Exception error logging
-Removed error-prefixing feature of the Exception class
-Improved error popup ui
+Added ability to securely subsitute strings
+Added a new utility called argument-proxy, which allows code components to build objects that wrap around other objects to change their arguments, or secure them
+Changing to a new style where faculties export a default function for init.
+Removed unnecessary code 
+Changed the way global classes are managed
+Added more classes, and modules to the list of global variables (FunctionProxy, SimpleCache, CollectionProxy, fsUtils, soulUtils)
+Improved error logging
+Removed deprecated method FacultyPlatform.prototype.warn()
+Removed deprecated errorMap(), courseHTTP, and sessionAPI methods
+Removed deprecated connectFaculty() method
