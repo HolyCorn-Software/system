@@ -37,11 +37,7 @@ export class BasePlatformHTTPAPI {
     course = (function (faculty, { serverPath, clientPort, clientPath }) {
         console.log(`Routing ${serverPath.blue} to ${clientPath} on an http server in ${faculty.descriptor.label.blue} running on port ${clientPort.toString().blue} `)
         this.#platform.http_manager.http_server.course({ localPath: serverPath, remoteURL: `http://127.0.0.1:${clientPort}${clientPath}` });
-
-        this.map = {
-            ...this.map,
-            [faculty.descriptor.name]: serverPath
-        }
+        (this.map[faculty.descriptor.name] ||= []).push(serverPath)
     }).bind(this)
 
 
@@ -58,8 +54,8 @@ export class BasePlatformHTTPAPI {
         /** @type {import('system/lib/libFaculty/faculty.mjs').Faculty} */
         const faculty = arguments[0]
 
-        if (this.map[faculty.descriptor.name]?.serverPath !== param0.path) {
-            throw new Error(`Only the faculty that claimed the path '${param0.point}' may deroute it.`)
+        if (this.map[faculty.descriptor.name]?.indexOf(param0.path) == -1) {
+            throw new Error(`Only the faculty that claimed the path '${param0.path}' may deroute it.`)
         }
 
         this.#platform.http_manager.http_server.deRoute({ path: param0.path })

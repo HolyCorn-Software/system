@@ -178,18 +178,6 @@ export class BasePlatform extends Platform {
         this.http_manager = http_manager;
     }
 
-    /**
-     * This is a map of which faculties have routed connections and which paths they have claimed
-     */
-    get urlMap() {
-        //Clients need to know which faculty is located at which url endpoint
-        return { ...this.urlMap0 }
-    }
-
-    get urlMap0() {
-        return this.faculty_http_api.map
-    }
-
     async exit() {
         console.log(`\nExiting\n`.red)
         //Close faculties
