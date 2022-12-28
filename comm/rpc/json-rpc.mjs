@@ -301,7 +301,7 @@ export class JSONRPCRemoteObject {
                                         exception.code = error.message.code
                                         exception.id = error.message.id
                                         exception.message = `${error.message.message}`
-                                        exception.stack = (error.message.stack ? ` ${error.message.stack}\n-----------------\n` : '') + stack + `\n\t${`Call was made from ` + (Platform.get() instanceof FacultyPlatform ? Platform.get().descriptor.label : 'BasePlatform')}`;
+                                        exception.stack = (error.message.stack ? ` ${error.message.stack}\n-----------------\n` : '') + stack + `\n\t${`Call was made from ` + (Platform.get() instanceof FacultyPlatform ? Platform.get().descriptor.label : 'BasePlatform').magenta}`;
                                         failed(exception)
                                         if(!error.message.code){
                                             console.error(exception)
