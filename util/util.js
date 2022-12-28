@@ -3,11 +3,8 @@
  * This module provides commonly used functionalities
  */
 
-// import { Exception } from "../errors/backend/exception.js";
 import { SuperRequest } from "../lib/nodeHC/http/super-request.js";
 import vm from 'node:vm'
-
-const Exception = (await import('../errors/backend/exception.js')).Exception
 
 /**
  * 
@@ -346,5 +343,6 @@ export default {
     callWithTimeout,
     callWithRetries,
     pickOnlyDefined,
-    substituteText
+    substituteText,
+    getCaller
 }

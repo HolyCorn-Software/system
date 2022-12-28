@@ -10,7 +10,6 @@ import net from 'net';
 import { EventEmitter } from 'events';
 import { SocketCommInterface } from '../interface/socket-interface.mjs';
 import { JSONRPC, JSONRPCRemote } from './json-rpc.mjs';
-import { FacultyDescriptor } from '../../lib/libFaculty/faculty-descriptor.mjs';
 import fs from 'fs'
 import { callWithRetries } from '../../util/util.js';
 import { faculty_platform_symbol } from '../../lib/libFaculty/faculty-connection-manager.mjs';
@@ -120,7 +119,7 @@ export class FacultyFacultyInterface {
         })
 
         /** @type {DataType & JSONRPCRemote} */ this.remote
-        /** @type {FacultyDescriptor} */ this.descriptor
+        /** @type {import('system/lib/libFaculty/types.js').FacultyDescriptor} */ this.descriptor
 
         /** @type {boolean} */ this.received_handshake
         /** @type {boolean} */ this.sent_handshake
@@ -162,7 +161,7 @@ export class FacultyFacultyInterface {
     /**
      * This method is called by remote faculties to make their identities available
      * @param {FacultyFacultyJSONRPC} jsonRPC 
-     * @param {FacultyDescriptor} descriptor 
+     * @param {import('system/lib/libFaculty/types.js').FacultyDescriptor} descriptor 
      */
     $faculty_describe = async (_null, descriptor) => {
         this.rpc.meta.remoteDescriptor = descriptor
@@ -377,7 +376,7 @@ export class FacultyFacultyJSONRPC extends JSONRPC {
         super()
         this.faculty_platform = faculty_platform
 
-        /** @type {{remoteDescriptor:FacultyDescriptor}} */
+        /** @type {{remoteDescriptor:import('system/lib/libFaculty/types.js').FacultyDescriptor}} */
         this.meta
     }
     get stub() {

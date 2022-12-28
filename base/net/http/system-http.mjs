@@ -4,7 +4,6 @@ This module brings together all the features available to client
 over http, that are directly associated with the base platform
 */
 
-import { FacultyDescriptor } from "../../../lib/libFaculty/faculty-descriptor.mjs";
 import { SocketPublicJSONRPC } from "../../../comm/rpc/socket-public-rpc.mjs";
 import utils from "../../../comm/utils/utils.mjs";
 import { HTTPServer } from "../../../http/server.js";
@@ -36,7 +35,7 @@ export class SystemHTTP extends HTTPServer {
                 const map = {}
                 manager.base.faculties.members.forEach(faculty => {
                     map[faculty.descriptor.name] = { ...faculty.descriptor }
-                    /** @type {keyof FacultyDescriptor} */
+                    /** @type {keyof import("system/lib/libFaculty/types.js").FacultyDescriptor} */
                     const restricted = ['path', 'set_properties', 'init', 'errors', 'errorsV2', 'plugin', 'name']
                     for (let property of restricted) {
                         delete map[faculty.descriptor.name][property]

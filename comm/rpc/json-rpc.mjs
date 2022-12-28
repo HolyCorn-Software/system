@@ -11,21 +11,10 @@ import crypto from 'node:crypto'
 import { EventEmitter } from 'events'
 import { Platform } from '../../platform.mjs';
 import { WildcardEventEmitter } from '../utils/wildcard-events.mjs';
-// import { getCaller } from '../../util/util.js';
 const uuid = crypto.randomUUID
-
-/** @type {typeof import('../../errors/backend/exception.js').Exception} */
-let Exception;
-//If not, there'll be a cyclic dependency
-import('../../errors/backend/exception.js').then(e => Exception = e.Exception);
-//import { Exception } from '../errors/backend/exception.js'
-/** @type {typeof import('../../lib/libFaculty/platform.mjs').FacultyPlatform} */
-let FacultyPlatform
-import('../../lib/libFaculty/platform.mjs').then(x => FacultyPlatform = x.FacultyPlatform);
 
 const stubSymbol = Symbol('JSONRPC.prototype.stub')
 const defaultStubSymbol = Symbol(`JSONRPC.prototype.defaultStub`)
-let getCaller = (await import('../../util/util.js')).getCaller;
 
 /**
  * Supports bi-directional JSON requests
@@ -187,7 +176,7 @@ export class JSONRPCRemote {
 
     constructor(json_rpc) {
 
-        let creation_stack = `Creation stack\n${getCaller({ offset: 2 })}`//new Error().stack.split('\n').slice(4,).join('\n') + `\n${'.'.repeat(process.stdout.columns)}`
+        // let creation_stack = `Creation stack\n${soulUtils.getCaller({ offset: 2 })}`//new Error().stack.split('\n').slice(4,).join('\n') + `\n${'.'.repeat(process.stdout.columns)}`
 
         /** @type {JSONRPC} */ this.$jsonrpc
 
@@ -217,7 +206,7 @@ export class JSONRPCRemote {
                     return undefined
                 }
 
-                return new JSONRPCRemoteObject(property, json_rpc, { stack: creation_stack })
+                return new JSONRPCRemoteObject(property, json_rpc, { stack: '' })
             }
         })
 
@@ -246,7 +235,7 @@ export class JSONRPCRemoteObject {
         let proxy = new Proxy(() => 1, {
 
             get: (target, property) => {
-                return new JSONRPCRemoteObject(`${methodName}.${property}`, json_rpc, { stack: `${stack}\n${getCaller({ offset: 0 })}` })
+                return new JSONRPCRemoteObject(`${methodName}.${property}`, json_rpc, { stack: `${stack}\n${soulUtils.getCaller({ offset: 0 })}` })
             },
             set: (target, property, value) => {
                 throw new Error(`For now, we cannot yet set a property on a remote object`)
@@ -303,9 +292,6 @@ export class JSONRPCRemoteObject {
                                         exception.message = `${error.message.message}`
                                         exception.stack = (error.message.stack ? ` ${error.message.stack}\n-----------------\n` : '') + stack + `\n\t${`Call was made from ` + (Platform.get() instanceof FacultyPlatform ? Platform.get().descriptor.label : 'BasePlatform').magenta}`;
                                         failed(exception)
-                                        if(!error.message.code){
-                                            console.error(exception)
-                                        }
                                     }
                             }
                             return;

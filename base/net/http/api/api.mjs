@@ -3,8 +3,8 @@ Copyright 2021 HolyCorn Software
 This class provides standard methods related to HTTP for components that interact with the BasePlatform
 */
 
-import { BaseSessionStorageAPI } from '../session-storage/api.js'
-import { WebSocketsAPI } from './websockets.js'
+import { BaseSessionStorageAPI } from '../session-storage/api.mjs'
+import { WebSocketsAPI } from './websockets.mjs'
 
 
 export class BasePlatformHTTPAPI {

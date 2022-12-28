@@ -8,18 +8,8 @@ import { Server } from "../lib/nodeHC/http/server.js";
 import utils from "../comm/utils/utils.mjs";
 import { BackendHandler } from '../errors/handler.mjs'
 import { Exception } from "../errors/backend/exception.js";
-
-/** @type {typeof import('./request/request.js').XSuperRequest} */
-let XSuperRequest;
-
-import('./request/request.js').then(x => XSuperRequest = x.XSuperRequest);
-
-/** @type {typeof import('./response/response.js').XSuperResponse} */
-let XSuperResponse;
-
-import('./response/response.js').then(x => XSuperResponse = x.XSuperResponse);
-
-
+import { XSuperRequest } from "./request/request.js";
+import { XSuperResponse } from "./response/response.js";
 
 
 

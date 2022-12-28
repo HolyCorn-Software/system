@@ -10,7 +10,7 @@ This session module allows the system to keep track of important variables belon
 import { FacultyPlatform } from "../../lib/libFaculty/platform.mjs";
 import { Platform } from "../../platform.mjs"
 import { BasePlatform } from "../../base/platform.mjs";
-import { SessionStorage } from "../../base/net/http/session-storage/storage.js";
+import { SessionStorage } from "../../base/net/http/session-storage/storage.mjs";
 
 export class Session {
 
@@ -107,7 +107,7 @@ export class Session {
      * Returns the SessionStorage api to use based on the platform we're currently running on.
      * Either one that's faster for the BasePlatform or one that's possible in the FacultyPlatform environment.
      * It's possible that we merge these two outcomes in a single method because the returned apis in both cases have methods with the exact same names.
-     * @returns {import('../../base/net/http/session-storage/api.js').BaseSessionStorageAPI & import('../../base/net/http/session-storage/storage.js').SessionStorage }
+     * @returns {import('../../base/net/http/session-storage/api.mjs').BaseSessionStorageAPI & import('../../base/net/http/session-storage/storage.mjs').SessionStorage }
      */
     static get sessionAPI() {
         const platform = Platform.get();

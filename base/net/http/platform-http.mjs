@@ -6,7 +6,7 @@ This module (platform-http) defines a custom intermediate HTTPServer extension s
 */
 
 import { HTTPServer } from "../../../http/server.js";
-import { SessionStorage } from "./session-storage/storage.js";
+import { SessionStorage } from "./session-storage/storage.mjs";
 
 export class PlatformHTTPServer extends HTTPServer {
 

@@ -41,6 +41,12 @@ export class Platform {
         import('./http/server.js').then(x => {
             global.HTTPServer = x.HTTPServer
         });
+        import('./errors/backend/exception.js').then(x => {
+            global.Exception = x.Exception
+        });
+        import('./lib/libFaculty/platform.mjs').then(x => {
+            global.FacultyPlatform = x.FacultyPlatform
+        })
 
         import('./http/strict-file-server.js').then(x => {
             global.StrictFileServer = x.StrictFileServer

@@ -1,0 +1,64 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "minLength": 2,
+            "title": "Unique name of Faculty"
+        },
+        "label": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Human-friendly name of the faculty "
+        },
+        "init": {
+            "type": "string",
+            "title": "The relative path to the main javascript module that should run once the faculty is started."
+        },
+        "http":{
+            "title":"Quick options related to HTTP",
+            "type":"object",
+            "$ref":"./schema.faculty.http.json"
+        },
+        "plugin": {
+            "title": "This property is used to define the faculty's support for plugins.",
+            "type": "object",
+            "properties": {
+                "plugins": {
+                    "title": "This property is where you define the different types of plugins the faculty supports",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "title": "The name of a namespace (type) of plugins.",
+                        "pattern": "^[a-zA-z][a-zA-Z0-9_]*$",
+                        "properties": {
+                            "model": {
+                                "title": "The name of the class which all plugins of this namespace must extend. The class must be globally accessible, reason why we specify the name.",
+                                "type": "string",
+                                "pattern": "^[a-zA-z][a-zA-Z0-9_]*$"
+                            },
+                            "test":{
+                                "title": "This section deals with validating subsequent plugins, in terms of code, and file structure.",
+                                "type": "object",
+                                "properties":{
+                                    "files":{
+                                        "type": "array",
+                                        "title": "A list of files that must be present in all plugins of this namespace."
+                                    },
+                                    "module":{
+                                        "title":"An object defining fields that must be present in plugin classes of this namespace.\nFor example: {execute:\"function\", name:\"string\"}.",
+                                        "additionalProperties": {
+                                            "type": "string",
+                                            "enum": ["string" , "number" , "bigint" , "boolean" , "symbol" , "object" , "function"]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

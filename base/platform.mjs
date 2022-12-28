@@ -15,7 +15,7 @@ import platform_credentials from '../secure/credentials.mjs'
 
 import { BaseToFacultyRemoteMethods } from '../comm/rpc/faculty-base-remote-methods.mjs';
 import quick from '../database/quick.mjs';
-import { BasePlatformHTTPAPI } from "./net/http/api/api.js";
+import { BasePlatformHTTPAPI } from "./net/http/api/api.mjs";
 import util from 'util';
 import { BasePlatformHTTPManager } from "./net/http/platform-http-manager.js";
 import { BasePlatformErrorAPI } from "./errors.js";

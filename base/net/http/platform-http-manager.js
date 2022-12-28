@@ -5,13 +5,13 @@ This module takes care of the general processing involved when a client makes a 
 This general processing involves aspects like handling websockets
 */
 
-import { SystemHTTP } from './system-http.js';
+import { SystemHTTP } from './system-http.mjs';
 import tls from 'node:tls'
 
 
 import platform_credentials from '../../../secure/credentials.mjs'
 
-import { PlatformHTTPServer } from './platform-http.js';
+import { PlatformHTTPServer } from './platform-http.mjs';
 
 export class BasePlatformHTTPManager {
 

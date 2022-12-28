@@ -4,7 +4,7 @@
  * This module (types) contains type definitions for the plugin module of the base platform
  */
 
-import { PluginStatus } from "system/lib/libFaculty/plugins/types"
+import { PluginStatus } from "system/lib/libFaculty/plugin/types"
 
 type PluginSupportMap = { [faculty: string]: boolean }
 

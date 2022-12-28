@@ -8,7 +8,6 @@ import { fileURLToPath } from 'url'
 import libPath from 'path'
 import node_static from 'node-static'
 import fs from 'node:fs';
-import { getCaller } from "../util/util.js";
 
 export class StrictFileServer {
 
@@ -42,7 +41,7 @@ export class StrictFileServer {
      * 
      * 
      */
-    constructor({ http, urlPath, refFolder }, importURL=getCaller()) {
+    constructor({ http, urlPath, refFolder }, importURL = soulUtils.getCaller()) {
         if (!http instanceof HTTPServer) {
             throw new Error(`Please pass an HTTP server as the http parameter`)
         }
@@ -97,9 +96,9 @@ export class StrictFileServer {
     add(...paths) {
         for (var path of paths) {
             let resolvedpath = libPath.resolve(this[path_symbol], path);
-            try{
+            try {
                 fs.statSync(resolvedpath)
-            }catch(e){
+            } catch (e) {
                 console.trace(`Warning!\nThe path '${resolvedpath}' added as '${path}' to the static file server operating at url '${this[urlPath_symbol]}' from the module '${this[importURL_symbol]}' based on the folder '${this[refFolder_symbol]}' is not working.  `)
             }
             this.whitelist.push(resolvedpath)

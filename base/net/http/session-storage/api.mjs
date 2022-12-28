@@ -92,7 +92,7 @@ export class BaseSessionStorageAPI {
 
     /**
      * This method checks whether we are running from the BasePlatform, then returns the SessionStorage instance
-     * @returns {import('../session-storage/storage.js').SessionStorage}
+     * @returns {import('./storage.mjs').SessionStorage}
      */
     static #getAPI() {
         if (!(Platform.get() instanceof BasePlatform)) {
