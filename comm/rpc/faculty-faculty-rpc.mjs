@@ -177,9 +177,6 @@ export class FacultyFacultyInterface {
      */
     handshake() {
 
-        // let _interface = new FacultyFacultyInterface(socket, faculty_platform)
-
-
         return new Promise(async (success, failure) => {
 
             const failed = (e) => {
@@ -209,15 +206,14 @@ export class FacultyFacultyInterface {
                     failure(e)
                     console.log(`${this.sent_handshake ? 'Sent without receiving' : 'Failed to send and receive'} descriptor\n`, e)
                 }
-                doChecks();
             }
 
             try {
                 await callWithRetries(doDescribe, {
                     label: `Sending description of ${this[faculty_platform_symbol].descriptor.label} to another faculty`,
-                    callInterval: 100,
+                    callInterval: 200,
                     maxTries: 50,
-                    timeout: 450
+                    timeout: 500
                 })
             } catch (e) {
                 failed(e);
@@ -265,18 +261,18 @@ export class FacultyFacultyRPCClient {
 
             await callWithRetries(doConnect, {
                 label: `Connecting a socket to endpoint ${credentials.local || (`${credentials.remote.host}:${credentials.remote.port}`)}`,
-                maxTries: 3,
+                maxTries: 5,
                 callInterval: 500,
                 timeout: 100
             })
 
             let _interface = new FacultyFacultyInterface(socket, faculty_platform)
             await _interface.handshake()
-            console.log(`${faculty_platform.descriptor.label.blue} connected to ${_interface.rpc.meta.remoteDescriptor.label.green}`);
 
             return _interface;
         } catch (e) {
             socket.destroy();
+            throw e
         }
 
     }
