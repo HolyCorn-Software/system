@@ -1,4 +1,3 @@
 .
 
-Corrected minor bug with faculty-faculty connections, and made it more stable
-Removed unnecessary logging
+Updated to the latest version of html-hc featuring more stable code.
