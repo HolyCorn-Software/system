@@ -47,6 +47,9 @@ export class Platform {
         import('./lib/libFaculty/platform.mjs').then(x => {
             global.FacultyPlatform = x.FacultyPlatform
         })
+        import('./comm/rpc/faculty-public-rpc.mjs').then(x => {
+            global.FacultyPublicJSONRPC = x.FacultyPublicJSONRPC
+        })
 
         import('./http/strict-file-server.js').then(x => {
             global.StrictFileServer = x.StrictFileServer
