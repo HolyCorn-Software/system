@@ -17,7 +17,7 @@ const timeouts = {}
 async function fetchAndStore(key, fetchFxn) {
 
     try {
-        const old = JSON.parse(localStorage.getItem(key))
+        const old = JSON.parse(localStorage.getItem(key)) || {}
         clearTimeout(timeouts[key])
         timeouts[key] = setTimeout(() => fetchNew(old), 2000)
         //The reason we passed a reference of old to the function fetchNew() is so that, long after the old that has been returned, when the update comes,
