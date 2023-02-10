@@ -1,3 +1,3 @@
 .
 
-Added useful class FacultyPublicJSONRPC to the list of globally accessible useful classes within the faculty
+Added schema files to help developers more easily construct specific json files.

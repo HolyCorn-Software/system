@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "title": "This defines a group of actions on the dashboard",
+    "allOf": [
+        {
+            "$ref": "./item.json"
+        }
+    ],
+    "properties": {
+        "supergroup": {
+            "title": "The name of the group that this group belongs to. If this field is left blank, the group will become a top-level group",
+            "type": "string"
+        },
+        "items": {
+            "title": "This property is a key-pair with key for option/group name, and value for option/group details.",
+            "type": "object",
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "$ref": "#"
+                    },
+                    {
+                        "$ref": "./action.json"
+                    }
+                ]
+            }
+        }
+    },
+    "additionalProperties": false
+}

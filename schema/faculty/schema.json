@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "minLength": 2,
+            "title": "Unique name of Faculty"
+        },
+        "label": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Human-friendly name of the faculty "
+        },
+        "init": {
+            "type": "string",
+            "title": "The relative path to the main javascript module that should run once the faculty is started."
+        },
+        "backend_dashboard":{
+            "$ref": "../backend_dashboard/schema.json"
+            
+        },
+        
+        "plugin": {
+            "title": "This property is used to define the faculty's support for plugins.",
+            "type": "object",
+            "properties": {
+                "plugins": {
+                    "title": "This property is where you define the different types of plugins the faculty supports",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "$ref": "./plugin/schema.json"
+                    }
+                }
+            }
+        }
+    }
+}

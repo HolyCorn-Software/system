@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "array": "object",
+    "title": "This array contains groups and/or actions to be added to the backend_dashboard for the benefit of this faculty",
+    "items": {
+        "anyOf": [
+            {
+                "$ref": "./group.json"
+            },
+            {
+                "$ref": "./action.json"
+            }
+        ]
+    },
+    "additionalProperties": false
+}

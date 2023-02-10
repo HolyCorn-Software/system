@@ -1,0 +1,100 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "required": [
+        "name",
+        "label",
+        "version",
+        "faculty",
+        "namespace"
+    ],
+    "properties": {
+        "name": {
+            "type": "string",
+            "title": "A unique name for the plugin",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_.]+$"
+        },
+        "label": {
+            "type": "string",
+            "title": "The human-friendly name of the plugin"
+        },
+        "version": {
+            "type": "object",
+            "title": "This field gives version information about the plugin",
+            "properties": {
+                "code": {
+                    "title": "Prefarably a number, or a predictable sequence of characters that can allow us to easily tell a higher version, from a lower one",
+                    "type": "string"
+                },
+                "label": {
+                    "title": "A human-friendly version. Here, you're free to assign anything.",
+                    "type": "string"
+                }
+            }
+        },
+        "faculty": {
+            "type": "string",
+            "title": "This field indicates which faculty, the plugin is for."
+        },
+        "namespace": {
+            "type": "string",
+            "title": "A namespace is a way of grouping plugins. A faculty can support multiple types of plugins. A namespace denotes a type of plugin.",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]+$"
+        },
+        "credentials": {
+            "title": "This field describes the credentials needed by the plugin to function.",
+            "type": "object",
+            "properties": {
+                "form": {
+                    "type": "array",
+                    "title": "An input form for collecting credentials needed by the plugin.\nIt should follow the MultiFlexForm manner of describing forms.",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "label": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "text",
+                                        "number",
+                                        "textarea",
+                                        "choose",
+                                        "boolean",
+                                        "customWidget",
+                                        "uniqueFileUpload",
+                                        "time"
+                                    ]
+                                },
+                                "customWidgetUrl": {
+                                    "title": "If input type is 'customWidget', then this property is used to point to the location of the widget, that would be used as an input.",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "validation": {
+                    "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                            "string",
+                            "number",
+                            "boolean",
+                            "object"
+                        ]
+                    }
+                }
+            }
+        },
+        "node_modules": {
+            "type": "array"
+        }
+    }
+}

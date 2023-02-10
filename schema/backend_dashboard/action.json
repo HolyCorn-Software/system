@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "title": "This is a single action on the dashboard",
+    "allOf": [
+        {
+            "$ref": "./item.json"
+        }
+    ],
+    "properties": {
+        "view": {
+            "type": "string",
+            "title": "URL path to a widget. Take note: widget must export a default class."
+        },
+        "group": {
+            "type": "string",
+            "title": "The name of the group which contains this action. If this "
+        }
+    },
+    "additionalProperties": false
+}
