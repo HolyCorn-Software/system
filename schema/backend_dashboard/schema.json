@@ -1,16 +1,19 @@
 {
     "$schema": "http://json-schema.org/schema",
-    "array": "object",
-    "title": "This array contains groups and/or actions to be added to the backend_dashboard for the benefit of this faculty",
-    "items": {
-        "anyOf": [
-            {
-                "$ref": "./group.json"
-            },
-            {
-                "$ref": "./action.json"
-            }
-        ]
-    },
-    "additionalProperties": false
+    "type": "object",
+    "title": "This object is a key-value pair, where the key signifies the name of the dashboard, and the details specify the actions, and groups to be added to that dashboard",
+    "additionalProperties": {
+        "title": "This array contains groups and/or actions to be added to the named dashboard",
+        "type": "array",
+        "items": {
+            "anyOf": [
+                {
+                    "$ref": "./group.json"
+                },
+                {
+                    "$ref": "./action.json"
+                }
+            ]
+        }
+    }
 }

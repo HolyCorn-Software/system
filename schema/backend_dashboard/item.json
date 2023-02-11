@@ -13,6 +13,10 @@
         "meta":{
             "type": "object",
             "title": "Additional properties to be added to the item"
+        },
+        "name": {
+            "type": "string",
+            "title": "Unique name of the action, or group"
         }
     }
 }
