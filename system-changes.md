@@ -1,5 +1,23 @@
 .
 
-Added missing schema fields
-Corrected minor structure ommission of dashboard name with introduction of key-pair data type at root level.
-Removed unnecessary "schemas" folder in libFaculty, in favour of the new path where all schemas are kept.
+Corrected minor documentation issues with the schemas.
+
+Added support for backend_dashboard descriptor.
+
+Deprecated PluginManager.plugins in favour of PluginManager.loaded, which is less ambiguous
+
+Improved error-reporting in the PluginManager module
+
+Corrected a minor type confusion, related to PluginList
+
+Restored missing schema information. Information about static HTTP routing within faculties.
+
+Updated to the latest version of html-hc, with better code quality.
+
+Added ability for faculties to have simple persistent settings, managed by their faculty platforms
+
+Made FacultyPublicMethods, FacultyPublicRPCServer classes globally available, as faculties depend on them
+
+Fixed minor issue with code completion for faculty backend_dashboard feature
+
+Added exclusiveUpdate() to soulUtils

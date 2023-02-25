@@ -16,6 +16,5 @@
             "type": "string",
             "title": "The name of the group which contains this action. If this "
         }
-    },
-    "additionalProperties": false
+    }
 }

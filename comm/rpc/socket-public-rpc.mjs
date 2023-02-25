@@ -41,7 +41,7 @@ export class SocketPublicJSONRPC extends JSONRPC {
         this.flags.expose_stack_traces = false;
         this.flags.stripColors = true;
 
-        /** @type {import('./types.js').FacultyPublicJSONRPCMeta} */ this.meta
+        /** @type {FacultyPublicJSONRPCMeta} */ this.meta
 
         /** @type {import('../websockets/incomingClient.js').WSIncomingClient} */ this.socketClient
     }

@@ -5,6 +5,7 @@
 
 import { SuperRequest } from "../lib/nodeHC/http/super-request.js";
 import vm from 'node:vm'
+import exclusiveUpdate from "./exclusive-update.mjs";
 
 /**
  * 
@@ -354,5 +355,6 @@ export default {
     pickOnlyDefined,
     substituteText,
     getCaller,
-    cleanPath
+    cleanPath,
+    exclusiveUpdate
 }

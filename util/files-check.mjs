@@ -6,7 +6,6 @@
 
 import fs from 'node:fs'
 import libPath from 'node:path'
-import nodeUtil from 'node:util'
 import DirectoryNavigator from './directory-navigator.mjs';
 
 

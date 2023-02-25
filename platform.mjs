@@ -49,6 +49,13 @@ export class Platform {
         })
         import('./comm/rpc/faculty-public-rpc.mjs').then(x => {
             global.FacultyPublicJSONRPC = x.FacultyPublicJSONRPC
+            global.FacultyPublicRPCServer = x.FacultyPublicRPCServer
+        })
+        import('./comm/rpc/faculty-public-methods.mjs').then(x=>{
+            global.FacultyPublicMethods = x.FacultyPublicMethods
+        });
+        import('./comm/rpc/faculty-faculty-rpc.mjs').then(x=>{
+            global.FacultyFacultyRemoteMethods = x.FacultyFacultyRemoteMethods
         })
 
         import('./http/strict-file-server.js').then(x => {

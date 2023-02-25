@@ -105,7 +105,7 @@ export class BaseToFacultyRemoteMethods {
      * Called by clients who want to get a list of faculties of the platform
      */
     faculties() {
-        return this[basePlatform].faculties.members.map(x => x.name);
+        return this[basePlatform].faculties.members.map(x => x.descriptor);
     }
 
     /**

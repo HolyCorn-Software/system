@@ -17,6 +17,14 @@
         "name": {
             "type": "string",
             "title": "Unique name of the action, or group"
+        },
+        "permissions":{
+            "type":"array",
+            "title": "This array contains a list of permissions, such that any of them owned by the user will allow him use the option",
+            "items":{
+                "type": "string",
+                "pattern": "^([a-zA-Z0-9]|@|.|_)+$"
+            }
         }
     }
 }

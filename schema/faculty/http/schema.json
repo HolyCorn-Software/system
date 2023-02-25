@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "staticPaths": {
+            "title": "This option configures automatic routing of files statically",
+            "type": "object",
+            "additionalProperties": {
+                "type": "string",
+                "title": "URL path that will be made available, vs path to the folder, or file to be served."
+            }
+        }
+    }
+}

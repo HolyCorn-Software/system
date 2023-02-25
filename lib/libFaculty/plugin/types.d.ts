@@ -85,8 +85,8 @@ interface PluginPreLoadResult {
     enabled: boolean
 }
 
-interface PluginLoadResult extends PluginPreLoadResult {
-    instance: PluginModelModel
+interface PluginLoadResult<PluginModelType extends PluginModelModel = PluginModelModel> extends PluginPreLoadResult {
+    instance: PluginModelType
 }
 
 
@@ -98,10 +98,7 @@ type PluginStatus = Pick<PluginLoadResult, "state" | "descriptor" | "enabled"> &
     error: string
 }
 
-type PluginMap = { [plugin: string]: PluginLoadResult }
-
-
-type PluginNamespaceMap<PluginType extends PluginModelModel> = { [namespace: string]: PluginType[] }
+// type PluginNamespaceMap<PluginType extends PluginModelModel> = { [namespace: string]: PluginType[] }
 
 
 type ArrayUnpacked<T> = T extends Array<infer X> ? X : T extends Array<Array<infer DX>> ? ArrayUnpacked<DX> : T
@@ -113,7 +110,7 @@ type NamespaceInterfaces<T> = {
 }
 
 
-type NamespaceInterfaceType<PluginModelType extends PluginModelModel> = Array<PluginModelType> & {
+type NamespaceInterfaceType<PluginModelType extends PluginModelModel> = Array<PluginLoadResult<PluginModelType>> & {
     callback: NamespaceCallbackType<PluginModelType>
 }
 
