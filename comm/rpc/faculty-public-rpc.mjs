@@ -22,6 +22,7 @@ export class FacultyPublicJSONRPC extends SocketPublicJSONRPC {
     }
 }
 
+const defaultRPCServer = Symbol()
 
 
 /**
@@ -30,48 +31,44 @@ export class FacultyPublicJSONRPC extends SocketPublicJSONRPC {
 export class FacultyPublicRPCServer {
 
     /**
-     * @param {object} stub The source of remote methods. Ommit this parameter to default to faculty.remote.public interface
      * @param {HTTPServer} http The http server that'll listen to the incoming connections
-     * @param {object} options Extra options if neccessary, to control how the public methods will be available (e.g with path)
-     * @param {string} options.path The path the client will have to connect to, to access the public methods. Leave blank in order that the client can access it at any path
-     * @param {function(import('http').IncomingMessage, import('../websockets/incomingClient.js').WSIncomingClient)} options.callback
-     * @param {string} options.remotePoint If this is specified, the remote path will be claimed and channeled to the faculty for the purpose of providing those methods
      */
-    constructor(stub, http, options) {
+    constructor(http) {
         const faculty = FacultyPlatform.get();
 
-        http.websocketServer.route({
-            path: options?.path || '/',
-            callback: options?.callback || ((headers, client) => {
-                new FacultyPublicJSONRPC(client, stub ||= faculty.remote.public)
-            })
-        })
+        if (faculty[defaultRPCServer]) {
+            throw new Exception(`Faculties may not create their own public rpc servers.\nThis feature is now automatically managed.\nSimply modify faculty.remote.public to define the interface which public clients will have access to.`)
+        }
 
         this.http = http;
-        this.options = options;
 
-        if (typeof options?.remotePoint !== 'undefined') {
-            this.claimRemotePoint(options.remotePoint, options?.path || '/')
-        }
     }
 
     /**
-     * Call this method so that a particular path from the BasePlatform will be forwarded to this Faculty
-     * @param {string} remotePoint The end point that will be forwarded to this http server. Leave this blank to use the standard point naming (e.g /$/rpc/<faculty.descriptor.name>)
-     * @param {string} localPath If you specify this, remote connections will be forwarded to this path. Leave this blank so that connections will be forwarded to /
+     * This method is used to begin routing of websocket requests, so that clients may access the public methods
      */
-    async claimRemotePoint(remotePoint = faculty.standard.publicRPCPoint, localPath = '/') {
+    async claimRemotePoint() {
         const faculty = FacultyPlatform.get();
 
-        faculty.base.shortcutMethods.http.websocket.claim({
+
+        await faculty.base.shortcutMethods.http.websocket.claim({
             base: {
-                point: remotePoint
+                point: faculty.standard.publicRPCPoint
             },
             local: {
-                path: localPath
+                path: '/'
             },
             http: this.http
         })
+
+        this.http.websocketServer.route({
+            path: '/',
+            callback: (headers, client) => {
+                new FacultyPublicJSONRPC(client)
+            }
+        });
+
+        faculty[defaultRPCServer] = this;
     }
 
 }

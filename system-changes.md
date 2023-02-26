@@ -1,3 +1,3 @@
 .
 
-Switched to the latest version of html-hc featuring bug fixes
+The faculty platform now automatically manages public rpc connections

@@ -18,13 +18,25 @@ declare global {
 
     declare class Exception extends _Exception { }
 
+
+    /**
+     * @deprecated
+     * The faculty platform is now automatically managing public rpc access.
+     * Just write to the platform.remote.public object, and clients will have access to the interface via RPC
+     */
     declare class FacultyPublicJSONRPC extends _FacultyPublicJSONRPC { }
 
     declare class FacultyPublicMethods extends _FacultyPublicMethods { }
 
+    /**
+     * @deprecated This feature is automatically managed now.
+     * 
+     * Simple modify the faculty.remote.public object, to define the interface that 
+     * remote clients will have access to
+     */
     declare class FacultyPublicRPCServer extends _FacultyPublicRPCServer { }
 
-    declare class FacultyFacultyRemoteMethods extends _FacultyFacultyRemoteMethods{}
+    declare class FacultyFacultyRemoteMethods extends _FacultyFacultyRemoteMethods { }
 
 
 
