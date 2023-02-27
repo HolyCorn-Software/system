@@ -75,6 +75,12 @@
                                 "customWidgetUrl": {
                                     "title": "If input type is 'customWidget', then this property is used to point to the location of the widget, that would be used as an input.",
                                     "type": "string"
+                                },
+                                "values": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "title": "This a map of item names, and their titles. These are items that the user would be allowed to select from."
                                 }
                             }
                         }
