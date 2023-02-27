@@ -6,6 +6,7 @@
 import { SuperRequest } from "../lib/nodeHC/http/super-request.js";
 import vm from 'node:vm'
 import exclusiveUpdate from "./exclusive-update.mjs";
+import SimpleCache from "./simple-cache.mjs";
 
 /**
  * 
@@ -356,5 +357,6 @@ export default {
     substituteText,
     getCaller,
     cleanPath,
-    exclusiveUpdate
+    exclusiveUpdate,
+    SimpleCache: SimpleCache
 }

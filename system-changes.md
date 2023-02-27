@@ -1,3 +1,5 @@
 .
 
-Updated to the latest version of html-hc, featuring bug fixes
+Improved typing for plugin models
+
+Added SimpleCache to soulUtils global, so that plugins can make use of it, without imports
