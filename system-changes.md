@@ -1,3 +1,3 @@
 .
 
-Updated to the latest version of html-hc, featuring bug fixes, especially for the list-popup widget
+Updated to the latest version of html-hc, that comes with enhancements to the slide-container widget
