@@ -1,3 +1,3 @@
 .
 
-Updated to the latest version of html-hc, featuring a new widget (list-popup)
+Updated to the latest version of html-hc, featuring bug fixes, especially for the list-popup widget
