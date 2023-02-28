@@ -1,3 +1,3 @@
 .
 
-Made FunctionProxy stable, by improving the care with which we handle the 'this'
+Updated to the latest version of html-hc, featuring a new widget (list-popup)
