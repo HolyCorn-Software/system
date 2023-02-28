@@ -32,13 +32,13 @@ export default class FunctionProxy {
                         return function () {
                             const modifiedParams = (fxns.arguments || ((metadata, ...args) => args))({ property: prefix ? `${prefix}${property}` : property }, ...arguments)
                             if (modifiedParams instanceof Promise) {
-                                return (async () => {
-                                    return await wrapReturn(await value(...(await modifiedParams)))
-                                })()
+                                return (async function () {
+                                    return await wrapReturn(await value.call(this, ...(await modifiedParams)))
+                                }.bind(this))()
                             } else {
-                                return wrapReturn(value(...modifiedParams))
+                                return wrapReturn(value.call(this, ...modifiedParams))
                             }
-                        }
+                        }.bind(object)
                     case 'object':
                         return new FunctionProxy(value, fxns, `${property}.`)
 
