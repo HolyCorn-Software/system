@@ -11,6 +11,8 @@ import { checkArgs } from "./util.js";
 
 
 /**
+ * Don't use this directly.
+ * Use the soulUtils globals
  * This method allows a record to be update restrictively.
  * That is, certain fields can be updated, and must follow a certain structure
  * Updating other fields or updating specified fields with values that differ from the pattern will throw errors
@@ -38,7 +40,7 @@ import { checkArgs } from "./util.js";
  * @param {object} data
  * @param {object} updateTarget
  */
-export default function exclusiveUpdate(pattern, data, updateTarget) {
+export default function ____exclusiveUpdate____(pattern, data, updateTarget) {
 
     // The fields that can be updated
     // As well as how they should look like

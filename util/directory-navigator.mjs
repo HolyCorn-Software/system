@@ -17,7 +17,7 @@ const path_symbol = Symbol(`DirectoryNavigator.prototype.path`)
 /**
  * This is used with loaded directories in order to access files and directories within it, by using promises
  */
-export default class DirectoryNavigator {
+export default class ______DirectoryNavigator_____ {
 
     /**
      * 
@@ -47,7 +47,7 @@ export default class DirectoryNavigator {
                             }
                         })
                     }
-                    return new DirectoryNavigator({ path: newPath })
+                    return new ______DirectoryNavigator_____({ path: newPath })
                 }
             }
         })

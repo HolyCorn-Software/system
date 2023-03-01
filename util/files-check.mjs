@@ -10,11 +10,13 @@ import DirectoryNavigator from './directory-navigator.mjs';
 
 
 /**
+ * Do not use this directly. 
+ * Use it from globals
  * This allows developers to verify that directories conform to a given structure  or that a single directory conforms to a structure
  * @typedef {{[key:string]: LoadedDirectory} & DirectoryNavigator} LoadedDirectory
  */
 
-export default class FilesCheck {
+export default class ____FilesCheck____ {
 
 
     /**
@@ -108,7 +110,7 @@ export default class FilesCheck {
         }
         for (let file of files) {
             try {
-                returns.data[file] = new FilesCheck({ structure: this.structure, path: `${this.path}${libPath.sep}${file}` }).load()
+                returns.data[file] = new ____FilesCheck____({ structure: this.structure, path: `${this.path}${libPath.sep}${file}` }).load()
             } catch (e) {
                 returns.errors[file] = e
             }

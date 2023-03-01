@@ -6,7 +6,12 @@
 
 
 
-export default class FunctionProxy {
+/**
+ * Donot import.
+ * Use Faculty globals
+ * 
+ */
+export default class _____FunctionProxy____ {
 
 
     /**
@@ -40,7 +45,7 @@ export default class FunctionProxy {
                             }
                         }.bind(object)
                     case 'object':
-                        return new FunctionProxy(value, fxns, `${property}.`)
+                        return new _____FunctionProxy____(value, fxns, `${property}.`)
 
                     default:
                         return wrapReturn(value)
@@ -79,7 +84,7 @@ export default class FunctionProxy {
              */
             constructor(target) {
 
-                return new FunctionProxy(target, {
+                return new _____FunctionProxy____(target, {
                     arguments: (data, ...args) => {
                         return args.slice(1)
                     }

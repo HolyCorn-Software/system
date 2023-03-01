@@ -1,3 +1,7 @@
 .
 
-Updated to the latest version of html-hc, that comes with enhancements to the slide-container widget
+Corrected minor bug that affected caching of plugin credentials
+
+Corrected minor bug with simple-cache
+
+Renamed some classes to discourage imports, in favour of using globals

@@ -18,7 +18,7 @@ const fetchPromise = Symbol()
 /**
  * @template Type
  */
-export default class SimpleCache {
+export default class ______SimpleCache______ {
     /**
      * 
      * @param {object} param0 
@@ -33,7 +33,9 @@ export default class SimpleCache {
          * @returns {Promise<Type>}
          */
         this.get = async () => {
-            if (this[cacheData] && (Date.now() - (this[cacheDataLastRefresh] || 0)) < timeout) {
+
+            if (this[cacheData] && ((Date.now() - (this[cacheDataLastRefresh] || 0)) < timeout)  /**/) {
+
                 return this[cacheData]
             }
 
@@ -45,7 +47,9 @@ export default class SimpleCache {
 
             if (this[fetchPromise]) {
                 try {
-                    return await this[fetchPromise]
+                    const results = await this[fetchPromise]
+                    delete this[fetchPromise]
+                    return results
                 } catch {
                     const results = (await (this[fetchPromise] = fetchAnew()))
                     delete this[fetchPromise]
@@ -55,14 +59,13 @@ export default class SimpleCache {
                 return await (this[fetchPromise] = fetchAnew())
             }
         }
-
     }
     /**
      * This method invalidates the data stored in the cache
      */
-    invalidate(){
+    invalidate() {
         delete this[cacheData]
         delete this[cacheDataLastRefresh]
-        
+
     }
 }
