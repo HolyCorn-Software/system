@@ -11,7 +11,7 @@
  * Use Faculty globals
  * 
  */
-export default class _____FunctionProxy____ {
+export default class FunctionProxy {
 
 
     /**
@@ -25,7 +25,9 @@ export default class _____FunctionProxy____ {
         const prefix = arguments[2]
 
         function wrapReturn(metadata, data) {
-            return (fxns.returns || (x => x))(data)
+            return (fxns.returns || ((metadata, ret) => {
+                return ret
+            }))(metadata, data)
         }
 
         return new Proxy(object, {
@@ -35,17 +37,19 @@ export default class _____FunctionProxy____ {
                 switch (typeof value) {
                     case 'function':
                         return function () {
-                            const modifiedParams = (fxns.arguments || ((metadata, ...args) => args))({ property: prefix ? `${prefix}${property}` : property }, ...arguments)
+                            const methodMetadata = { property: prefix ? `${prefix}${property}` : property }
+                            const modifiedParams = (fxns.arguments || ((metadata, ...args) => args))(methodMetadata, ...arguments)
                             if (modifiedParams instanceof Promise) {
                                 return (async function () {
-                                    return await wrapReturn(await value.call(this, ...(await modifiedParams)))
+                                    return await wrapReturn(await value.call(this, methodMetadata, ...(await modifiedParams)))
                                 }.bind(this))()
                             } else {
-                                return wrapReturn(value.call(this, ...modifiedParams))
+                                const ret = value.call(this, ...modifiedParams)
+                                return ret instanceof Promise ? (async () => wrapReturn(methodMetadata, await ret))() : wrapReturn(ret)
                             }
                         }.bind(object)
                     case 'object':
-                        return new _____FunctionProxy____(value, fxns, `${property}.`)
+                        return new FunctionProxy(value, fxns, `${property}.`)
 
                     default:
                         return wrapReturn(value)
@@ -84,7 +88,7 @@ export default class _____FunctionProxy____ {
              */
             constructor(target) {
 
-                return new _____FunctionProxy____(target, {
+                return new FunctionProxy(target, {
                     arguments: (data, ...args) => {
                         return args.slice(1)
                     }
