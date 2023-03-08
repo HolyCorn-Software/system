@@ -1,3 +1,5 @@
 .
 
-Updated to the latest version of html-hc with a bug-fix
+Added ability to enable wildcard CORS policy on StrictFileServer
+
+Made easier access to plugin static files by allowing CORS wildcard

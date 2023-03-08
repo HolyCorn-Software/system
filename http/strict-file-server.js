@@ -13,7 +13,7 @@ export class StrictFileServer {
 
     /**
      * 
-     * @param {{http:HTTPServer, urlPath:string, refFolder:string}} param0 
+     * @param {{http:HTTPServer, urlPath:string, refFolder:string, cors:boolean}} param0 
      * @param {string} importURL
      * 
      * Note, initializing a StrictFileServer doesn't give access to any file.
@@ -41,7 +41,7 @@ export class StrictFileServer {
      * 
      * 
      */
-    constructor({ http, urlPath, refFolder }, importURL = soulUtils.getCaller()) {
+    constructor({ http, urlPath, refFolder, cors }, importURL = soulUtils.getCaller()) {
         if (!http instanceof HTTPServer) {
             throw new Error(`Please pass an HTTP server as the http parameter`)
         }
@@ -80,6 +80,10 @@ export class StrictFileServer {
                 if (!this.whitelist.some(aPublicFolder => path.startsWith(aPublicFolder))) {
                     //Then file not found
                     return res.endJSON(`error.http.not_found`, {}, 404)
+                }
+
+                if (cors) {
+                    res.setHeader('Access-Control-Allow-Origin', '*')
                 }
 
                 //Else, all good
