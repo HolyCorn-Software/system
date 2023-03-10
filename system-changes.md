@@ -1,3 +1,3 @@
 .
 
-Made faculties more safe, by catching unhandled exceptions
+Updated to the latest version of html-hc which has better typing
