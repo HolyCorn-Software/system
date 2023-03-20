@@ -34,6 +34,8 @@ export class BasePlatformFacultiesAPI {
         let faculty = new Faculty(path);
         await faculty.start(this.base);
 
+        faculty.descriptor.resolveVariables()
+
         this.members.push(faculty) //Include in the list of faculties
     }
 

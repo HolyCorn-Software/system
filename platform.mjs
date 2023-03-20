@@ -51,10 +51,10 @@ export class Platform {
             global.FacultyPublicJSONRPC = x.FacultyPublicJSONRPC
             global.FacultyPublicRPCServer = x.FacultyPublicRPCServer
         })
-        import('./comm/rpc/faculty-public-methods.mjs').then(x=>{
+        import('./comm/rpc/faculty-public-methods.mjs').then(x => {
             global.FacultyPublicMethods = x.FacultyPublicMethods
         });
-        import('./comm/rpc/faculty-faculty-rpc.mjs').then(x=>{
+        import('./comm/rpc/faculty-faculty-rpc.mjs').then(x => {
             global.FacultyFacultyRemoteMethods = x.FacultyFacultyRemoteMethods
         })
 
@@ -92,6 +92,13 @@ export class Platform {
      */
     get type() {
         return 'faculty'
+    }
+
+    /**
+     * @returns {'production'|'development'}
+     */
+    get environment() {
+        return process.env.environment?.toLowerCase() === 'production' ? 'production' : 'development'
     }
 
     /**

@@ -1,0 +1,13 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "description": "An object of additional definitions that enhance the functioning of the faculty",
+    "properties": {
+        "backend_dashboard": {
+            "$ref": "./backend_dashboard/schema.json"
+        },
+        "settings": {
+            "$ref": "./settings/schema.json"
+        }
+    }
+}

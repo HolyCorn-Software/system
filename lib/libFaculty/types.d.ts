@@ -12,16 +12,24 @@ export interface FacultyDescriptor {
     init: string
     plugin: PluginSupportDefinition
     http: FacultyDescriptorHTTPOptions
-    backend_dasbhoard: FacultyBackendDashboardSupport
+    meta: FacultyMetadata
 }
 
 export interface FacultyDescriptorPlus extends FacultyDescriptor {
     path: string
 }
 
+export interface FacultyMetadata {
+    backend_dashboard: FacultyBackendDashboardSupport
+    engTerminal: FacultyEngTerminalSupport
+    settings: faculty.managedsettings.SettingsDefinition
+}
 
 export type FacultyBackendDashboardSupport = {
     [dashboard: string]: (FacultyBackendDashboardAction & Omit<FacultyBackendDashboardGroup, "supergroup">)[]
+}
+interface FacultyEngTerminalSupport {
+
 }
 
 export interface FacultyBackendDashboardAction extends FacultyBackendDashboardItem {

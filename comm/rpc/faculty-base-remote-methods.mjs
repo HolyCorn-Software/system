@@ -5,6 +5,7 @@ This module creates an interface for remote clients (faculties) to call methods 
 */
 
 import fs from 'fs'
+import FacultySettingsBaseRemote from '../../../system/base/settings/remote.mjs';
 import LanguageInternalMethods from '../../base/lang/terminals/internal.mjs';
 import BasePluginAPIMethods from '../../base/plugin/terminal.mjs';
 import FacultyManagementRemote from '../../lib/libFaculty/management/manager.mjs';
@@ -42,6 +43,8 @@ export class BaseToFacultyRemoteMethods {
 
         this.lang = new LanguageInternalMethods()
         this.plugin = new BasePluginAPIMethods()
+        /** @type {faculty.managedsettings.BaseRemote['$0']} */
+        this.settings = new FacultySettingsBaseRemote(platform)
 
     }
 
@@ -103,6 +106,7 @@ export class BaseToFacultyRemoteMethods {
 
     /**
      * Called by clients who want to get a list of faculties of the platform
+     * @returns {Promise<import('system/lib/libFaculty/types.js').FacultyDescriptor[]>}
      */
     faculties() {
         return this[basePlatform].faculties.members.map(x => x.descriptor);

@@ -7,7 +7,9 @@ It allows that even in faculties, clients should be identified and variables per
 
 import { Exception } from "../../../../errors/backend/exception.js";
 import shortuuid from 'short-uuid'
-import collections from './collections.js'
+
+let collections;
+setImmediate(() => import('./collections.js').then(x => collections = x.default))
 
 
 

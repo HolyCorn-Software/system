@@ -1,0 +1,45 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "title": "This controls how input about this setting will be collected from the Engineer",
+    "properties": {
+        "label": {
+            "type": "string",
+            "description": "A piece of text that will be put over the input."
+        },
+        "values": {
+            "type": "object",
+            "description": "If the input type is set to 'choose', this field defines the options the engineer can choose from",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                ]
+            }
+        },
+        "type": {
+            "type": "string",
+            "description": "The type of input to be collected",
+            "enum": [
+                "text",
+                "number",
+                "textarea",
+                "choose",
+                "boolean",
+                "customWidget",
+                "uniqueFileUpload",
+                "time"
+            ]
+        },
+        "customWidgetUrl": {
+            "type": "string",
+            "description": "This is a URL path to the custom-created widget that will handle this input.\nMake sure type is set to 'customWidget'"
+        },
+        "valueProperty": {
+            "type": "string",
+            "description": "If the input you are using doesn't have a property called 'value', this property defines the property that will be read, and written to control the value of the input"
+        }
+    }
+}

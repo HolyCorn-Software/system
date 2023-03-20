@@ -12,6 +12,7 @@ import { SocketPublicJSONRPC } from './socket-public-rpc.mjs';
 export class FacultyPublicJSONRPC extends SocketPublicJSONRPC {
 
     /**
+     * @deprecated The faculty automatically manages connections. Just right to faculty.remote.public, to specify methods clients have access to
      * Provide methods to a public client by specifying the client and the stub (source of methods)
      * @param {import('../websockets/incomingClient.js').WSIncomingClient} socket 
      * @param {Object|undefined} stub Ignore this and the function will use the default public stub remote methods (faculty.remote.public)

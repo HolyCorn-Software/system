@@ -16,9 +16,6 @@
             "type": "string",
             "title": "The relative path to the main javascript module that should run once the faculty is started."
         },
-        "backend_dashboard": {
-            "$ref": "../backend_dashboard/schema.json"
-        },
         "plugin": {
             "title": "This property is used to define the faculty's support for plugins.",
             "type": "object",
@@ -37,6 +34,10 @@
             "title": "Quick options related to HTTP",
             "type": "object",
             "$ref": "./http/schema.json"
+        },
+        "meta": {
+            "description": "Additional properties which enhance the functioning of faculty",
+            "$ref": "./meta/schema.json"
         }
     }
 }

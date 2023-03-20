@@ -17,12 +17,14 @@ import SimpleCache from "./simple-cache.mjs";
 
 
 /**
+ * @template ArgType
+ * @template StructInput
  * This method is used to check that arguments conform to a given structure.
- * @param {any} args The Object to be checked
- * @param {object|string} structure The structure it must follow
+ * @param {ArgType} args The Object to be checked
+ * @param {FinalType<ArgType,StructInput,StructureCheckInput<ArgType>,StructInput>} structure The structure it must follow
  * @param {string|undefined} argName This is mandatory only when structure is a string. It is used to construct the resulting error message.
  * That is, ${argName} was supposed to be a ${structure} but a(n) ${typeof args} was passed
- * @param {function({ideal:string, real: string, value:any, field:string})} error_callback An optional parameter that will be called when an error is detected, instead of throwing errors
+ * @param {(arg0: CheckerCallbackArgs<FinalType<ArgType,StructInput>>)=>void} error_callback An optional parameter that will be called when an error is detected, instead of throwing errors
  * @param {('definite'|'exclusive')[]} flags If 'definite' is passed, then type of each item is only checked when the item is not undefined. When 'exclusive' is set, the system will
  * throw an error if the object has more parameters than the structure
  * Example:
@@ -337,14 +339,13 @@ export function substituteText(string, data) {
     return vm.runInContext(`\`${string}\``, context)
 }
 
-
 /**
  * This method cleans path information, by removing some things such as duplicated slashes
  * @param {string} path 
  * @returns {string}
  */
 function cleanPath(path) {
-    return path.replaceAll(/[^^]\.\//g, '/').replaceAll(/\/\/*/g, '/')
+    return path.replaceAll(/[^^]\.\//g, '/').replaceAll(/((\\){2,})|((\/){2,})/g, x => `${x.substring(0, 1)}`)
 }
 
 

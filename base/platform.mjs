@@ -89,7 +89,7 @@ export class BasePlatform extends Platform {
         }
 
         let returns = await this.init0({ port, key: platform_credentials.tls_key, cert: platform_credentials.tls_cert, database_credentials: platform_credentials.database_config, http_port: new Number(process.env.HTTP_PORT).valueOf(), https_port: new Number(process.env.HTTPS_PORT).valueOf(), server_domains })
-        this.events.emit('booted')
+        setTimeout(() => this.events.emit('booted'), 3000)
         return returns;
     }
 

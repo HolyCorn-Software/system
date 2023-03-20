@@ -1,0 +1,52 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "description": "This field defines settings that are automatically managed by the faculty.\nIt's a map of string, representing namespace name, and value, representing data about the namespace",
+    "additionalProperties": {
+        "type": "object",
+        "description": "This field controls details for a namespace of settings",
+        "properties": {
+            "label": {
+                "description": "A human-friendly name for this namespace of settings",
+                "type:": "string"
+            },
+            "icon": {
+                "description": "A URL path to the icon used to represent this namespace on UIs",
+                "type:": "string"
+            },
+            "public": {
+                "description": "This field determines if clients can access this setting namespace from the front end",
+                "type:": "boolean"
+            },
+            "items": {
+                "description": "This array contains settings that can managed on this namespace",
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "description": "This is a unique name for this setting in this namespace",
+                            "type": "string"
+                        },
+                        "label": {
+                            "description": "This is a human-friendly name for the setting",
+                            "type": "string"
+                        },
+                        "icon": {
+                            "description": "A URL path to an icon, that will be used to represent this setting",
+                            "type": "string"
+                        },
+                        "input": {
+                            "description": "This field defines how data for this setting is collected. Is it a number, string, enum, etc..",
+                            "$ref": "./input.json"
+                        },
+                        "public": {
+                            "description": "This field determines if the setting will be accessible from the public web.",
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

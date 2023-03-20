@@ -17,15 +17,15 @@ export default class FunctionProxy {
     /**
      * 
      * @param {object} object 
-     * @param {FunctionProxyFunctions} fxns The function that would be called to modify the arguments. The output of the method would be used as input for the real method being called. If the method returns a promise, the promise too would be resolved 
+     * @param {FunctionProxyFunctions} modifier The object containing the functions that would be called to modify the arguments, and out. The output of the method would be used as input for the real method being called. If the method returns a promise, the promise too would be resolved 
      */
-    constructor(object, fxns) {
+    constructor(object, modifier) {
 
 
         const prefix = arguments[2]
 
         function wrapReturn(metadata, data) {
-            return (fxns.returns || ((metadata, ret) => {
+            return (modifier?.returns || ((metadata, ret) => {
                 return ret
             }))(metadata, data)
         }
@@ -38,7 +38,7 @@ export default class FunctionProxy {
                     case 'function':
                         return function () {
                             const methodMetadata = { property: prefix ? `${prefix}${property}` : property }
-                            const modifiedParams = (fxns.arguments || ((metadata, ...args) => args))(methodMetadata, ...arguments)
+                            const modifiedParams = (modifier?.arguments || ((metadata, ...args) => args))(methodMetadata, ...arguments)
                             if (modifiedParams instanceof Promise) {
                                 return (async function () {
                                     return await wrapReturn(await value.call(this, methodMetadata, ...(await modifiedParams)))
@@ -49,7 +49,7 @@ export default class FunctionProxy {
                             }
                         }.bind(object)
                     case 'object':
-                        return new FunctionProxy(value, fxns, `${property}.`)
+                        return new FunctionProxy(value, modifier, `${property}.`)
 
                     default:
                         return wrapReturn(value)

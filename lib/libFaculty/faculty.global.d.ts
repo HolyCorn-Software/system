@@ -20,7 +20,6 @@ declare global {
 
 
     /**
-     * @deprecated
      * The faculty platform is now automatically managing public rpc access.
      * Just write to the platform.remote.public object, and clients will have access to the interface via RPC
      */

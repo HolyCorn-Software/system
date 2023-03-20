@@ -30,6 +30,9 @@
 import { FacultyPlatform } from '../lib/libFaculty/platform.mjs'
 import { Platform } from '../platform.mjs';
 
+/**
+ * @template Mp
+ */
 export class CollectionProxy {
 
     /**
@@ -41,7 +44,7 @@ export class CollectionProxy {
      * }
      * ```
      * In the above, users is the object we'll have access to at runtime. 'user_profiles' is the name of the collection
-     * @param {import('./collection-proxy-types.js').CollectionProxyValues} values 
+     * @param {Mp} values 
      * @param {string} prefix - This defines the prefix before all collection names. By default, the module will use the name of the platform
      * @returns 
      */
@@ -49,7 +52,10 @@ export class CollectionProxy {
 
         //The whole idea is, providers.credentials becomes collection('providers.credentials')
 
-        return new Proxy(this, {
+        /** @type {ToCollection<Mp>} */ this.$0;
+
+
+        const proxy = new Proxy(this, {
             /**
              * 
              * @param {CollectionsClass} target 
@@ -57,6 +63,9 @@ export class CollectionProxy {
              * @returns {Collection}
              */
             get: (target, property) => {
+                if (property === '$0') {
+                    return proxy
+                }
                 if (typeof values[property] == 'string') {
                     let platform = Platform.get(); //Either get a FacultyPlatform or BasePlatform
                     //If faculty platform, use platform.descriptor.name, or just use system
@@ -72,6 +81,8 @@ export class CollectionProxy {
                 }
             }
         })
+
+        return proxy
 
     }
 
