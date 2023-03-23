@@ -18,7 +18,7 @@ export class BasePlatformFacultiesAPI {
     constructor(base) {
         this.base = base;
 
-        /**@type {[Faculty]} */
+        /**@type {Faculty[]} */
         this.members = [] //An array containing all the individual faculties
 
         this[Symbol.iterator] = function* () {

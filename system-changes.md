@@ -1,19 +1,9 @@
 .
 
-Moved field for backend_dashboard support in faculty descriptor to a sub-object known as meta, for better organization.
+Improved typing
 
-Improved typing for the checkArgs method
+Updated to the latest version of html-hc with better typing, and better UI
 
-Made plugin-manager more robust
+Added feature for supporting public settings. If a setting is declared, and its namespace is declared public, it will be accessible to the general public via the systemRpc.base.settings.get() method
 
-Improved typing for plugin management modules
-
-Improved the cleanPath utility
-
-Made it possible to have variables in any point of the faculty descriptor
-
-Improved typing for the checkArgs() utility method
-
-Updated the system of exploiting managed faculty settings to one that requires declaration
-
-Added field 'environment' to Platform, responsible for telling if the code is in production, or development environments
+Deprecated the use of providers

@@ -51,7 +51,7 @@ export default class LanguageInternalMethods {
      * This method is used to retrieve strings from the database
      * @param {object} param0 
      * @param {string} param0.lang If specified, only strings for the given
-     * @returns {Promise<[import("./../types.js").SummedLanguageStrings]>}
+     * @returns {Promise<import("./../types.js").SummedLanguageStrings>}
      */
     async getStrings({ lang }) {
         return await this[controller].getStrings({ ...arguments[1] })

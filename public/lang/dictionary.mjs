@@ -44,7 +44,7 @@ async function getStringMap() {
 
 /**
  * This method is used to retrieve languages 
- * @returns {Promise<[import("../types.js").LanguageConfig]}
+ * @returns {Promise<import("../../base/lang/types.js").LanguageConfig[]>}
  */
 async function getLanguages() {
     return await fetchAndStore('system.lang.languages', systemRpc.system.lang.getLanguages)

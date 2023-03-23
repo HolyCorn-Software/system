@@ -470,7 +470,7 @@ class TransmissionManager {
         /** @type {JSONRPC} */
         this.json_rpc = json_rpc;
 
-        /** @type {[string]} Contains a list of id's of the last 512 function calls. This helps prevent double calling of a function, all in the name of transmission error */
+        /** @type {string[]} Contains a list of id's of the last 512 function calls. This helps prevent double calling of a function, all in the name of transmission error */
         this.pendingCalls = new Proxy([], {
 
             set: (target, property, value) => {

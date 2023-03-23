@@ -12,7 +12,7 @@ import { ClientJSONRPC } from '../websocket-rpc.js';
 
 //Retrieve the list of faculties with public methods
 
-/** @type {Object<string, [{point:string}]} */
+/** @type {Object<string, {point:string}>[]} */
 let map;
 const fetchMap = async () => {
     map = window.aggregateRpcMap = await (await fetch('/$/system/maps/websockets')).json();
