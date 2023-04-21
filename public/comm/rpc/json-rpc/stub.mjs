@@ -30,7 +30,7 @@ class WildcardEventEmitter extends EventTarget {
      */
     dispatchEvent(event) {
         super.dispatchEvent(new CustomEvent('*', { detail: { type: event.type, data: event.detail } }))
-        super.addEventListener(event)
+        super.dispatchEvent(event)
     }
 }
 
