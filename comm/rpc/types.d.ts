@@ -4,11 +4,22 @@ The Soul System
 This contains type definitions for the rpc module
 */
 
-export class __ { }
-export class ___ { }
+import { SystemPublicMethods } from "system/base/net/rpc/api.mjs"
 
-
-interface FacultyPublicJSONRPCMeta {
+export interface FacultyPublicJSONRPCMeta {
     hcSessionId: string
 
+}
+
+
+
+global {
+
+    namespace rpc{
+        type Public<T extends faculty.faculties = faculty.faculties> = {
+            [K in keyof T]: T[K]['remote']['public']
+        } & {
+            system: SystemPublicMethods
+        }
+    }
 }

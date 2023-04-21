@@ -9,10 +9,11 @@ This class enables a Faculty to set up a server socket to locally listen for oth
 import net from 'net';
 import { EventEmitter } from 'events';
 import { SocketCommInterface } from '../interface/socket-interface.mjs';
-import { JSONRPC, JSONRPCRemote } from './json-rpc.mjs';
+import JSONRPC from './json-rpc.mjs';
 import fs from 'fs'
 import { callWithRetries } from '../../util/util.js';
 import { faculty_platform_symbol } from '../../lib/libFaculty/faculty-connection-manager.mjs';
+import JSONRPCRemote from '../../public/comm/rpc/json-rpc/remote.mjs';
 
 
 /**

@@ -111,10 +111,11 @@ export class BaseBaseRPCServer extends EventEmitter {
 
     /**
      * 
+     * @param {object} param0
      * @param {string} param0.port
-     * @param {[string,string]} param0.keys : Private Key and Certificate
-     * @param {string} param0.ca : Certificate authority for verifying clients
-     * @param {object} default_methods: An object containing methods, that'll be available to each and every client that gets connected
+     * @param {string[]} param0.key Private Key
+     * @param {string} param0.cert Certificate
+     * @param {object} default_methods An object containing methods, that'll be available to each and every client that gets connected
      * @returns {Promise<BaseBaseRPCServer>}
      * 
      * Use this method to create an RPC server

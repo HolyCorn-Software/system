@@ -41,7 +41,7 @@ export default class FunctionProxy {
                             const modifiedParams = (modifier?.arguments || ((metadata, ...args) => args))(methodMetadata, ...arguments)
                             if (modifiedParams instanceof Promise) {
                                 return (async function () {
-                                    return await wrapReturn(await value.call(this, methodMetadata, ...(await modifiedParams)))
+                                    return await wrapReturn(methodMetadata, await value.call(this, ...(await modifiedParams)))
                                 }.bind(this))()
                             } else {
                                 const ret = value.call(this, ...modifiedParams)

@@ -38,6 +38,10 @@ declare global {
     declare class FacultyFacultyRemoteMethods extends _FacultyFacultyRemoteMethods { }
 
 
+    type FacultyConnectionOverload<T extends faculty.faculties = faculty.faculties> = {
+        [K in keyof T]: () => Promise<T[K]['remote']['internal']>
+    }
+
 
 
 }

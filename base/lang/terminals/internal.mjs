@@ -60,7 +60,7 @@ export default class LanguageInternalMethods {
     /**
      * This method is used to delete a single string, from the language specified
      * @param {object} param0 
-     * @param {[string]} param0.langs
+     * @param {string[]} param0.langs
      * @param {string} param0.string
      * @returns {Promise<void>}
      */
@@ -72,7 +72,7 @@ export default class LanguageInternalMethods {
      * This method is used to delete many strings from a specified language
      * @param {object} param0 
      * @param {string} param0.lang
-     * @param {[string]} param0.strings
+     * @param {string[]} param0.strings
      * @returns {Promise<void>}
      */
      async deleteStrings({ lang, strings }) {

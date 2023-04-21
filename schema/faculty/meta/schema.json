@@ -8,6 +8,9 @@
         },
         "settings": {
             "$ref": "./settings/schema.json"
+        },
+        "modernuser": {
+            "$ref": "./modernuser/schema.json"
         }
     }
 }

@@ -21,7 +21,7 @@ import SimpleCache from "./simple-cache.mjs";
  * @template StructInput
  * This method is used to check that arguments conform to a given structure.
  * @param {ArgType} args The Object to be checked
- * @param {FinalType<ArgType,StructInput,StructureCheckInput<ArgType>,StructInput>} structure The structure it must follow
+ * @param {FinalType<ArgType,StructInput,StructureCheckInput<ArgType>,StructInput>|ArgType|GenericCheckerStructure} structure The structure it must follow
  * @param {string|undefined} argName This is mandatory only when structure is a string. It is used to construct the resulting error message.
  * That is, ${argName} was supposed to be a ${structure} but a(n) ${typeof args} was passed
  * @param {(arg0: CheckerCallbackArgs<FinalType<ArgType,StructInput>>)=>void} error_callback An optional parameter that will be called when an error is detected, instead of throwing errors
@@ -170,27 +170,6 @@ export function checkArgs(args, structure, argName, error_callback, flags = []) 
 
 
 /**
- * This method will return an object gotten by parsing the body of the request
- * as a json. If this fails, it throws error.http.bad_request
- * 
- * @param {SuperRequest} request 
- * @returns {object}
- * @throws error.http.bad_request
- */
-export async function getJSONOrBadRequest(request) {
-    let json;
-    try {
-        json = await request.json()
-    } catch (e) {
-        throw new Exception({ code: 'error.http.bad_request' })
-    }
-    return json
-}
-
-
-
-
-/**
  * This method is used to call other functions only for a given amount of time. If the function takes more than the specified time to execute,
  * this method will throw an error
  * @param {function} func 
@@ -312,7 +291,7 @@ export function getCaller({ hideFunction = true, hideFileURL, offset = 0 } = {})
 /**
  * This method picks a selected number of fields from an object, if and only if the object has those fields
  * @param {object} object 
- * @param {[string]} fields 
+ * @param {string[]} fields 
  * @param {(field:string)=>string} transform
  * @returns {object}
  */
@@ -351,7 +330,6 @@ function cleanPath(path) {
 
 export default {
     checkArgs,
-    getJSONOrBadRequest,
     callWithTimeout,
     callWithRetries,
     pickOnlyDefined,

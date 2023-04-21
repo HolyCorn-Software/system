@@ -43,7 +43,6 @@ export class BaseToFacultyRemoteMethods {
 
         this.lang = new LanguageInternalMethods()
         this.plugin = new BasePluginAPIMethods()
-        /** @type {faculty.managedsettings.BaseRemote['$0']} */
         this.settings = new FacultySettingsBaseRemote(platform)
 
     }

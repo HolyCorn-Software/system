@@ -4,9 +4,11 @@
  */
 
 
-import hcRpc from './aggregate-rpc.js';
+import hcRpc from './aggregate-rpc.mjs';
 
 /**
+ * @deprecated
+ * Just use hcRpc directly
  * @type {{system: import('system/base/net/rpc/api.mjs').SystemPublicMethods}}
  */
 let systemRpc = hcRpc

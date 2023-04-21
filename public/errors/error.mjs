@@ -3,29 +3,10 @@ Copyright 2021 HolyCorn Software
 This module ensures that errors from the Server get displayed to client in a user-friendly manner
 */
 
+import hcRpc from '../comm/rpc/aggregate-rpc.mjs'
 import { ErrorEngine } from './engine.mjs'
 import { ErrorUI } from './popup/widget.mjs'
 
-
-/** @type {typeof import('../comm/rpc/system-rpc.mjs').default} */
-let systemRpc
-setTimeout(async () => {
-    systemRpc = (await import('../comm/rpc/system-rpc.mjs')).default
-}, 10)
-
-async function waitForSystemRpc(){
-    return new Promise(resolve=>{
-        if(systemRpc){
-            resolve()
-        }
-        const interval = setInterval(()=>{
-            if(systemRpc){
-                resolve()
-                clearInterval(interval)
-            }
-        })
-    })
-}
 
 const errorMap = await (await fetch('/$/system/maps/errors')).json() //This is a map of which errors mean what, gotten from the faculties
 
@@ -99,9 +80,8 @@ const on_error = (ev) => {
 
 export async function report_error_direct(error, tag = '') {
 
-    await waitForSystemRpc()
     
-    systemRpc.system.error.report(
+    hcRpc.system.system.error.report(
         `${tag ? `${tag}:\n` : ''}
         Error:\t${error.stack || error.message || error}
 

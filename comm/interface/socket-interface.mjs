@@ -5,7 +5,7 @@ Common Interface between sockets. Useful for connecting BasePlatform to BasePlat
 
 import { default as net } from 'net'
 import { CommInterface } from './interface.mjs';
-import { JSONRPC } from '../rpc/json-rpc.mjs';
+import JSONRPC from '../rpc/json-rpc.mjs';
 
 
 export class SocketCommInterface extends CommInterface {
@@ -29,7 +29,7 @@ export class SocketCommInterface extends CommInterface {
 
         let socket_data_buffer = []
         let on_socket_data = (d) => {
-            if(socket !== this.socket){
+            if (socket !== this.socket) {
                 //Then this socket is no longer the one we're using
                 socket.off('data', on_socket_data)
                 return;

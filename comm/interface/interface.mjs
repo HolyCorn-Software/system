@@ -6,7 +6,7 @@ Be it BasePlatform to FacultyPlatform, FacultyPlatform to FacultyPlatform, ...
 */
 
 
-import {JSONRPC}  from '../rpc/json-rpc.mjs'
+import JSONRPC from '../rpc/json-rpc.mjs'
 
 
 export class CommInterface {
@@ -15,7 +15,7 @@ export class CommInterface {
     /**
      * @param {object} methods An object containing methods that will automatically be registered once the the interface is created
      */
-    constructor( methods = {}, rpc=new JSONRPC()) {
+    constructor(methods = {}, rpc = new JSONRPC()) {
         this.rpc = rpc
 
         //Now that everything is set, register the new methods

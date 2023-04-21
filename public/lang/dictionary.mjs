@@ -4,7 +4,7 @@
  * This sub-module (dictionary) allows for strings to be looked up in the frontend
  */
 
-import systemRpc from "/$/system/static/comm/rpc/system-rpc.mjs";
+import hcRpc from "../comm/rpc/aggregate-rpc.mjs";
 
 
 const timeouts = {}
@@ -37,7 +37,7 @@ async function fetchAndStore(key, fetchFxn) {
 
 
 async function getStringMap() {
-    return await fetchAndStore('system.lang.strings', systemRpc.system.lang.getStrings)
+    return await fetchAndStore('system.lang.strings', hcRpc.system.lang.getStrings)
 }
 
 
@@ -47,7 +47,7 @@ async function getStringMap() {
  * @returns {Promise<import("../../base/lang/types.js").LanguageConfig[]>}
  */
 async function getLanguages() {
-    return await fetchAndStore('system.lang.languages', systemRpc.system.lang.getLanguages)
+    return await fetchAndStore('system.lang.languages', hcRpc.system.lang.getLanguages)
 }
 
 
@@ -63,7 +63,7 @@ class StringDictionary {
     /**
      * 
      * @param {import("../types.js").SummedLanguageStrings} _strings 
-     * @param {[import("../types.js").LanguageConfig]} langs
+     * @param {import("../types.js").LanguageConfig[]} langs
      */
     constructor(_strings, langs) {
         this[strings] = _strings
@@ -78,7 +78,7 @@ class StringDictionary {
             this[lang] = chosenLanguage ?? superDefaultLanguage
             //TODO: Ask the user to select his language, if the chosen language is undefined
         } catch (e) {
-            systemRpc.system.error.report(e)
+            hcRpc.system.error.report(e)
             console.log(e)
             this[lang] = superDefaultLanguage
         }
@@ -96,7 +96,7 @@ class StringDictionary {
         nullValue ??= `${code} missing`
         const realValue = this[strings]?.[this[lang]]?.[code]
         if (!realValue) {
-            systemRpc.system.error.report(`Unfortunately, there's no value for string ${code} in language ${this[lang]}`, `\nInvoked from\n`, new Error().stack.split('\n').slice(1).join('\n'))
+            hcRpc.system.error.report(`Unfortunately, there's no value for string ${code} in language ${this[lang]}`, `\nInvoked from\n`, new Error().stack.split('\n').slice(1).join('\n'))
         }
         return realValue || nullValue
     }

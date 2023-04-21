@@ -16,7 +16,11 @@ type TypeofType = "string" | "number" | "boolean" | "undefined"
 type StructureCheckInput<T> = T extends object ? {
     [K in keyof T]: StructureCheckInput<T[K]>
 } : TypeofType
-type FinalType<A, B, Yes = A, No = B> = A extends unknown ? No : Yes
+type FinalType<A, B, Yes = A, No = B> = A extends (unknown | undefined | never) ? No : Yes
+
+type GenericCheckerStructure = {
+    [K: string]: TypeofType | GenericCheckerStructure
+}
 
 type ObjectValues<T> = T[keyof T]
 
@@ -26,7 +30,7 @@ type RecursiveDot<T> = T extends (string | number) ? T : ObjectValues<{
 
 type CheckerCallbackArgs<T> = {
     ideal: TypeofType
-    real: TypeofType
+    real: TypeofType | "symbol" | "function"
     value: any
     field: RecursiveDot<T>
 }

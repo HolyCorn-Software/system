@@ -6,7 +6,7 @@
  */
 
 
-import { ClientJSONRPC } from '../websocket-rpc.js'
+import { ClientJSONRPC } from './websocket-rpc.mjs'
 
 export type Connection = { remote: GeneralPublicRPC } & ClientJSONRPC
 

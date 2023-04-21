@@ -100,7 +100,7 @@ export default class LanguageController {
      * This method is used to retrieve strings from the database
      * @param {object} param0 
      * @param {string} param0.lang If specified, only strings for the given
-     * @returns {Promise<[import("./types.js").SummedLanguageStrings]>}
+     * @returns {Promise<import("./types.js").SummedLanguageStrings[]>}
      */
     async getStrings({ lang } = {}) {
 
@@ -124,7 +124,7 @@ export default class LanguageController {
     /**
      * This method is used to delete a single string, from the language specified
      * @param {object} param0 
-     * @param {[string]} param0.langs
+     * @param {string[]} param0.langs
      * @param {string} param0.string
      * @returns {Promise<void>}
      */
@@ -142,7 +142,7 @@ export default class LanguageController {
     /**
      * This method is used to delete a number of strings
      * @param {object} param0 
-     * @param {[string]} param0.strings The strings to be deleted. This value should be an array of string codes
+     * @param {string[]} param0.strings The strings to be deleted. This value should be an array of string codes
      * @param {string} param0.lang The language from which these strings will be deleted
      * @returns {Promise<void>}
      */

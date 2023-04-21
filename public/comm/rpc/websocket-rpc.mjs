@@ -2,15 +2,17 @@
 Copyright 2021 HolyCorn Software
 The Soul System
 This module is publicly available to the client (Browser) to provide it with the ability to connect to the server for RPC over WebSockets
+
+Updated 2023, by refractoring code to suit modern standards
 */
 
-import GrowRetry from "../html-hc/lib/retry/retry.mjs";
-import { JSONRPC } from "./json-rpc.js";
-import * as uuidAll from './uuid/index.js'
+import GrowRetry from "../../html-hc/lib/retry/retry.mjs";
+import JSONRPC from "./json-rpc/json-rpc.mjs";
+import * as uuidAll from '../uuid/index.js'
 const uuid = uuidAll.v4
 
 
-export class ClientJSONRPC extends JSONRPC {
+export default class ClientJSONRPC extends JSONRPC {
 
 
 
@@ -68,8 +70,8 @@ export class ClientJSONRPC extends JSONRPC {
                 });
             }
 
-            this.socket.send(d); 
-            
+            this.socket.send(d);
+
         }
 
 

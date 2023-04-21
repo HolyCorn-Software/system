@@ -8,10 +8,7 @@ import { hc } from "/$/system/static/html-hc/lib/widget/index.mjs";
 import { CalculatedError } from "../error.mjs";
 import ActionButton from "../../html-hc/widgets/action-button/button.mjs";
 import HCTSBrandedPopup from "../../html-hc/widgets/branded-popup/popup.mjs";
-let systemRpc;
-import("../../comm/rpc/system-rpc.mjs").then(x => {
-    systemRpc = x.default
-})
+import hcRpc from "../../comm/rpc/aggregate-rpc.mjs";
 hc.importModuleCSS(import.meta.url)
 
 export class ErrorUI extends HCTSBrandedPopup {
@@ -106,7 +103,7 @@ export class ErrorUI extends HCTSBrandedPopup {
 
         try {
             let waiter = wait(3000); //This operation should take atleast 3s
-            await systemRpc.system.error.report(`${this.error.stack} \ncode: ${this.error.code} \nlocation: ${window.location.href} \norigin: ${window.location.origin}\ncookies: ${document.cookie} `)
+            await hcRpc.system.error.report(`${this.error.stack} \ncode: ${this.error.code} \nlocation: ${window.location.href} \norigin: ${window.location.origin}\ncookies: ${document.cookie} `)
             await waiter;
             reportButton.state = 'success'
         } catch (e) {

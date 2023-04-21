@@ -5,7 +5,7 @@ It allows faculties to be added, and removed
 It calls the Faculty object to start the particular faculty
 */
 
-import { JSONRPC } from '../comm/rpc/json-rpc.mjs';
+import JSONRPC from '../comm/rpc/json-rpc.mjs';
 import { Faculty } from '../lib/libFaculty/faculty.mjs';
 
 

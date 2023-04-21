@@ -16,10 +16,9 @@ global {
                 [K in keyof T]: MapFacultyToBase<T[K]>
             } : T
 
-        class BaseRemote {
-            $0: MapFacultyToBase<FacultySettings>
+        declare var BaseRemote: {
+            new(): MapFacultyToBase<FacultySettings>
         }
-
     }
 
 }

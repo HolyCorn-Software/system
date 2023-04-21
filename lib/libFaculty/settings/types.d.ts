@@ -62,8 +62,8 @@ global {
             value: T
         }
 
-        class SettingDescriptorsCollection extends Collection<SettingDescriptor>{ }
+        type SettingDescriptorsCollection = Collection<SettingDescriptor>
 
-        class SettingValuesCollection extends Collection<SettingValue>{ }
+        type SettingValuesCollection = Collection<SettingValue>
     }
 }

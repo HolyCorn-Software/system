@@ -4,7 +4,7 @@
  */
 
 import { Session } from '../../http/session/session.js';
-import { JSONRPC } from './json-rpc.mjs';
+import JSONRPC from './json-rpc.mjs';
 
 
 
@@ -39,6 +39,7 @@ export class SocketPublicJSONRPC extends JSONRPC {
 
 
         this.flags.expose_stack_traces = false;
+        
         this.flags.stripColors = true;
 
         /** @type {FacultyPublicJSONRPCMeta} */ this.meta

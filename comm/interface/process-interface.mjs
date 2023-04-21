@@ -51,7 +51,7 @@ export class FacultyBaseCommInterface extends CommInterface {
     /**
      * This is an interface that you can use to call methods residing on the other end of the communication link (remote methods)
      * For example, assuming the method exists, you can do  await this.remote.serverWake()
-     * @returns {BaseToFacultyRemoteMethods & import('../rpc/json-rpc.mjs').JSONRPCRemote}
+     * @returns {BaseToFacultyRemoteMethods & import('../../public/comm/rpc/json-rpc/remote.mjs').default}
      */
     get remote() {
         return this.rpc.remote

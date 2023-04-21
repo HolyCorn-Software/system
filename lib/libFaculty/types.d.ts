@@ -21,15 +21,16 @@ export interface FacultyDescriptorPlus extends FacultyDescriptor {
 
 export interface FacultyMetadata {
     backend_dashboard: FacultyBackendDashboardSupport
-    engTerminal: FacultyEngTerminalSupport
     settings: faculty.managedsettings.SettingsDefinition
+    modernuser: FacultyModernuserSupport
 }
 
 export type FacultyBackendDashboardSupport = {
     [dashboard: string]: (FacultyBackendDashboardAction & Omit<FacultyBackendDashboardGroup, "supergroup">)[]
 }
-interface FacultyEngTerminalSupport {
 
+interface FacultyModernuserSupport {
+    permissions: modernuser.permission.PermissionDataInput[]
 }
 
 export interface FacultyBackendDashboardAction extends FacultyBackendDashboardItem {

@@ -19,7 +19,7 @@ export class Session {
         /** @type {string} */ this.id
         /** @type {string} */ this.cookie
 
-        if(!id){
+        if (!id) {
             console.trace(`id is `, id)
         }
 
@@ -74,9 +74,12 @@ export class Session {
      * @returns {Promise<Session>}
      */
     static async getSessionFromCookieOrStartNew(cookie) {
-        let session;
+        if (!cookie) {
+            return await this.startNew()
+        }
+
         try {
-            session = await this.getFromCookie(cookie);
+            return await this.getFromCookie(cookie);
         } catch (e) {
             //The only exception allowed at this point is session not found
             if (!/net.sessionStorage.session_not_found/.test(e.code)) {
@@ -84,9 +87,8 @@ export class Session {
                 throw e;
             }
             //So if that's the case, we create a new session
-            session = await this.startNew();
+            return await this.startNew();
         }
-        return session;
     }
 
     /**

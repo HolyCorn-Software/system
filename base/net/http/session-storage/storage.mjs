@@ -39,7 +39,7 @@ export class SessionStorage {
             this.restoreFromDatabase();
         })
     }
-    /** @type {[import("./types.js").SessionData]} */
+    /** @type {import("./types.js").SessionData[]} */
     #sessions
     #base
 

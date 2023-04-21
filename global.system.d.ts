@@ -27,6 +27,4 @@ declare global {
 
     let soulUtils = _soulUtils
 
-
-
 }

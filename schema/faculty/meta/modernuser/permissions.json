@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "array",
+    "title": "This array contains permissions that will be auto-created in the faculty 'modernuser', when this faculty starts.",
+    "items": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "title": "The unique name of the permission, e.g permissions.finance.payment.supervise",
+                "pattern": "^[a-zA-Z._]+$"
+            },
+            "label": {
+                "type": "string",
+                "title": "An Engineer-friendly name for this permission"
+            },
+            "inherits": {
+                "title": "An array of already existing permission, that this one inherits from. This means, if someone has this permission, he automatically has all the inherit permissions.",
+                "type": "array",
+                "items": [
+                    {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z._]+$",
+                        "title": "name of a well-known already existing permission"
+                    }
+                ]
+            }
+        }
+    }
+}

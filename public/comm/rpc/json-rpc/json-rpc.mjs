@@ -1,0 +1,170 @@
+/*
+Copyright 2023 HolyCorn Software
+Adapted from the 2021 version, into this modular utility
+This defines a simple JSON-RPC 3.0 Client (originally 2.0), that ensures that we don't have to explicitly register methods
+At the time the method is being called, the stub object is checked to see the availability of the method.
+
+*/
+
+import { JSONRPCManager } from './manager/manager.mjs';
+import JSONRPCRemote from './remote.mjs';
+import JSONRPCDefaultStub from './stub.mjs';
+
+import { v4 as uuid } from '../../uuid/index.js'
+
+/**
+ * Supports bi-directional JSON requests
+ */
+
+
+const defaultStubSymbol = Symbol()
+
+export default class JSONRPC extends EventTarget {
+
+    constructor() {
+
+        super();
+
+        /**
+         * This object is where the methods to be called will be lookep up.
+         * You can set it to anything, as well as append methods to it using the ```register()``` method
+         * @type {object}
+        */
+        this.stub = {}
+        this.manager = new JSONRPCManager(this)
+
+        /**
+         * Use this object to call remote methods at the _other_ side
+         * For example ```myRPC.remote.printRemote('Displayed this remotely!')```
+         * @type {JSONRPCRemote}
+         */
+        let remote = new JSONRPCRemote(this.manager);
+
+        /** @type {object} */ this.remote
+        Reflect.defineProperty(this, 'remote', {
+            get: () => {
+                return remote;
+            }
+        })
+
+        /** Store additional information here, so as to prevent interference with the JSON RPC module */
+        this.meta = {}
+
+        /**@type {(data: string) => void} Override this method to receive json data that will be transmitted */this.ondata
+
+        this.flags = {
+            //
+            /**
+             * For each method that is called locally, which objects should be inserted as the first argument ?
+             */
+            first_arguments: [this],
+            /** 
+             * When there's a call, or an error, should the stack traces 
+             * be transmitted to the remote endpoint?
+             * 
+             */
+            expose_stack_traces: true,
+            /**
+             * The maximum number of outbound calls allowed at a time
+             */
+            max_outbound_calls: 512,
+            /** The maximum number of inbound calls at any given time */
+            max_inbound_calls: 32,
+
+            /**
+             * This object contains deadlines for various operations of the module
+             */
+            timeouts: {
+                /** The longest time an inbound/outbound call can last */
+                inbound_call: 10_000,
+                loop: 5 * 60 * 1000, // 5mins for a loop response
+            },
+            /** 
+             * A function that will be called each time there's an error with an inbound
+             * call. This function should transform the error, into something that
+             * can be viewed by the remote party
+             * @param {Error} error
+             * @param {string} methodName
+             * @param {any[]} params
+             */
+            error_transform: (error, methodName, params) => error
+        }
+
+
+
+        this[defaultStubSymbol] = new JSONRPCDefaultStub(this);
+
+        this.id = uuid()
+
+        /** @type {JSONRPCDefaultStub} */ this.$rpc
+        Reflect.defineProperty(this, '$rpc', {
+            get: () => this[defaultStubSymbol],
+            configurable: true,
+            enumerable: true
+        })
+    }
+
+    /** 
+     * Defined so that JSON serializer may avoid it.
+     * This object is usually a cause for cyclic property errors with JSON serialization, though unfortunately, it doesn't contain any valuable raw data
+     *
+    */
+    toJSON() {
+        return {}
+    }
+
+
+    /**
+     * Accept JSON-formated data
+     */
+    accept(json_text) {
+        //The reason the \n was added in the first place during transmission is to prevent collisions when two processes transmit json text which concatenates to something unelligible
+
+
+        let chunks = json_text.split('\n');
+
+        for (let chunk of chunks) {
+            if (chunk === '') continue;
+            try {
+                let json = JSON.parse(chunk)
+                this.manager.accept(json)
+            } catch (e) {
+                if (/unexpected token.*JSON/gi.test(e.message)) {
+                    console.log('JSONRPC could not parse ', chunk, `. It is ${typeof chunk}`)
+                } else {
+                    console.log(`Error\n`, e, `\nFor input: '${chunk}'`)
+                    console.log(`this.stub `, this.stub)
+                }
+            }
+        }
+
+    }
+
+
+    /**
+     * 
+     * @param {string} name 
+     * @param {function(JSONRPC,...any)} method 
+     * Register a method that will be called remotely by the client.
+     * 
+     * Take note that when the method is called, the first argument will be reference to the JSONRPC object.
+     * Which means
+     * @example hello(name){
+     *      
+     * } 
+     * //becomes
+     * hello(rpc, name){
+     *      
+     * }
+     */
+    register(name, method) {
+        Object.defineProperty(this.stub, name, {
+            value: method,
+            configurable: true,
+            enumerable: true
+        })
+    }
+
+
+}
+
