@@ -1,3 +1,3 @@
 .
 
-Corrected minor bug related to event propagation from faculty to faculty
+Updated to the latest version of html-hc featuring a new widget
