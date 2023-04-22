@@ -1,5 +1,3 @@
 .
 
-Improved error management for sessions
-
-Made json-rpc more robust
+Fixed minor git issue with html-hc
