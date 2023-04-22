@@ -139,6 +139,7 @@ export default class TransmissionManager {
                 } else {
                     console.log(`The loop return of request id ${object.id} is being processed already.`)
                 }
+                this.sendACK(object.id)
                 return
             } else {
                 this[PENDING_CALLS].push(object.id);

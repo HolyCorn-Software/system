@@ -1,3 +1,5 @@
 .
 
-Updated to the latest version of html-hc featuring a new widget
+Improved error management for sessions
+
+Made json-rpc more robust
