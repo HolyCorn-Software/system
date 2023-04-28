@@ -6,13 +6,11 @@
  */
 
 import { Collection } from "mongodb"
-import { MultiFlexFormFieldData } from "/$/system/static/html-hc/widgets/multi-flex-form/types"
-
 
 global {
     namespace faculty.managedsettings {
 
-        type InputDetails = Omit<MultiFlexFormFieldData, "value">
+        type InputDetails = Omit<htmlhc.widget.multiflexform.MultiFlexFormFieldData, "value">
 
         /**
          * This type defines the data that faculties need to pass in when defining

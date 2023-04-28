@@ -7,7 +7,7 @@
 import { Collection } from "mongodb"
 import PluginModelModel from "./model.mjs";
 import _PluginModelModel from "./model.mjs"
-import { MultiFlexFormDefinitionData } from "/$/system/static/html-hc/widgets/multi-flex-form/types";
+
 
 interface PluginSupportDefinition {
     plugins: {
@@ -51,7 +51,7 @@ interface PluginDescriptor {
 }
 
 interface PluginCredentialsDescriptor {
-    form: MultiFlexFormDefinitionData
+    form: htmlhc.widget.multiflexform.MultiFlexFormDefinitionData
     validation: GeneralObjectTest
 }
 

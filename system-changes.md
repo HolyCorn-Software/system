@@ -1,3 +1,5 @@
 .
 
-Fixed minor git issue with html-hc
+Improved typing
+
+Updated to the latest version of htmlhc, with better typing
