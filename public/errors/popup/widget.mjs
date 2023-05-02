@@ -47,7 +47,7 @@ export class ErrorUI extends HCTSBrandedPopup {
         })
 
 
-        reportButton.html.on('click', () => {
+        reportButton.html.addEventListener('click', () => {
             this.reportError()
         })
 
@@ -66,7 +66,7 @@ export class ErrorUI extends HCTSBrandedPopup {
 
 
 
-        this.html.$('.actions .close').on('click', () => this.hide())
+        this.html.$('.actions .close').addEventListener('click', () => this.hide())
 
 
         this.error = error;
