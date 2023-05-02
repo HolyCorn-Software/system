@@ -27,7 +27,6 @@
  * 
  */
 
-import { FacultyPlatform } from '../lib/libFaculty/platform.mjs'
 import { Platform } from '../platform.mjs';
 
 /**
@@ -69,7 +68,7 @@ export class CollectionProxy {
                 if (typeof values[property] == 'string') {
                     let platform = Platform.get(); //Either get a FacultyPlatform or BasePlatform
                     //If faculty platform, use platform.descriptor.name, or just use system
-                    if (platform instanceof FacultyPlatform) {
+                    if (typeof FacultyPlatform !== 'undefined' && (platform instanceof FacultyPlatform)) {
                         return platform.database.collection(`${prefix || (platform.descriptor.name)}.${values[property]}`)
                     } else {
                         return platform.database.connection.collection(`${prefix || 'base'}.${values[property]}`)

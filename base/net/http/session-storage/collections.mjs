@@ -15,8 +15,8 @@ let namespace = `sessionStorage`
  * sessionStorage: C<import("./types.js").SessionData>
  * }}
  */
-let collectionProxy = new CollectionProxy({
+let collections = new CollectionProxy({
     sessionStorage: `${namespace}.storage`
 })
 
-export default collectionProxy
+export default collections
