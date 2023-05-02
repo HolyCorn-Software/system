@@ -33,9 +33,38 @@ export class SessionStorage {
         this.#base = basePlatform
         this.#setErrorsOnBase();
 
-        basePlatform.events.on('booted', () => {
+        basePlatform.events.on('booted', async () => {
             console.log(`Now restoring sessions from database`)
-            this.restoreFromDatabase();
+            await this.restoreFromDatabase();
+            
+            try {
+                const indices = await collections.sessionStorage.listIndexes().toArray()
+                for (const index of indices) {
+                    if (index.name === '_id_') continue;
+                    await collections.sessionStorage.dropIndex(index.name)
+                }
+                collections.sessionStorage.createIndex(
+                    { id: 1 },
+                    { unique: true }
+                )
+                collections.sessionStorage.createIndex(
+                    {
+                        cookie: 1
+                    },
+                    { unique: true }
+                );
+                collections.sessionStorage.createIndex(
+                    {
+                        expires: 1
+                    },
+                    {
+                        expireAfterSeconds: 10
+                    }
+                );
+
+            } catch (e) {
+                console.error(e)
+            }
         })
     }
     /** @type {import("./types.js").SessionData[]} */

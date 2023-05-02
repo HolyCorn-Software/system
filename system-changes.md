@@ -1,3 +1,3 @@
 .
 
-Improved code quality
+Improved management of session database
