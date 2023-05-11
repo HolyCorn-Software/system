@@ -11,6 +11,8 @@ import JSONRPCRemote from './remote.mjs';
 import JSONRPCDefaultStub from './stub.mjs';
 
 import { v4 as uuid } from '../../uuid/index.js'
+import CleanEventTarget from './clean-event-target.mjs';
+import EventChannelServer from './event-channel/server/sever.mjs';
 
 /**
  * Supports bi-directional JSON requests
@@ -19,7 +21,7 @@ import { v4 as uuid } from '../../uuid/index.js'
 
 const defaultStubSymbol = Symbol()
 
-export default class JSONRPC extends EventTarget {
+export default class JSONRPC extends CleanEventTarget {
 
     constructor() {
 
@@ -102,6 +104,18 @@ export default class JSONRPC extends EventTarget {
             configurable: true,
             enumerable: true
         })
+
+        /** 
+         * The destroy event is called when json-rpc is about to be cleaned from the memory
+         * The 'reinit' is dispatched by any object that owns json-rpc, telling other listeners,
+         * that json-rpc recovered from a stalled state, and is now processing requests
+         * @type {(event: "destroy"|"reinit", cb: (event: CustomEvent)=> void )=> void} 
+        */ this.addEventListener
+
+        this.addEventListener('destroy', () => {
+            // 1s after destroy, cleanup the event listener
+            setTimeout(() => this.cleanup(), 1000)
+        })
     }
 
     /** 
@@ -111,6 +125,10 @@ export default class JSONRPC extends EventTarget {
     */
     toJSON() {
         return {}
+    }
+
+    destroy() {
+        this.dispatchEvent(new CustomEvent('destroy'))
     }
 
 
@@ -163,6 +181,13 @@ export default class JSONRPC extends EventTarget {
             configurable: true,
             enumerable: true
         })
+    }
+
+    static get EventChannel() {
+        return {
+            Server: EventChannelServer,
+            client: {}
+        }
     }
 
 

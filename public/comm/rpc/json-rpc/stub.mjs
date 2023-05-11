@@ -49,15 +49,33 @@ class JSONRPCEventsStub extends WildcardEventEmitter {
         this[json_rpc_symbol] = json_rpc
 
     }
-    emit(rpc, type, ...data) {
+    /**
+     * Please, don't call this method locally.
+     * 
+     */
+    emit(rpc, type, data) {
         if (typeof rpc === 'string') { //If called locally
-            type = arguments[0]
-            data = Array.prototype.slice.call(arguments, 1)
-            super.emit(type, ...data);
-            this[json_rpc_symbol].remote.$rpc.events.emit(type, ...data);
+            // type = arguments[0]
+            // data = Array.prototype.slice.call(arguments, 1)
+            // super.emit(type, ...data);
+            // this[json_rpc_symbol].remote.$rpc.events.emit(type, ...data);
+            throw new Error(`This method is not supposed to be called locally.\nJust use the regular dispatchEvent() method.`)
         } else {
             super.dispatchEvent(new CustomEvent(`$remote-event`, { detail: { type, data } }))
+            super.dispatchEvent(new CustomEvent(type, { detail: data }))
         }
+    }
+    /**
+     * Dispatching an event, will also cause the event to be dispatched remotely
+     * @param {CustomEvent} event 
+     * @returns {void}
+     */
+    dispatchEvent(event) {
+        if (!(event instanceof Event)) {
+            throw new Error(`This is NOT a remote method.`)
+        }
+        super.dispatchEvent(event)
+        this[json_rpc_symbol].remote.$rpc.events.emit(event.type, event.detail);
     }
 
 }

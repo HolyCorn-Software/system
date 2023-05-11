@@ -14,3 +14,5 @@ import hcRpc from './aggregate-rpc.mjs';
 let systemRpc = hcRpc
 
 export default systemRpc
+
+console.warn(`This module is deprecated.\nImport hcRpc directly.`)

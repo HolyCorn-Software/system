@@ -75,8 +75,7 @@ export class SystemHTTP extends HTTPServer {
 
         let rpc_stub = new SystemPublicMethods()
         this.websocketServer.route({
-            // point: this.system_rpc_point,
-            point: '/rpc',
+            point: this.system_rpc_point,
             callback: (req, client) => {
                 new SocketPublicJSONRPC(client, rpc_stub)
             }
@@ -86,7 +85,7 @@ export class SystemHTTP extends HTTPServer {
         //Channel the rpc requests meant for the system to the appropriate headquarters
         manager.http_server.websocketServer.course({
             path: this.system_path,
-            remoteURL: `ws://127.0.0.1:${this.port}/`
+            remoteURL: `ws://0.0.0.0:${this.port}/`
         })
 
 

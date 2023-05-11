@@ -21,7 +21,7 @@ const fetchMap = async () => {
 await fetchMap();
 
 let map_symbol = Symbol('get [map]')
-let established_connections_symbol = Symbol('get [connections]');
+const established_connections = Symbol('get [connections]');
 let pending_connections_symbol = Symbol(`Pending connnections for AggregateRPCProxy`)
 
 class AggregateRPCProxy {
@@ -36,7 +36,7 @@ class AggregateRPCProxy {
         this[pending_connections_symbol] = {}
 
         /** @type {Object<string, Object<string, function():Promise>} */
-        this[established_connections_symbol] = {}
+        this[established_connections] = {}
 
         this[map_symbol] = map;
 
@@ -88,6 +88,9 @@ class RemoteFacultyRPCObject {
                 if (property === 'then') {
                     return undefined;
                 }
+                if (!path && property === '$jsonrpc') {
+                    return aggregate[established_connections][name]
+                }
                 return new RemoteFacultyRPCObject({ name, path: !path ? property : `${path}.${property}` }, aggregate)
             },
             apply: (target, thisArg, argArray) => {
@@ -99,7 +102,7 @@ class RemoteFacultyRPCObject {
 
 
                     /** @type {import('./types.js').Connection}*/
-                    let connection = aggregate[established_connections_symbol][name]
+                    let connection = aggregate[established_connections][name]
 
                     const call_method = async () => {
                         if (!path) {
@@ -137,11 +140,10 @@ class RemoteFacultyRPCObject {
                     */
                     const store_connection = (connection) => {
                         let connection_name = name;
-                        aggregate[established_connections_symbol][connection_name] = connection;
-                        connection.socket.addEventListener('close', () => {
-                            console.log(`${connection.socket.url} banished!`)
-                            delete aggregate[established_connections_symbol][connection_name]
-                        })
+                        aggregate[established_connections][connection_name] = connection;
+                        // connection.socket.addEventListener('close', () => {
+                        //     delete aggregate[established_connections][connection_name]
+                        // })
                     }
 
 
@@ -224,18 +226,13 @@ const connect_and_auth = async (url) => {
 
     //Now if a disconnection happens, we replace the connection, and then re-authenticate
     client.addEventListener('reconnect', () => {
-        if (1) {
-            return console.log(`reconnection disabled`)
-        }
-        console.log(`Re-authenticating`)
         //When reconnecting, re-authenticate with the session
-        session_auth(connection).catch(e => {
+        session_auth(connection).then(() => {
+            client.dispatchEvent(new CustomEvent('reinit'))
+        }).catch(e => {
             //If during reconnection, we could not authenticate, we destroy the connection and let a new one form organically
-            console.error(`Closing sockect because session auth failed`, e)
             client.socket?.close()
-            setTimeout(() => client.reconnect(), 300);
-        }).then(() => {
-            console.log(`Re-Authentication to `, url, ` is complete!`)
+            setTimeout(() => client.reconnect(), 3000);
         })
 
     });
@@ -254,7 +251,7 @@ const connect_and_auth = async (url) => {
 /** @type {Promise<void>} */
 let pending_session_auth_promise;
 
-let SESSION_COOKIE_NAME
+let SESSION_COOKIE_NAME = 'hcSession' // For now let's not even ask for the name
 
 
 /**
@@ -286,7 +283,8 @@ const session_auth = async (connection) => {
             new Promise(async (done) => {
 
                 let cookieManager = new CookieManager();
-                SESSION_COOKIE_NAME ||= await connection.$session.getSessionCookieName();
+                // For now, let's not ask for the cookie name. Let's hard-code the default value
+                // SESSION_COOKIE_NAME ||= await connection.$session.getSessionCookieName();
 
 
                 let auth = await connection.$session.sessionAuth({
@@ -294,6 +292,8 @@ const session_auth = async (connection) => {
                 });
 
                 cookieManager.setCookie(auth.cookieName, auth.cookieValue, { expires: auth.expires });
+
+                pending_session_auth_promise = undefined;
 
                 clearTimeout(auth_timeout_key)
                 done(auth.cookieValue)
@@ -312,7 +312,7 @@ const session_auth = async (connection) => {
 
 
 /**
- * @type {rpc.Public}
+ * @type {import('./types.js').AggregateRPCTransform<rpc.Public>}
  */
 let hcRpc = window.hcRpc = new AggregateRPCProxy(map);
 

@@ -9,3 +9,5 @@ import hcRpc from "./aggregate-rpc.mjs";
 
 /** @deprecated. Use ./aggregate-rpc.mjs not .js */
 export default hcRpc
+
+console.warn(`This module is deprecated. Import ./aggregate-rpc.mjs`)

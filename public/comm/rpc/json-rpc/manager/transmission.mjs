@@ -173,12 +173,13 @@ export default class TransmissionManager {
                     for (const event of events) {
                         this.manager.removeEventListener(`${event}-${object.id}`, cleanup)
                     }
+                    this[PENDING_CALLS] = this[PENDING_CALLS].filter(x => x !== object.id)
 
                 }
 
 
                 for (const event of events) {
-                    this.manager.addEventListener(`${event}-${object.id}`, cleanup, { once: true })
+                    this.manager.addEventListener(`${event}-${object.id}`, cleanup, { once: true, cleanup })
                 }
 
 
@@ -263,7 +264,7 @@ export default class TransmissionManager {
                 }
 
                 for (const event of events) {
-                    this.manager.addEventListener(`${event}-${object.id}`, cleanup, { once: true })
+                    this.manager.addEventListener(`${event}-${object.id}`, cleanup, { once: true, cleanup })
                 }
                 setTimeout(reject, TransmissionManager.expectedMethodTimeRemote)
 
@@ -408,15 +409,22 @@ export default class TransmissionManager {
 
 
             this.manager.addEventListener(`loop-request-${id}`, afterDestroy)
-            //Keep the after-destroy response only for 60s
+            //Keep the destroy response only for 60s
             setTimeout(() => this.manager.removeEventListener(`loop-request-${id}`, afterDestroy), 60_000)
-        }
-        this.manager.addEventListener(`loop-request-${id}`, respondLoop)
-        let autoDestroyTimeout;
-        const autoDestroy = () => {
+
+            // And after destroy, cancel any auto-destroy plans
             clearTimeout(autoDestroyTimeout)
-            autoDestroyTimeout = setTimeout(destroy, 24 * 60 * 60 * 1000)
+
+            // Also, cleanup properly
+            this.manager.json_rpc.removeEventListener('destroy', destroy)
         }
+
+        this.manager.addEventListener(`loop-request-${id}`, respondLoop)
+
+        // auto-destroy after 24 hours
+        let autoDestroyTimeout = setTimeout(destroy, 24 * 60 * 60 * 1000)
+
+        this.manager.json_rpc.addEventListener('destroy', destroy)
 
 
     }

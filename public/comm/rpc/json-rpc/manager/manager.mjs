@@ -8,9 +8,10 @@
 import JSONRPC from "../json-rpc.mjs";
 import TransmissionManager from "./transmission.mjs";
 import uuid from '../../../uuid/v4.js'
+import CleanEventTarget from "../clean-event-target.mjs";
 
 
-export class JSONRPCManager extends EventTarget {
+export class JSONRPCManager extends CleanEventTarget {
 
 
     /**
@@ -23,6 +24,10 @@ export class JSONRPCManager extends EventTarget {
         this.json_rpc = json_rpc
 
         this.transmission = new TransmissionManager(this)
+
+        this.json_rpc.addEventListener('destroy', () => {
+            this.cleanup()
+        })
     }
 
 
@@ -47,7 +52,13 @@ export class JSONRPCManager extends EventTarget {
 
 
             for (let i = 0; i < parts.length; i++) {
-                method = method?.[parts[i]]
+                if (i == 0 && parts[i] === '$rpc') {
+                    method = this.json_rpc.$rpc
+                    lastPart = this.json_rpc
+                } else {
+                    method = method?.[parts[i]]
+                }
+
                 if (i < parts.length - 1) {
                     lastPart = lastPart?.[parts[i]]
                 }
@@ -163,12 +174,6 @@ export class JSONRPCManager extends EventTarget {
                                     cleanup()
                                 };
 
-                                //Let's wait for reply to this packet
-                                manager.addEventListener(`loop-result-${id}`,
-                                    onLoopResult,
-                                    { once: true }
-                                );
-
                                 let timeout = setTimeout(() => {
                                     reject(new Error(`Timeout in loop`))
                                     cleanup()
@@ -178,6 +183,13 @@ export class JSONRPCManager extends EventTarget {
                                     clearTimeout(timeout)
                                     manager.removeEventListener(`loop-result-${id}`, onLoopResult)
                                 }
+
+                                //Let's wait for reply to this packet
+                                manager.addEventListener(`loop-result-${id}`,
+                                    onLoopResult,
+                                    { once: true, cleanup }
+                                );
+
 
                             })
 

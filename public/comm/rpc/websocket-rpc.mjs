@@ -12,6 +12,8 @@ import * as uuidAll from '../uuid/index.js'
 const uuid = uuidAll.v4
 
 
+const reconnect_promise = Symbol()
+
 export default class ClientJSONRPC extends JSONRPC {
 
 
@@ -25,8 +27,7 @@ export default class ClientJSONRPC extends JSONRPC {
 
         this.socket = ws;
 
-        /** @type {function(('reconnect'), function(CustomEvent), AddEventListenerOptions)} */ this.addEventListener
-
+        /** @type {(event: "destroy"|"reinit"|"reconnect", cb: (event: CustomEvent)=> void )=> void} */ this.addEventListener
 
     }
     set socket(socket) {
@@ -78,8 +79,8 @@ export default class ClientJSONRPC extends JSONRPC {
         socket.onclose = () => {
             //Reconnect if and only if the socket is still our socket
             if (this.socket === socket) {
-                this.reconnect()
                 this.socket.onclose = undefined; //Prevent this recovery method from happening again
+                this.reconnect()
             }
         }
         this.__socket__ = socket;
@@ -87,40 +88,49 @@ export default class ClientJSONRPC extends JSONRPC {
 
     reconnect() {
 
-        if (1) {
-            return console.log(`reconnection disabled!`)
+        if (this[reconnect_promise]) {
+            return this[reconnect_promise]
         }
 
+
+        let old_socket_buffer = []
+
+        //But, before reconnecting, intercept the messages from the old socket, so that once the new socket becomes created, the messages will be sent over
+        let old_socket = this.socket
+
+
+        old_socket.onmessage = (ev) => {
+            new GrowRetry(() => {
+                if (old_socket === this.socket) {
+                    //If the same socket via which the data was sent (ev.target) is the same as the current socket (this.socket), 
+                    //then we have not yet reconnected 
+                    console.warn(`Not yet connected`)
+                    old_socket_buffer.push(ev.data)
+                } else {
+                    //Else, the reconnection has already happened, so we can forward the data
+                    // this.socket.send(ev.data)
+                    console.warn(`This message `, ev.data, ` might be lost forever`)
+                }
+            }, {
+                maxTime: 10_000,
+                startTime: 100,
+                factor: 5
+            })
+        }
+
+
+        delete this.__socket__;
+
+
+
         //Reconnect exponentially
-        return new GrowRetry(async () => {
+        return this[reconnect_promise] = new GrowRetry(async () => {
+
             //Fortunately, when this.socket is assigned, the whole setup process (setting this.ondata, this.onclose, this.onmessage) will happen again
-
-            //But, before reconnecting, intercept the messages from the old socket, so that once the new socket becomes created, the messages will be sent over
-            let old_socket = this.socket
-            let old_socket_buffer = []
-            delete this.__socket__;
-
-            old_socket.onmessage = (ev) => {
-                new GrowRetry(() => {
-                    if (old_socket === this.socket) {
-                        //If the same socket via which the data was sent (ev.target) is the same as the current socket (this.socket), 
-                        //then we have not yet reconnected 
-                        console.warn(`Not yet connected`)
-                        old_socket_buffer.push(ev.data)
-                    } else {
-                        //Else, the reconnection has already happened, so we can forward the data
-                        // this.socket.send(ev.data)
-                        console.warn(`This message `, ev.data, ` might be lost forever`)
-                    }
-                }, {
-                    maxTime: 30_000,
-                    startTime: 100,
-                    factor: 5
-                })
-            }
             this.socket = await ClientJSONRPC.socketConnect(old_socket.url)
             console.log(`Reconnection successful!! ${this.socket.url}`)
             this.dispatchEvent(new CustomEvent('reconnect'))
+            delete this[reconnect_promise]
         }).execute()
     }
     /** @returns {WebSocket} */
@@ -176,51 +186,3 @@ export default class ClientJSONRPC extends JSONRPC {
     }
 
 }
-
-const locked = Symbol('object Lock!')
-
-class Locker {
-
-    constructor(object) {
-        this.object = object
-        if (!object) {
-            return console.trace(`How can object be null ?`)
-        }
-    }
-    async acquireLock() {
-
-
-        await new Promise(x => {
-            const interval = setInterval(() => {
-                if (!this.object) {
-                    return clearInterval(interval)
-                }
-                if (this.object[locked] !== true) {
-                    this.object[locked] = true;
-                    clearInterval(interval);
-                    x();
-                }
-            }, 1)
-        })
-
-
-
-        this.object[locked] = true
-
-        return {
-            release: () => {
-                this.object[locked] = false;
-            }
-        }
-    }
-
-    static async lock(object) {
-        return new Locker(object).acquireLock()
-    }
-    static forceRelease(object) {
-        object[locked] = false;
-    }
-
-}
-
-
