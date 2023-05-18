@@ -73,7 +73,9 @@ export class BackendHandler {
                         if (platform.type === 'faculty') { //If FacultyPlatform
                             map = await platform.base.channel.remote.errors.getMap()
                         } else {
-                            map = platform.errors.map
+                            if (!(map = platform.errors?.map)) {
+                                return
+                            }
                         }
 
                         this.map = map
@@ -93,7 +95,7 @@ export class BackendHandler {
 
     resolve(message) {
         if (!this.engine) {
-            console.trace(`Could not resolve error \n${message.stack||message}\n since error engine is not yet initialzed`)
+            console.trace(`Could not resolve error \n${message.stack || message}\n since error engine is not yet initialzed`)
             return message;
         }
         return this.engine.resolve(message)
