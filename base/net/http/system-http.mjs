@@ -6,13 +6,11 @@ over http, that are directly associated with the base platform
 
 import { SocketPublicJSONRPC } from "../../../comm/rpc/socket-public-rpc.mjs";
 import utils from "../../../comm/utils/utils.mjs";
-import { HTTPServer } from "../../../http/server.js";
-import { StrictFileServer } from "../../../http/strict-file-server.js";
 import { SystemPublicMethods } from "../rpc/api.mjs";
 
 
 
-export class SystemHTTP extends HTTPServer {
+export default class SystemHTTP extends HTTPServer {
 
 
     /**

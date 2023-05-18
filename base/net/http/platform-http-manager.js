@@ -5,13 +5,11 @@ This module takes care of the general processing involved when a client makes a 
 This general processing involves aspects like handling websockets
 */
 
-import { SystemHTTP } from './system-http.mjs';
 import tls from 'node:tls'
 
 
 import platform_credentials from '../../../secure/credentials.mjs'
 
-import { PlatformHTTPServer } from './platform-http.mjs';
 
 export class BasePlatformHTTPManager {
 
@@ -32,7 +30,7 @@ export class BasePlatformHTTPManager {
         let port = this.http_port; //Heroku and other hosting platforms tell us which port to bind to
 
         //The default HTTP server that everthing goes through
-        this.http_server = new PlatformHTTPServer(this.base, port);
+        this.http_server = new (await import('./platform-http.mjs')).default(this.base, port);
         this.http_server.isHalted = true;
 
         //The TLS server that forwards all requests back to the default HTTP server
@@ -44,7 +42,7 @@ export class BasePlatformHTTPManager {
 
 
         //An HTTP server responsible for things like errorMap
-        this.system_http = await SystemHTTP.new(this)
+        this.system_http = await (await import('./system-http.mjs')).default.new(this)
 
 
         //Now Log

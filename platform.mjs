@@ -23,6 +23,15 @@ export class Platform {
 
         /** @type {{plaintext: string, secure:string}} */ this.server_domains
 
+        this.preinit()
+
+    }
+
+    async preinit() {
+
+        await import('./util/util.js').then(x => {
+            global.soulUtils = x.default
+        })
     }
 
 
@@ -30,7 +39,7 @@ export class Platform {
      * This method is called by sub-classes to completely initialize themselves
      */
 
-    init() {
+    async init() {
 
 
         global.platform = this;
@@ -38,9 +47,8 @@ export class Platform {
         //console.log(`Platform init done`)
 
         //Now, make some classes global
-        import('./http/server.js').then(x => {
-            global.HTTPServer = x.HTTPServer
-        });
+        global.HTTPServer = (await import('./http/server.mjs')).HTTPServer;
+
         import('./errors/backend/exception.js').then(x => {
             global.Exception = x.Exception
         });
@@ -78,9 +86,6 @@ export class Platform {
             global.fsUtils = x.default
         });
 
-        import('./util/util.js').then(x => {
-            global.soulUtils = x.default
-        })
 
 
 

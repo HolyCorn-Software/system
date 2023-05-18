@@ -146,6 +146,9 @@ export class BasePlatform extends Platform {
             }
         })
 
+        await super.init()
+
+
         this.errors = new BasePlatformErrorAPI(this);
 
         this.faculties = new BasePlatformFacultiesAPI(this);
@@ -160,7 +163,7 @@ export class BasePlatform extends Platform {
 
         this.server_domains = server_domains
 
-        super.init()
+
 
 
         this.lang = new LanguageController()

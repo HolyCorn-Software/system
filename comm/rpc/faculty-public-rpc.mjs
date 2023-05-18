@@ -3,8 +3,6 @@ Copyright 2021 HolyCorn Software
 This module represents the link between a Faculty and a public client getting access to faculty via RPC on web sockets.
 */
 
-import { HTTPServer } from '../../http/server.js';
-import { FacultyPlatform } from '../../lib/libFaculty/platform.mjs';
 import { SocketPublicJSONRPC } from './socket-public-rpc.mjs';
 
 

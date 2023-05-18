@@ -86,6 +86,17 @@ class JSONRPCRemoteObject {
 
             apply: function (target, _this, args) {
 
+                if (methodName === 'toJSON') {
+                    console.trace(`Why this toJSON()?`)
+                    return undefined
+                }
+
+                if (methodName.endsWith('.apply')) {
+                    // To make this compatible with babeljs, which takes care of older browsers
+                    methodName = methodName.split('.apply')[0]
+                    args = args[1]
+                }
+
                 const stack =
 
                     //Then the stack trace from calling this method

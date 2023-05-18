@@ -3,11 +3,13 @@ Copyright 2021 HolyCorn Software
 This module is used to create a file server that exposes only specific files and folders
 */
 
-import { HTTPServer } from "./server.js";
+import { HTTPServer } from "./server.mjs";
 import { fileURLToPath } from 'url'
 import libPath from 'path'
-import node_static from 'node-static'
 import fs from 'node:fs';
+import CompatFileServer from "./compat-server/server.mjs";
+
+const compatServer = Symbol()
 
 export class StrictFileServer {
 
@@ -58,15 +60,17 @@ export class StrictFileServer {
         this.whitelist = []
 
         this[path_symbol] = libPath.dirname(fileURLToPath(importURL))
-        this[refFolder_symbol] = refFolder = libPath.resolve(this[path_symbol], refFolder)
+
+        refFolder = libPath.resolve(this[path_symbol], refFolder)
         this[urlPath_symbol] = urlPath
         this[importURL_symbol] = importURL
 
 
+        this[compatServer] = new CompatFileServer()
+
+
 
         //Then the server that'll serve the files needed
-
-        const static_server = new node_static.Server(refFolder)
 
 
         http.route({
@@ -86,34 +90,46 @@ export class StrictFileServer {
                     res.setHeader('Access-Control-Allow-Origin', '*')
                 }
 
-                //Else, all good
-                static_server.serve(req, res)
+                if (CompatFileServer.fileIsJS(path)) {
+                    this[compatServer].getCompatFile(path).then((compatPath) => {
+                        HTTPServer.serveFile(compatPath, res, path)
+                    })
+                    return true;
+                } else {
+                    HTTPServer.serveFile(path, res)
+                    return true
+                }
             }
         })
 
     }
+
 
     /**
      * 
      * @param  {...string} paths A list of paths or files that clients will be able to access.
      */
     add(...paths) {
-        for (var path of paths) {
-            let resolvedpath = libPath.resolve(this[path_symbol], path);
-            try {
-                fs.statSync(resolvedpath)
-            } catch (e) {
-                console.trace(`Warning!\nThe path '${resolvedpath}' added as '${path}' to the static file server operating at url '${this[urlPath_symbol]}' from the module '${this[importURL_symbol]}' based on the folder '${this[refFolder_symbol]}' is not working.  `)
+        for (const path of paths) {
+            const resolvedpath = libPath.resolve(this[path_symbol], path);
+            if (this.whitelist.findIndex(x => x === resolvedpath) !== -1) {
+                continue
             }
+
+            if (!fs.existsSync(resolvedpath)) {
+                console.trace(`Warning!\nThe path '${resolvedpath}' added as '${path}' to the static file server operating at url '${this[urlPath_symbol]}' from the module '${this[importURL_symbol]}' based on the folder '${this[path_symbol]}' is not working.  `)
+            }
+
             this.whitelist.push(resolvedpath)
+
+            this[compatServer].watch(resolvedpath)
+
         }
     }
-
 
 }
 
 
 const importURL_symbol = Symbol(`StrictFileServer.prototype.importURL`)
 const path_symbol = Symbol(`StrictFileServer.prototype.path_symbol`)
-const refFolder_symbol = Symbol(`StrictFileServer.prototype.refFolder_symbol`)
 const urlPath_symbol = Symbol(`StrictFileServer.prototype.urlPath_symbol`)

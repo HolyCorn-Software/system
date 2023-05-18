@@ -4,7 +4,7 @@
  */
 
 import _FunctionProxy from "./util/function-proxy.mjs";
-import { HTTPServer as _HTTPServer } from "system/http/server.js";
+import { HTTPServer as _HTTPServer } from "system/http/server.mjs";
 import { StrictFileServer as _StrictFileServer } from "system/http/strict-file-server.js";
 import _FilesCheck from "./util/files-check.mjs";
 import _fsUtils from "./util/fsUtils.mjs";

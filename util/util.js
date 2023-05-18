@@ -3,10 +3,10 @@
  * This module provides commonly used functionalities
  */
 
-import { SuperRequest } from "../lib/nodeHC/http/super-request.js";
 import vm from 'node:vm'
 import exclusiveUpdate from "./exclusive-update.mjs";
 import SimpleCache from "./simple-cache.mjs";
+import recursePath from "./recursive-path.mjs";
 
 /**
  * 
@@ -337,5 +337,6 @@ export default {
     getCaller,
     cleanPath,
     exclusiveUpdate,
-    SimpleCache: SimpleCache
+    SimpleCache: SimpleCache,
+    recursePath
 }

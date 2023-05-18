@@ -28,17 +28,20 @@ export class BasePlatformHTTPAPI {
         this.webSocketAPI = new WebSocketsAPI(platform);
         this.sessionAPI = new BaseSessionStorageAPI()
     }
+    /** @type {import('../../../platform.mjs').BasePlatform} */
     #platform
 
     /**
+     * @this BasePlatformHTTPAPI
+     * @param {BasePlatformHTTPAPI} this
      * This method is used to forward some of the platform (BasePlatform)'s HTTP requests to a remote destination
      * This remote destination is intended to be a faculty, reason why rpcPort is a parameter
     */
-    course = (function (faculty, { serverPath, clientPort, clientPath }) {
+    course(faculty, { serverPath, clientPort, clientPath }) {
         console.log(`Routing ${serverPath.blue} to ${clientPath} on an http server in ${faculty.descriptor.label.blue} running on port ${clientPort.toString().blue} `)
         this.#platform.http_manager.http_server.course({ localPath: serverPath, remoteURL: `http://127.0.0.1:${clientPort}${clientPath}` });
         (this.map[faculty.descriptor.name] ||= []).push(serverPath)
-    }).bind(this)
+    }
 
 
     /**
