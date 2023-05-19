@@ -1,3 +1,3 @@
 .
 
-Switched to the latest version of html-hc, with bug fixes
+Minor http bug fix
