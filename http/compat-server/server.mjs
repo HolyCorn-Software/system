@@ -238,7 +238,7 @@ export default class CompatFileServer {
             // If something modified the file before us, let's rethink the need to transpile
             if (fs.existsSync(compatPath)) {
                 const nwStat = await fs.promises.stat(compatPath)
-                if ((nwStat.size > 0) || (nwStat.mtimeMs >= info.stat.mtimeMs)) {
+                if ((nwStat.size > 0) || (nwStat.mtimeMs >= fStat.mtimeMs)) {
                     return
                 }
             }

@@ -1,3 +1,3 @@
 .
 
-Minor http bug fix
+Fixed minor bug
