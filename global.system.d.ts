@@ -9,6 +9,9 @@ import { StrictFileServer as _StrictFileServer } from "system/http/strict-file-s
 import _FilesCheck from "./util/files-check.mjs";
 import _fsUtils from "./util/fsUtils.mjs";
 import _soulUtils from './util/util.js'
+import _JSONRPC from "./comm/rpc/json-rpc.mjs";
+
+
 
 
 declare global {
@@ -26,5 +29,7 @@ declare global {
     let fsUtils = _fsUtils
 
     let soulUtils = _soulUtils
+
+    class JSONRPC extends _JSONRPC { }
 
 }

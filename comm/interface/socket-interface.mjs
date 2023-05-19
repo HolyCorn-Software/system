@@ -5,8 +5,6 @@ Common Interface between sockets. Useful for connecting BasePlatform to BasePlat
 
 import { default as net } from 'net'
 import { CommInterface } from './interface.mjs';
-import JSONRPC from '../rpc/json-rpc.mjs';
-
 
 export class SocketCommInterface extends CommInterface {
     //Common interface that defines communications between client and server

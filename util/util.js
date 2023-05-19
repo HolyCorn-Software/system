@@ -222,14 +222,14 @@ export let callWithRetries = (func, { label, maxTries = 5, callInterval = 5000, 
             })
         }
 
-        let lastError = new Exception(`Timeout performing action ${label} within ${maxTries * callInterval / 1000}s time limit`, { code: 'error.system.unplanned' })
+        let lastError = new Error(`Timeout performing action ${label} within ${maxTries * callInterval / 1000}s time limit`)
 
         while (maxTries-- > 0) {
             try {
                 resolve(await call())
                 break;
             } catch (e) {
-                lastError = new Exception(`${label} failed due to ,\n${e.stack || e} retrying in ${callInterval / 1000}s\n${stack}`, { code: 'error.system.unplanned' })
+                lastError = new Error(`${label} failed due to ,\n${e.stack || e} retrying in ${callInterval / 1000}s\n${stack}`)
             }
             await new Promise(r => setTimeout(r, callInterval))
         }
@@ -320,6 +320,7 @@ export function substituteText(string, data) {
 
 /**
  * This method cleans path information, by removing some things such as duplicated slashes
+ * @deprecated Use (node:path).normalize()
  * @param {string} path 
  * @returns {string}
  */

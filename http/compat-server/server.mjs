@@ -21,6 +21,7 @@ const getCompatFilePath = Symbol()
 const watchPathForTranspile = Symbol()
 const transpileTasks = Symbol()
 const watched = Symbol()
+const getParentPath = Symbol()
 
 export default class CompatFileServer {
 
@@ -100,7 +101,7 @@ export default class CompatFileServer {
                 return
             }
 
-            this.transpile(path, true).catch(e => {
+            this.transpile(path).catch(e => {
                 console.error(`The file ${path} changed, but could not be transpiled\n`, e);
             })
         }
@@ -132,17 +133,26 @@ export default class CompatFileServer {
      * @returns {string}
      */
     [getCompatFilePath](path) {
+        return libPath.normalize(`${this[tmp]}/${libPath.relative(this[getParentPath](path) || process.cwd(), path)}.compat.babel`)
+    }
 
+
+    /**
+     * This method gets the parent path of this path, according to the list
+     * of directories the CompatFileServer is watching
+     * @param {string} path 
+     * @returns {string}
+     */
+    [getParentPath](path) {
         let found;
         for (const item of this[watched]) {
             const relative = libPath.relative(item, path);
             if (!/\.\.\//.test(relative)) {
-                found = item
+                found = item;
             }
         }
-        return libPath.normalize(`${this[tmp]}/${libPath.relative(found || process.cwd(), path)}.compat.babel`)
+        return found;
     }
-
 
     /**
      * This method transpiles a javascript file, and saves the output to another file
@@ -155,8 +165,8 @@ export default class CompatFileServer {
 
         const realPath = this[getCompatFilePath](path)
 
-        if (fs.statSync(realPath).size == 0) {
-            console.log(`How can ${realPath} be of size zero?`)
+        if ((await fs.promises.stat(realPath)).size == 0) {
+            console.warn(`How can ${realPath} be of size zero?\nWhen the content is an array of `, (await fs.promises.readFile(realPath)).length, ` bytes`)
         }
         return realPath
     }
@@ -166,11 +176,10 @@ export default class CompatFileServer {
 
     /**
      * This method transpiles files in a path, or a single file
-     * @param {string} path 
-     * @param {boolean} force If true, the transpiling will happen, even if it alread did
+     * @param {string} path
      * @returns {Promise<void>}
      */
-    async transpile(path, force) {
+    async transpile(path) {
 
         if (!fs.existsSync(path)) {
             return console.log(`The path to be transpiled ${path}, doesn't exist`)
@@ -194,19 +203,25 @@ export default class CompatFileServer {
 
 
 
+        /**
+         * This method transpiles a single file immediately
+         * @param {string} path 
+         * @param {fs.Stats} fStat 
+         * @returns {Promise<void>}
+         */
         const transpileOne = async (path, fStat) => {
 
-            if (!CompatFileServer.fileIsJS(path)) {
+            if (!CompatFileServer.fileIsJS(path) || (fStat.size === 0)) {
                 return
             }
 
             const compatPath = this[getCompatFilePath](path)
             const isNew = await ensureFile(compatPath)
-            fStat ||= fs.promises.stat(path)
+            fStat ||= await fs.promises.stat(path)
 
 
 
-            if (!isNew && (await fs.promises.stat(compatPath)).mtimeMs > fStat.mtimeMs) {
+            if (!isNew && (await fs.promises.stat(compatPath)).mtimeMs >= fStat.mtimeMs) {
                 return
             }
 
@@ -220,17 +235,83 @@ export default class CompatFileServer {
                     ]
                 }
             )
-            await fs.promises.writeFile(compatPath, data.code)
+            // If something modified the file before us, let's rethink the need to transpile
+            if (fs.existsSync(compatPath)) {
+                const nwStat = await fs.promises.stat(compatPath)
+                if ((nwStat.size > 0) || (nwStat.mtimeMs >= info.stat.mtimeMs)) {
+                    return
+                }
+            }
+            await new Promise((resolve, reject) => {
+                fs.writeFile(compatPath, data.code, (error, data) => {
+                    if (error) {
+                        return reject(error)
+                    }
+                    const check = () => {
+                        if ((fs.statSync(compatPath).size > 0)) {
+                            clearInterval(interval)
+                            resolve()
+                            return true
+                        }
+                    }
+                    let interval
+                    if (!check()) {
+                        interval = setInterval(check, 100)
+                    }
+                })
+            })
+            if ((await fs.promises.stat(compatPath)).size === 0) {
+                console.log(`We ourselves finished transpiling, and the size was still zero`)
+            }
         }
 
 
 
-        const dirTranspile = async () => {
+        /**
+         * This method transpiles an entire directory
+         * @param {string} path 
+         * @returns {Promise<void>}
+         */
+        const dirTranspile = async (path) => {
             await remoteTranspile(path, this[tmp])
         }
 
         try {
-            await (this[transpileTasks][path] = stat.isFile() ? transpileOne(path, stat) : dirTranspile())
+            await (this[transpileTasks][path] = (async () => {
+                if (stat.isFile()) {
+                    const parentPath = this[getParentPath](path);
+                    const parentTranspilePromise = this[transpileTasks][parentPath]
+
+                    if (parentTranspilePromise) {
+                        // Let's give the part of the parent task,
+                        // involved with transpiling this particular file 5s, or less to complete;
+                        // else, we prioritize this single task
+                        await Promise.race(
+                            [
+                                new Promise((resolve, reject) => {
+                                    const compatPath = this[getCompatFilePath](path)
+                                    let interval
+                                    const check = () => {
+                                        if (fs.existsSync(compatPath)) {
+                                            clearInterval(interval)
+                                            resolve()
+                                            return true
+                                        }
+                                    }
+                                    if (!check()) {
+                                        interval = setInterval(check, 250)
+                                    }
+                                }),
+                                new Promise(x => setTimeout(x, 5_000))
+                            ]
+                        )
+
+                    }
+                    await transpileOne(path, stat)
+                } else {
+                    await dirTranspile(path)
+                }
+            })());
             delete this[transpileTasks][path]
         } catch (e) {
             delete this[transpileTasks][path]

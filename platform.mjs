@@ -32,6 +32,8 @@ export class Platform {
         await import('./util/util.js').then(x => {
             global.soulUtils = x.default
         })
+
+        global.JSONRPC = (await import('./comm/rpc/json-rpc.mjs')).default
     }
 
 

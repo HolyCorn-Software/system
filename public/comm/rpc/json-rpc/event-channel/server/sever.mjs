@@ -154,5 +154,9 @@ export default class EventChannelServer {
 
     }
 
+    static get PublicMethods(){
+        return EventChannelPublicMethods
+    }
+
 }
 

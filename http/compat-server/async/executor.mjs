@@ -22,7 +22,7 @@ async function transpile(path, compatRoot) {
 
     await recursePath(path, async (info) => {
 
-        if (!CompatFileServer.fileIsJS(info.path)) {
+        if (!CompatFileServer.fileIsJS(info.path) || info.stat.size === 0) {
             return
         }
 
@@ -34,7 +34,7 @@ async function transpile(path, compatRoot) {
             await fs.promises.mkdir(libPath.dirname(compatPath), { recursive: true })
             isNew = true
         }
-        if (!isNew && (await fs.promises.stat(compatPath)).mtimeMs > info.stat.mtimeMs) {
+        if (!isNew && ((await fs.promises.stat(compatPath)).mtimeMs >= info.stat.mtimeMs)) {
             return
         }
         const data = await babel.transformFileAsync(info.path,
@@ -47,7 +47,7 @@ async function transpile(path, compatRoot) {
                 ]
             }
         )
-        await fs.promises.writeFile(compatPath, data.code)
+        fs.writeFileSync(compatPath, data.code)
 
     }, { sequential: false })
 }

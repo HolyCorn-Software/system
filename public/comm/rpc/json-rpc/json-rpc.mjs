@@ -13,6 +13,7 @@ import JSONRPCDefaultStub from './stub.mjs';
 import { v4 as uuid } from '../../uuid/index.js'
 import CleanEventTarget from './clean-event-target.mjs';
 import EventChannelServer from './event-channel/server/sever.mjs';
+import EventChannelClient from './event-channel/client.mjs';
 
 /**
  * Supports bi-directional JSON requests
@@ -186,7 +187,7 @@ export default class JSONRPC extends CleanEventTarget {
     static get EventChannel() {
         return {
             Server: EventChannelServer,
-            client: {}
+            Client: EventChannelClient
         }
     }
 

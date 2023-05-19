@@ -9,12 +9,9 @@ This class enables a Faculty to set up a server socket to locally listen for oth
 import net from 'net';
 import { EventEmitter } from 'events';
 import { SocketCommInterface } from '../interface/socket-interface.mjs';
-import JSONRPC from './json-rpc.mjs';
 import fs from 'fs'
 import { callWithRetries } from '../../util/util.js';
-import { faculty_platform_symbol } from '../../lib/libFaculty/faculty-connection-manager.mjs';
-import JSONRPCRemote from '../../public/comm/rpc/json-rpc/remote.mjs';
-
+import JSONRPC from './json-rpc.mjs';
 
 /**
  * @typedef {function(('connect'))} FacultyFacultyRPCServerEventsFunction
@@ -37,10 +34,10 @@ export class FacultyFacultyRPCServer extends EventEmitter {
         this.serverSocket.on('connection', async (socket) => {
 
             try {
-                let _interface = new FacultyFacultyInterface(socket, faculty_connection_manager[faculty_platform_symbol])
+                let _interface = new FacultyFacultyInterface(socket, FacultyPlatform.get())
                 await _interface.handshake()
                 this.emit('connect', _interface) //To the listeners. Let them know a new client connected
-                console.log(`${faculty_connection_manager[faculty_platform_symbol].descriptor.label.green} received a connection from ${_interface.rpc.meta.remoteDescriptor.label.blue}`);
+                console.log(`${FacultyPlatform.get().descriptor.label.green} received a connection from ${_interface.rpc.meta.remoteDescriptor.label.blue}`);
 
             } catch (e) {
                 console.log(`A new faculty tried to connect, but failed\n`, e)
@@ -97,11 +94,11 @@ export class FacultyFacultyRPCServer extends EventEmitter {
  */
 export class FacultyFacultyInterface {
 
-    constructor(socket, faculty_platform) {
+    constructor(socket) {
 
         /** @type {FacultyFacultyJSONRPC} */ this.rpc
         Reflect.defineProperty(this, 'rpc', {
-            value: new FacultyFacultyJSONRPC(faculty_platform),
+            value: new FacultyFacultyJSONRPC(),
             enumerable: true
         });
 
@@ -119,14 +116,11 @@ export class FacultyFacultyInterface {
             enumerable: true
         })
 
-        /** @type {DataType & JSONRPCRemote} */ this.remote
+        /** @type {object} */ this.remote
         /** @type {import('system/lib/libFaculty/types.js').FacultyDescriptor} */ this.descriptor
 
         /** @type {boolean} */ this.received_handshake
         /** @type {boolean} */ this.sent_handshake
-
-        /** @type {import('../../lib/libFaculty/platform.mjs').FacultyPlatform} */
-        this[faculty_platform_symbol] = faculty_platform
 
         const original_stub = Reflect.getOwnPropertyDescriptor(this.rpc, 'stub');
 
@@ -201,7 +195,7 @@ export class FacultyFacultyInterface {
 
             let doDescribe = async () => {
                 try {
-                    await this.remote.$faculty_describe(this[faculty_platform_symbol].descriptor)
+                    await this.remote.$faculty_describe(FacultyPlatform.get().descriptor)
                     this.sent_handshake = true
                 } catch (e) {
                     failure(e)
@@ -211,7 +205,7 @@ export class FacultyFacultyInterface {
 
             try {
                 await callWithRetries(doDescribe, {
-                    label: `Sending description of ${this[faculty_platform_symbol].descriptor.label} to another faculty`,
+                    label: `Sending description of ${FacultyPlatform.get().descriptor.label} to another faculty`,
                     callInterval: 200,
                     maxTries: 50,
                     timeout: 500
@@ -242,10 +236,9 @@ export class FacultyFacultyRPCClient {
      *      local:string,
      *      remote:{port:Number, host:string}
      * }} credentials 
-     * @param {import('../../lib/libFaculty/platform.mjs').FacultyPlatform} faculty_platform
      * @returns {SocketCommInterface}
      */
-    static async connect(credentials, faculty_platform) {
+    static async connect(credentials) {
         let socket = new net.Socket();
 
         try {
@@ -267,7 +260,7 @@ export class FacultyFacultyRPCClient {
                 timeout: 100
             })
 
-            let _interface = new FacultyFacultyInterface(socket, faculty_platform)
+            let _interface = new FacultyFacultyInterface(socket)
             await _interface.handshake()
 
             return _interface;
@@ -365,19 +358,14 @@ class FacultyFacultyRemoteObject {
  * It provides information about the faculty on the other end that is using RPC
  */
 export class FacultyFacultyJSONRPC extends JSONRPC {
-
-    /**
-     * @param {import('../../lib/libFaculty/platform.mjs').FacultyPlatform} faculty_platform
-     */
-    constructor(faculty_platform) {
+    constructor() {
         super()
-        this.faculty_platform = faculty_platform
 
         /** @type {{remoteDescriptor:import('system/lib/libFaculty/types.js').FacultyDescriptor}} */
         this.meta
     }
     get stub() {
-        return this.faculty_platform.remote.internal
+        return (FacultyPlatform.get()).remote.internal
     }
     set stub(val) {
         //No modifications
