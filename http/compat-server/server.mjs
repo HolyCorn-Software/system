@@ -61,10 +61,11 @@ export default class CompatFileServer {
                 console.trace(`Warning!\nThe path '${path}', is not working.  `)
             }
 
-            this[watchPathForTranspile](path).catch(e => {
+            this[watchPathForTranspile](path).then(() => {
+                this[watched].push(path)
+            }).catch(e => {
                 console.error(`Error adding path ${path}\n`, e)
             })
-            this[watched].push(path)
         }
     }
 
@@ -81,9 +82,8 @@ export default class CompatFileServer {
         /** @type {chokidar.FSWatcher} */
         if (!this[watcher]) {
             this[watcher] = chokidar.watch(path);
-        } else {
-            this[watcher].add(path)
         }
+        this[watcher].add(path)
 
 
         // Transpile the current files we have in the path

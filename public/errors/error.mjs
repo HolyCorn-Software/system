@@ -47,7 +47,7 @@ export class CalculatedError extends Error {
 export function handle(error) {
     error = new CalculatedError(error);
 
-    
+
 
     new ErrorUI(error).show();
 
@@ -61,7 +61,7 @@ const on_error = (ev) => {
 
         const error = ev.error || ev.reason //Since we're handling both errors and rejections
 
-        let real_lines = (error.stack || error.message || error)?.split('\n').filter(x => !/<anonymous>/.test(x))
+        let real_lines = (error.stack || error.message || error)?.split('\n')?.filter(x => !/<anonymous>/.test(x))
 
         if (real_lines?.length < 2) {
             if (/EvalError.*side-effect.*debug-evaluate/) {
@@ -80,10 +80,10 @@ const on_error = (ev) => {
 
 export async function report_error_direct(error, tag = '') {
 
-    
+
     hcRpc.system.system.error.report(
         `${tag ? `${tag}:\n` : ''}
-        Error:\t${error.stack || error.message || error}
+        Error:\t${error?.stack || error?.message || error}
 
         location: ${window.location.href}
         origin: ${window.location.origin}
