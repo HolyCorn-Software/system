@@ -1,7 +1,5 @@
 .
 
-Updated to the latest version of html-hc featuring bug fixes
+Fixed minor bug preventing the compat-server from auto-updating compat code
 
-Fixed minor bug related to reporting errors
-
-Fixed minor bug that prevented compat-server from updating code
+Updated to the latest version of html-hc, featuring a bug fixes
