@@ -103,10 +103,6 @@ export default class RequestMap {
         for (const item in this[map]) {
             try {
                 if ((this[map][item].links ||= []).findIndex(x => x == url) !== -1) {
-
-                    if (/css/gi.test(url)) {
-                        console.log(`${item.cyan} is associated to ${url}`)
-                    }
                     this[map][item].version.grand = now
                 }
             } catch (e) {

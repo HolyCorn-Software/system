@@ -26,7 +26,7 @@ self.addEventListener('fetch', (event) => {
 
             const promise = (async () => {
 
-                if (/^\$bundle_cache/gi.test(request.url)) {
+                if (/^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) {
                     try {
                         return await fetch(request)
                     } catch (e) {
