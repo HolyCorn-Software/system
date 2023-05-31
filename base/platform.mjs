@@ -20,6 +20,10 @@ import util from 'util';
 import { BasePlatformHTTPManager } from "./net/http/platform-http-manager.js";
 import { BasePlatformErrorAPI } from "./errors.js";
 import LanguageController from "./lang/controller.mjs";
+import BaseBundleCacheAPI from "./net/http/bundle-cache/api.mjs";
+
+const startHTTP = Symbol()
+const init0 = Symbol()
 
 
 
@@ -88,7 +92,7 @@ export class BasePlatform extends Platform {
 
         }
 
-        let returns = await this.init0({ port, key: platform_credentials.tls_key, cert: platform_credentials.tls_cert, database_credentials: platform_credentials.database_config, http_port: new Number(process.env.HTTP_PORT).valueOf(), https_port: new Number(process.env.HTTPS_PORT).valueOf(), server_domains })
+        let returns = await this[init0]({ port, key: platform_credentials.tls_key, cert: platform_credentials.tls_cert, database_credentials: platform_credentials.database_config, http_port: new Number(process.env.HTTP_PORT).valueOf(), https_port: new Number(process.env.HTTPS_PORT).valueOf(), server_domains })
         setTimeout(() => this.events.emit('booted'), 3000)
         return returns;
     }
@@ -109,7 +113,9 @@ export class BasePlatform extends Platform {
      * @param {string} param0.server_domains.secure
      * 
      */
-    async init0({ port, key, cert, ca, database_credentials, http_port, https_port, server_domains } = {}) {
+    async [init0]({ port, key, cert, ca, database_credentials, http_port, https_port, server_domains } = {}) {
+
+        await this.waitForPreInit()
 
         if (!port || !key || !cert) {
             throw new Error(`Please pass the following parameters: 'port', 'key', 'cert', and (optionally) 'ca'`)
@@ -157,13 +163,12 @@ export class BasePlatform extends Platform {
         //Then the channel via which faculties can communicate back to the server
         this.faculty_remote_methods = new BaseToFacultyRemoteMethods(this)
 
-        await this.startHTTP(http_port, https_port);
+        await this[startHTTP](http_port, https_port);
+
         /** This is an api available to faculties that provides features related to HTTP */
         this.faculty_http_api = new BasePlatformHTTPAPI(this);
 
         this.server_domains = server_domains
-
-
 
 
         this.lang = new LanguageController()
@@ -175,10 +180,11 @@ export class BasePlatform extends Platform {
      * @param {number|undefined} http_port
      * @param {number|undefined} https_port
      */
-    async startHTTP(http_port = 4141, https_port = 4142) {
+    async [startHTTP](http_port = 4141, https_port = 4142) {
         let http_manager = new BasePlatformHTTPManager(this, { http_port, https_port })
         await http_manager.init()
         this.http_manager = http_manager;
+        this.events.addListener('booted', () => this.bundlecache = new BaseBundleCacheAPI())
     }
 
     async exit() {

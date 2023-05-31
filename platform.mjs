@@ -7,6 +7,7 @@ It is a store of multiple objects, that simplify the work of faculties
 */
 
 import { EventEmitter } from 'node:events'
+const preInitPromise = Symbol()
 
 /**
  * @typedef {function(('booted'|'exit'), function)} PlatformEventListenerFunction
@@ -23,8 +24,11 @@ export class Platform {
 
         /** @type {{plaintext: string, secure:string}} */ this.server_domains
 
-        this.preinit()
+        this[preInitPromise] = this.preinit()
 
+    }
+    async waitForPreInit() {
+        await this[preInitPromise]
     }
 
     async preinit() {

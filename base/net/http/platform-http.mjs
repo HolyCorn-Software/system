@@ -22,16 +22,4 @@ export default class PlatformHTTPServer extends HTTPServer {
         this.sessionStorage = new SessionStorage(this.base);
     }
 
-    /**
-     * 
-     * @param {import('../../../lib/nodeHC/http/super-request.js').SuperRequest} req 
-     * @param {import('../../../lib/nodeHC/http/super-response.js').SuperResponse} res 
-     * @returns {Promise<void>}
-     */
-    async serve(req, res) {
-        //Since we want better performance, we'll do the additional work asynchronous
-
-        return super.serve(...arguments);
-    }
-
 }

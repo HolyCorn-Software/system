@@ -98,7 +98,7 @@ export class BaseSessionStorageAPI {
         if (!(Platform.get() instanceof BasePlatform)) {
             throw new Exception(`There's a misconfiguration that caused the BaseSessionStorageAPI to be found running in an environment other than the BasePlatform`, { code: 'error.system.unplanned' })
         }
-        return BasePlatform.get().http_manager.http_server.sessionStorage
+        return BasePlatform.get().http_manager.platform_http.sessionStorage
     }
 
 }

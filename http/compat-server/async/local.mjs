@@ -15,7 +15,7 @@ const list = []
 export default function remoteTranspile(path, compatRoot) {
     const existing = list.findIndex(x => x.path === path)
     if (existing !== -1) {
-        return console.log(`Not double transpiling ${path}\nby caller\n${new Error().stack}\nBecause originally it came from\n${list[existing].stack}`)
+        return //console.log(`Not double transpiling ${path}\nby caller\n${new Error().stack}\nBecause originally it came from\n${list[existing].stack}`)
     }
     list.push({ path, stack: new Error().stack })
     return new Promise((resolve, reject) => {

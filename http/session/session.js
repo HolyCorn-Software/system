@@ -116,7 +116,7 @@ export class Session {
     static get sessionAPI() {
         const platform = Platform.get();
         if (platform instanceof BasePlatform) {
-            return platform.http_manager.http_server.sessionStorage
+            return platform.http_manager.platform_http.sessionStorage
         }
         if (platform instanceof FacultyPlatform) {
             return platform.base.channel.remote.http.sessionAPI

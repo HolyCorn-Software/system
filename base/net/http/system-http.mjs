@@ -4,9 +4,13 @@ This module brings together all the features available to client
 over http, that are directly associated with the base platform
 */
 
+import VersionReporter from "../../../http/bundle-cache/client/version-reporter.mjs";
 import { SocketPublicJSONRPC } from "../../../comm/rpc/socket-public-rpc.mjs";
 import utils from "../../../comm/utils/utils.mjs";
 import { SystemPublicMethods } from "../rpc/api.mjs";
+import { BasePlatform } from "../../../base/platform.mjs";
+import libPath from 'node:path'
+import libUrl from 'node:url'
 
 
 
@@ -23,9 +27,9 @@ export default class SystemHTTP extends HTTPServer {
 
         this.system_path = '/$/system/'
 
-        manager.http_server.course({
+        manager.platform_http.course({
             localPath: this.system_path,
-            remoteURL: `http://127.0.0.1:${this.port}/`
+            remoteURL: `http://0.0.0.0:${this.port}/`
         })
 
         this.route({
@@ -56,14 +60,28 @@ export default class SystemHTTP extends HTTPServer {
             }
         })
 
+        const publicDir = '../../../public/';
         //Since ES6 is universal, we simply share necessary libraries to the client
         new StrictFileServer({
-            http: this,
-            urlPath: `/static/`,
-            refFolder: '../../../public/'
+            http: manager.platform_http,
+            urlPath: `/$/system/static/`,
+            refFolder: publicDir,
+            cache: true
         }, import.meta.url).add(
-            '../../../public/',
+            publicDir,
         );
+
+        BasePlatform.get().events.addListener('booted', () => {
+            setTimeout(() => {
+                new VersionReporter(
+                    BasePlatform.get().bundlecache.base
+                ).watch(
+                    libPath.normalize(`${this.system_path}/static`) + '/',
+                    libUrl.fileURLToPath(new URL(publicDir, import.meta.url).href)
+                )
+            }, 1000)
+        })
+
 
 
         //Now setup the system's rpc, independent of the other faculties.
@@ -81,7 +99,7 @@ export default class SystemHTTP extends HTTPServer {
 
 
         //Channel the rpc requests meant for the system to the appropriate headquarters
-        manager.http_server.websocketServer.course({
+        manager.platform_http.websocketServer.course({
             path: this.system_path,
             remoteURL: `ws://0.0.0.0:${this.port}/`
         })

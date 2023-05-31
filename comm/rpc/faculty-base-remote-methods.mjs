@@ -44,6 +44,10 @@ export class BaseToFacultyRemoteMethods {
         this.lang = new LanguageInternalMethods()
         this.plugin = new BasePluginAPIMethods()
         this.settings = new FacultySettingsBaseRemote(platform)
+        
+    }
+    get bundlecache(){
+        return this[basePlatform].bundlecache.remote
 
     }
 

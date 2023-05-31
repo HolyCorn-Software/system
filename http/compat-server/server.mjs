@@ -23,6 +23,8 @@ const transpileTasks = Symbol()
 const watched = Symbol()
 const getParentPath = Symbol()
 
+const systemBootPromise = new Promise(x => setTimeout(x, 7000))
+
 export default class CompatFileServer {
 
     /**
@@ -85,6 +87,7 @@ export default class CompatFileServer {
         }
         this[watcher].add(path)
 
+        await systemBootPromise
 
         // Transpile the current files we have in the path
         await this.transpile(path)
@@ -211,20 +214,21 @@ export default class CompatFileServer {
          */
         const transpileOne = async (path, fStat) => {
 
+            fStat ||= await fs.promises.stat(path)
+
             if (!CompatFileServer.fileIsJS(path) || (fStat.size === 0)) {
                 return
             }
 
             const compatPath = this[getCompatFilePath](path)
             const isNew = await ensureFile(compatPath)
-            fStat ||= await fs.promises.stat(path)
 
 
 
-            if (!isNew && (await fs.promises.stat(compatPath)).mtimeMs >= fStat.mtimeMs) {
+            if ((!isNew) && (await fs.promises.stat(compatPath)).mtimeMs >= fStat.mtimeMs) {
                 return
             }
-
+            
             const data = await babel.transformFileAsync(path,
                 {
                     presets: [
@@ -236,12 +240,6 @@ export default class CompatFileServer {
                 }
             )
             // If something modified the file before us, let's rethink the need to transpile
-            if (fs.existsSync(compatPath)) {
-                const nwStat = await fs.promises.stat(compatPath)
-                if ((nwStat.size > 0) && (nwStat.mtimeMs >= fStat.mtimeMs)) {
-                    return
-                }
-            }
             await new Promise((resolve, reject) => {
                 fs.writeFile(compatPath, data.code, (error, data) => {
                     if (error) {
@@ -282,7 +280,9 @@ export default class CompatFileServer {
                     const parentPath = this[getParentPath](path);
                     const parentTranspilePromise = this[transpileTasks][parentPath]
 
+
                     if (parentTranspilePromise) {
+                        console.log(`Waiting for parent to transpile`)
                         // Let's give the part of the parent task,
                         // involved with transpiling this particular file 5s, or less to complete;
                         // else, we prioritize this single task
@@ -306,6 +306,7 @@ export default class CompatFileServer {
                             ]
                         )
 
+                        console.log(`Done waiting for parent dir transpile`)
                     }
                     await transpileOne(path, stat)
                 } else {

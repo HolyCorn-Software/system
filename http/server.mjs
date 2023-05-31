@@ -12,6 +12,8 @@ import fs from 'node:fs'
 import node_static from 'node-static'
 import { SuperRequest } from "../lib/nodeHC/http/super-request.js";
 import { SuperResponse } from "../lib/nodeHC/http/super-response.js";
+import FileCache from "./file-cache/cache.mjs";
+import libStream from 'node:stream'
 
 
 
@@ -86,7 +88,7 @@ export class HTTPServer extends Server {
          */
         return async (req, res) => {
             try {
-                await callback(req, res)
+                return await callback(req, res)
             } catch (e) {
 
                 if (typeof e === 'string') {
@@ -113,7 +115,7 @@ export class HTTPServer extends Server {
     /**
      * 
      * @param {object} param0 
-     * @param {function(import('node:http').IncomingMessage, import('node:http').OutgoingMessage)} param0.callback
+     * @param {function(import('node:http').IncomingMessage, import('node:http').ServerResponse<import('node:http').IncomingMessage>)} param0.callback
      */
     addMiddleWare({ callback }) {
         let args = arguments[0]
@@ -146,26 +148,40 @@ export class HTTPServer extends Server {
      * If a stream is passed, it too would be used
      * @param {import('http').ServerResponse} res 
      * @param {string} originalPath
+     * @param {FileCache} cache
      * We will just use the provided stream
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    static serveFile(path, res, originalPath) {
-        
-        /** @type {fs.Stats} */
-        let stat
-        if (typeof path === 'string' && (!fs.existsSync(path) || (!(stat = fs.statSync(path)).isFile()))) {
-            res.statusCode = 404
-            res.statusMessage = "NOT FOUND"
-            return res.end(`Not Found (${path})`)
-        }
+    static serveFile(path, res, originalPath, cache) {
 
-        const stream = typeof path === 'string' ? fs.createReadStream(path) : path
-        res.statusCode = 200
-        res.setHeader(`Content-Type`, node_static.mime.lookup(originalPath || (typeof path === 'string' ? path : '.mjs')))
-        res.setHeader(`Content-Length`, stat?.size || stream.readableLength)
-        stream.pipe(res)
-        res.addListener('close', () => {
-            stream.close()
+        return new Promise(async (resolve, reject) => {
+
+
+            /** @type {fs.Stats} */
+            let stat
+            if (typeof path === 'string' && (!fs.existsSync(path) || (!(stat = fs.statSync(path)).isFile()))) {
+                res.statusCode = 404
+                res.statusMessage = "NOT FOUND"
+                return res.end(`Not Found (${path})`)
+            }
+
+            const stream = typeof path === 'string' ? (cache ? await cache.readAsStream(path) : fs.createReadStream(path, { autoClose: true })) : path
+            res.statusCode = 200
+            res.setHeader(`Content-Type`, node_static.mime.lookup(originalPath || (typeof path === 'string' ? path : '.mjs')))
+            res.setHeader(`Content-Length`, stat?.size || stream.readableLength)
+            stream.pipe(res)
+            stream.addListener('end', () => {
+                res.end()
+                resolve()
+            })
+
+
+        }).catch(e => {
+            console.error(e)
+            try {
+                res.statusCode = 500
+                res.end(`System Error`)
+            } catch { }
         })
     }
 

@@ -30,8 +30,8 @@ export class BasePlatformHTTPManager {
         let port = this.http_port; //Heroku and other hosting platforms tell us which port to bind to
 
         //The default HTTP server that everthing goes through
-        this.http_server = new (await import('./platform-http.mjs')).default(this.base, port);
-        this.http_server.isHalted = true;
+        this.platform_http = new (await import('./platform-http.mjs')).default(this.base, port);
+        this.platform_http.isHalted = true;
 
         //The TLS server that forwards all requests back to the default HTTP server
         await this.createTLSServer(this.https_port);
@@ -57,7 +57,7 @@ export class BasePlatformHTTPManager {
         `)
 
         setTimeout(() => {
-            this.http_server.isHalted = false;
+            this.platform_http.isHalted = false;
             console.log(`The server has started accepting HTTP requests`.cyan)
         }, 3000)
     }
@@ -65,7 +65,7 @@ export class BasePlatformHTTPManager {
     enforceSSL() {
 
 
-        this.http_server.addMiddleWare({
+        this.platform_http.addMiddleWare({
             /**
              * 
              * @param {import('node:http').IncomingMessage} req 
@@ -93,7 +93,7 @@ export class BasePlatformHTTPManager {
 
         //Just forward the HTTPS connections to the HTTP server
         tls_server.on('secureConnection', (socket) => {
-            this.http_server.server.emit('connection', socket)
+            this.platform_http.server.emit('connection', socket)
         })
 
         tls_server.on('tlsClientError', (e) => {

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url'
 import libPath from 'path'
 import fs from 'node:fs';
 import CompatFileServer from "./compat-server/server.mjs";
+import FileCache from "./file-cache/cache.mjs";
 
 const compatServer = Symbol()
 
@@ -15,7 +16,7 @@ export class StrictFileServer {
 
     /**
      * 
-     * @param {{http:HTTPServer, urlPath:string, refFolder:string, cors:boolean}} param0 
+     * @param {{http:HTTPServer, urlPath:string, refFolder:string, cors:boolean, cache: boolean|number}} param0 
      * @param {string} importURL
      * 
      * Note, initializing a StrictFileServer doesn't give access to any file.
@@ -43,7 +44,7 @@ export class StrictFileServer {
      * 
      * 
      */
-    constructor({ http, urlPath, refFolder, cors }, importURL = soulUtils.getCaller()) {
+    constructor({ http, urlPath, refFolder, cors, cache }, importURL = soulUtils.getCaller()) {
         if (!http instanceof HTTPServer) {
             throw new Error(`Please pass an HTTP server as the http parameter`)
         }
@@ -67,6 +68,8 @@ export class StrictFileServer {
 
 
         this[compatServer] = new CompatFileServer()
+
+        const cacheObject = cache ? new FileCache({ max_size: typeof cache === 'number' ? cache : undefined }) : undefined
 
 
 
@@ -92,11 +95,11 @@ export class StrictFileServer {
 
                 if (CompatFileServer.fileIsJS(path)) {
                     this[compatServer].getCompatFile(path).then((compatPath) => {
-                        HTTPServer.serveFile(compatPath, res, path)
+                        HTTPServer.serveFile(compatPath, res, path, cacheObject)
                     })
                     return true;
                 } else {
-                    HTTPServer.serveFile(path, res)
+                    HTTPServer.serveFile(path, res, path, cacheObject)
                     return true
                 }
             }

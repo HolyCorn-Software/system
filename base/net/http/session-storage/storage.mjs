@@ -31,11 +31,11 @@ export class SessionStorage {
 
         this.#sessions = []
         this.#base = basePlatform
-        this.#setErrorsOnBase();
 
         basePlatform.events.on('booted', async () => {
             console.log(`Now restoring sessions from database`)
             await this.restoreFromDatabase();
+            this.#setErrorsOnBase();
             
             try {
                 const indices = await collections.sessionStorage.listIndexes().toArray()
