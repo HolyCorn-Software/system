@@ -376,7 +376,15 @@ export default class BundleCacheServer {
                     )
 
                 ).then(async () => {
-                    await zipStream.finalize()
+
+                    await new Promise(resolve => {
+                        zipStream.finalize()
+                        const done = () => {
+                            zipStream.removeAllListeners()
+                            resolve()
+                        }
+                        fileStream.addListener('close', done)
+                    })
                 })
             }
 
@@ -456,7 +464,15 @@ export default class BundleCacheServer {
                     // Now that we are done fetching, and storing the new entries,
                     // as well as maintaining the older valid entries...
                     // Let's finalize things
-                    await tmpZip.finalize()
+
+                    await new Promise(resolve => {
+                        tmpZip.finalize()
+                        const done = () => {
+                            tmpZip.removeAllListeners()
+                            resolve()
+                        }
+                        tmpZip.addListener('end', done)
+                    })
 
 
                     // Copy the tmp file, and replace the original

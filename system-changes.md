@@ -1,7 +1,5 @@
 .
 
-Improved page loading algorithm
+Improved the strictness of the isHalted variable in the http module, that prevents clients from connecting to the server
 
-Added possibility of turning off frontend compatibility mode with the `IGNORE_COMPAT` flag
-
-Updated to the latest version of html-hc, with a minor bug fix
+Corrected minor bug related to zipping files for the bundle-cache
