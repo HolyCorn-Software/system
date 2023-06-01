@@ -1,5 +1,7 @@
 .
 
-Improved interoperability of the bundle-cache, with other client-side modules
+Improved page loading algorithm
 
-Updated to the latest version of html-hc with bug fixes
+Added possibility of turning off frontend compatibility mode with the `IGNORE_COMPAT` flag
+
+Updated to the latest version of html-hc, with a minor bug fix

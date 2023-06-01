@@ -230,7 +230,7 @@ class LoadWidget {
         if (document.body.classList.contains('hidden')) {
             document.body.classList.remove('hidden')
             document.body.classList.add('showing')
-            setTimeout(() => document.body.classList.remove('showing'), 2500)
+            setTimeout(() => document.body.classList.remove('showing'), 15_000)
         }
     }
 

@@ -156,6 +156,16 @@ export default class CompatFileServer {
         }
         return found;
     }
+    /**
+     * This variable tells if compatibility mode is on.
+     * 
+     * That is, should we transpile?
+     * @readonly
+     * @returns {boolean}
+     */
+    static get COMPAT_ACTIVE() {
+        return (typeof process.env.IGNORE_COMPAT) == 'undefined'
+    }
 
     /**
      * This method transpiles a javascript file, and saves the output to another file
@@ -164,6 +174,11 @@ export default class CompatFileServer {
      * @returns {Promise<string>}
      */
     async getCompatFile(path) {
+
+        if (!CompatFileServer.COMPAT_ACTIVE) {
+            return path
+        }
+
         await this.transpile(path)
 
         const realPath = this[getCompatFilePath](path)
@@ -183,6 +198,10 @@ export default class CompatFileServer {
      * @returns {Promise<void>}
      */
     async transpile(path) {
+
+        if (!CompatFileServer.COMPAT_ACTIVE) {
+            return
+        }
 
         if (!fs.existsSync(path)) {
             return console.log(`The path to be transpiled ${path}, doesn't exist`)
@@ -228,7 +247,7 @@ export default class CompatFileServer {
             if ((!isNew) && (await fs.promises.stat(compatPath)).mtimeMs >= fStat.mtimeMs) {
                 return
             }
-            
+
             const data = await babel.transformFileAsync(path,
                 {
                     presets: [
