@@ -1,3 +1,3 @@
 .
 
-Fixed minor http routing bug
+Added safety check, to prevent hanging requests, during bundling

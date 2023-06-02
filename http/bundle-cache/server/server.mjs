@@ -357,7 +357,18 @@ export default class BundleCacheServer {
                     related.map(
                         async entry => {
                             try {
-                                const results = await fetch(`http://0.0.0.0${entry.url}`)
+                                let done
+                                const results = await Promise.race(
+                                    [
+                                        fetch(`http://0.0.0.0${entry.url}`),
+                                        new Promise((resolve, reject) => {
+                                            setTimeout(() => {
+                                                reject(new Error(`The url ${entry.url} too too long to fetch`))
+                                            }, 5000)
+                                        })
+                                    ]
+                                )
+                                done = true
                                 if ((results.status < 200) || (results.status >= 300)) {
                                     return console.log(`Not caching ${entry.url}\nResponse ${results.status}`)
                                 }
