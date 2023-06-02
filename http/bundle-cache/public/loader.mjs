@@ -46,7 +46,6 @@ async function init() {
 
 
 
-
 class SWLoaderServer {
 
     /**
@@ -64,15 +63,10 @@ class SWLoaderServer {
                 if (!loader) {
                     loader = new LoadWidget()
                 }
-                if (document.readyState == 'complete') {
-                    return;
-                }
-                if (!loader.html.isConnected) {
-                    document.body.prepend(loader.html)
-                }
+                loader.load(event.data.load)
             }
             if (event.data?.unload) {
-                loader.unload()
+                loader.unload(event.data.unload)
             }
         })
     }
@@ -121,6 +115,8 @@ class SWControllerServer {
         this[channel].postMessage({ type: 'setStorage', data: object })
     }
 }
+
+const items = Symbol()
 
 
 class LoadWidget {
@@ -219,6 +215,7 @@ class LoadWidget {
         document.head.appendChild(
             meta
         )
+        this[items] = []
     }
     static hideBody() {
 
@@ -234,13 +231,20 @@ class LoadWidget {
         }
     }
 
-    load() {
-        if (document.readyState === 'complete') {
+    load(name) {
+        this[items].push(name)
+        if (!this.html.isConnected) {
+            document.body.prepend(this.html)
+        }
+    }
+    unload(name) {
+
+        this[items] = this[items].filter(x => x !== name)
+
+        if (this[items].length > 0) {
             return;
         }
-        document.body.appendChild(this.html)
-    }
-    unload(maxTime) {
+
         if (this.onloading || !this.html.isConnected) {
             return;
         }
@@ -252,7 +256,7 @@ class LoadWidget {
                     window.addEventListener('transitionend', resolve, { once: true, passive: true })
                     window.addEventListener('animationend', resolve, { once: true, passive: true })
                 }),
-                new Promise(x => setTimeout(x, maxTime || 1500))
+                new Promise(x => setTimeout(x, 1500))
             ]
         ).then(() => {
             LoadWidget.showBody()

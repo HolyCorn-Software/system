@@ -26,7 +26,7 @@ self.addEventListener('fetch', (event) => {
 
             const promise = (async () => {
 
-                if (/^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) {
+                if (!isUIFile(request.url) || /^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) {
                     try {
                         return await fetch(request)
                     } catch (e) {
@@ -132,7 +132,7 @@ class SWLoaderClient {
 
         /** @type {{[origin: string]: Promise[]}} */ this[promises] = {};
 
-        const post = (msg, origin) => channel.postMessage({ [msg]: true, origin })
+        const post = (msg, origin, id) => channel.postMessage({ [msg]: id, origin })
         /**
          * This method puts the page of an origin to start loading, for as long as this promise
          *  is pending
@@ -141,19 +141,14 @@ class SWLoaderClient {
          * @returns {void}
          */
         this.load = (origin, promise) => {
-            (this[promises][origin] ||= []).push(promise)
-            if (this[promises][origin].length == 1) {
-                // Time to unload
-                post('load', origin)
-            }
+            const id = `${Date.now()}${Math.random()}${Math.random()}`
+            post('load', origin, id);
+
             (async () => {
                 try {
                     await promise
                 } catch { }
-                this[promises][origin] = this[promises][origin].filter(x => x !== promise)
-                if (this[promises][origin].length === 0) {
-                    post('unload', origin)
-                }
+                post('unload', origin, id)
             })()
         }
 

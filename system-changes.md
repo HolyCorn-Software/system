@@ -1,5 +1,7 @@
 .
 
-Improved the strictness of the isHalted variable in the http module, that prevents clients from connecting to the server
+Improved the page loader UI algorithm
 
-Corrected minor bug related to zipping files for the bundle-cache
+Improved the interoperability of the service-worker, to make it cache only required resources
+
+Improved the stability of the ErrorUI widget
