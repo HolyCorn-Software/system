@@ -1,7 +1,5 @@
 .
 
-Improved the page loader UI algorithm
+Fixed minor bugs related to routing, and dealing with requests that have no routes
 
-Improved the interoperability of the service-worker, to make it cache only required resources
-
-Improved the stability of the ErrorUI widget
+Fixed minor bug related to unzipping plugins
