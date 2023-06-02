@@ -66,7 +66,7 @@ export class ErrorUI extends HCTSBrandedPopup {
 
 
 
-        this.html.$('container >.actions >.close').addEventListener('click', () => this.hide())
+        this.html.$('.container >.actions >.close').addEventListener('click', () => this.hide())
 
 
         this.error = error;

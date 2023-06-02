@@ -1,5 +1,5 @@
 .
 
-Fixed minor bugs related to routing, and dealing with requests that have no routes
+Fixed minor http routing bug
 
-Fixed minor bug related to unzipping plugins
+Fixed minor issue with the ErrorUI widget
