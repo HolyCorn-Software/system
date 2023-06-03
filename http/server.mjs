@@ -162,7 +162,7 @@ export class HTTPServer extends Server {
             if (typeof path === 'string' && (!fs.existsSync(path) || (!(stat = fs.statSync(path)).isFile()))) {
                 res.statusCode = 404
                 res.statusMessage = "NOT FOUND"
-                return res.end(`Not Found (${path})`)
+                return res.end(`Not Found`)
             }
 
             const stream = typeof path === 'string' ? (cache ? await cache.readAsStream(path) : fs.createReadStream(path, { autoClose: true })) : path
