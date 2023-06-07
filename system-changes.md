@@ -1,5 +1,3 @@
 .
 
-Improved design of the offline page
-
-Improved the UI of the loader
+Updated to the latest version of the soul system featuring a new feature, and better UI
