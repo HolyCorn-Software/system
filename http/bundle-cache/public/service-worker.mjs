@@ -96,8 +96,12 @@ const templates = {
             </head>
             <body>
                 <div class='all'>
+                    <div class='img'>
+                        <img src='/$/shared/static/logo.png'>
+                    </div>
                     <div class='message'>
                         <div class='container'>
+                            
                             <div class='title'>Offline</div>
                             <div class='content'>You seem to be offline.
                             Please Check your internet connection.
@@ -166,6 +170,19 @@ const templates = {
                     padding:1.5em;
                     max-width:clamp(300px, 400px, 80vw);
                 }
+                .all >.img{
+                    display:flex;
+                    justify-content:center;
+                    padding-bottom:3em;
+                }
+                .all >.img >img{
+                    border-radius:100%;
+                    background-color:white;
+                    object-fit:contain;
+                    height:4em;
+                    width:4em;
+                    border:2px solid lightblue;
+                }
                 .all >.message >.container >.title{
                     font-size:1.5em;
                     font-weight:bolder;
@@ -193,9 +210,11 @@ self.addEventListener('install', async (event) => {
 
 self.addEventListener('activate', async (event) => {
     controller.continueLoad()
+    console.log(`Activate called.`)
     await event.waitUntil(self.clients.claim().then(async () => {
         controller.updateStorage()
         controller.continueLoad();
+        console.log(`Activated!!!`)
     }))
 
 })
@@ -240,7 +259,7 @@ function isHTML(url) {
 }
 
 function isUIFile(url) {
-    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url)
+    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || /\/shared\/static\/logo.png/.test(url)
 }
 
 const storageObject = {}

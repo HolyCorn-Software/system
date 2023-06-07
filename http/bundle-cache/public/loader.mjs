@@ -32,6 +32,9 @@ async function init() {
                 await navigator.serviceWorker.register('/$bundle_cache/public/service-worker.mjs', {
                     scope: "/",
                 });
+                setTimeout(() => loadNormally(), 5000) //In case the service-worker signal fails to reach
+            } else {
+                loadNormally()
             }
 
             control.sendUpdates()
@@ -41,7 +44,6 @@ async function init() {
         }
         loader.unload()
     }
-    loadNormally()
 }
 
 
@@ -126,6 +128,10 @@ class LoadWidget {
         this.html.classList.add('hc-sw-spinner')
         this.html.innerHTML = `
             <div class='container'>
+                
+            </div>
+            <div class='logo'>
+                <img src='/$/shared/static/logo.png'>
             </div>
         `;
 
@@ -167,6 +173,25 @@ class LoadWidget {
             .hc-sw-spinner, .hc-sw-spinner>.container {
                 display: inline-grid;
                 place-items: center;
+            }
+
+            .hc-sw-spinner >.logo{
+                position:absolute;
+                left:calc(50% - 1.25em);
+                top: calc(50% - 1.25em);
+                width:2em;
+                aspect-ratio:1/1;
+                background-color:white;
+                border-radius:100%;
+                padding-left:0.25em;
+                padding-right:0.25em;
+                padding-top:0.25em;
+                padding-bottom:0.25em;
+            }
+            .hc-sw-spinner >.logo >img{
+                width:100%;
+                height:100%;
+                object-fit:contain;
             }
 
 

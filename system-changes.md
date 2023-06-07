@@ -1,3 +1,5 @@
 .
 
-Added mechanism for removing URL paths whose files have been removed
+Improved design of the offline page
+
+Improved the UI of the loader
