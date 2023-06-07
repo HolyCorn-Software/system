@@ -116,8 +116,8 @@ export default class CompatFileServer {
          * @param {fs.Stats} stat 
          */
         const doDelete = (path, stat) => {
-            if (!stat.isFile()) return;
-            fs.promises.rm(path, { force: true }).catch(e => {
+            if (!stat?.isFile() || !CompatFileServer.COMPAT_ACTIVE) return;
+            fs.promises.rm(this.getCompatFile(path), { force: true }).catch(e => {
                 console.error(`The file ${path} was removed\nBut the compat file `
                     + `could not be removed `,
                     e

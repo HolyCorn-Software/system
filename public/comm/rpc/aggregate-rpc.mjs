@@ -12,33 +12,18 @@ import ClientJSONRPC from './websocket-rpc.mjs';
 
 //Retrieve the list of faculties with public methods
 
-/** @type {Object<string, {point:string}>[]} */
-let map;
-const fetchMap = async () => {
-    map = window.aggregateRpcMap = await (await fetch('/$/system/maps/websockets')).json();
-}
-
-await fetchMap();
-
-let map_symbol = Symbol('get [map]')
 const established_connections = Symbol('get [connections]');
 let pending_connections_symbol = Symbol(`Pending connnections for AggregateRPCProxy`)
 
 class AggregateRPCProxy {
 
-    /**
-     * 
-     * @param {Object<string, string>} map Tells us which faculty is at which point
-     */
-    constructor(map) {
+    constructor() {
 
 
         this[pending_connections_symbol] = {}
 
         /** @type {Object<string, Object<string, function():Promise>} */
         this[established_connections] = {}
-
-        this[map_symbol] = map;
 
 
         return new Proxy(this, {
@@ -155,7 +140,7 @@ class RemoteFacultyRPCObject {
 
                             await (aggregate[pending_connections_symbol][name] = (async () => {
                                 try {
-                                    let url_point = aggregate[map_symbol][name]?.[0].point
+                                    let url_point = `/$/rpc/${name}`
                                     if (!url_point) {
                                         throw new Error(`We made a request to the server but it could not complete because the feature ('${name}') we requested was non-existent`)
                                     }
@@ -314,6 +299,6 @@ const session_auth = async (connection) => {
 /**
  * @type {import('./types.js').AggregateRPCTransform<rpc.Public>}
  */
-let hcRpc = window.hcRpc = new AggregateRPCProxy(map);
+let hcRpc = window.hcRpc = new AggregateRPCProxy();
 
 export default hcRpc;

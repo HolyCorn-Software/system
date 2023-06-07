@@ -41,6 +41,9 @@ export default class FileCache {
         this[state].watcher.on('unlink', onFileRemove)
 
     }
+    remove(path) {
+        this[remove](path)
+    }
 
     [remove](path) {
         this[state].size -= this[state].items[path].data.byteLength
@@ -128,7 +131,15 @@ export default class FileCache {
      */
     async read(path) {
         const start = Date.now()
-        const data = this[state].items[path]?.data || await libFs.promises.readFile(path)
+        if (this[state].items[path]) {
+            if (libFs.existsSync(path) && (await libFs.promises.stat(path)).size == this[state].items[path].data.byteLength) {
+                if (/zip/.test(path) && this[state].items[path].data.byteLength < 200) {
+                    console.warn(`How is ${path.yellow} only ${this[state].items[path].data.byteLength.toString().green} bytes long?`)
+                }
+                return this[state].items[path].data
+            }
+        }
+        let data = await libFs.promises.readFile(path)
         this[put](path, data)
         return this[get](path) || data
     }

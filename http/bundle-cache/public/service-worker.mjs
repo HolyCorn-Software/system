@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
                 } catch (e) {
                     console.error(`Failed to perform service worker duties for url ${request.url}\n`, e)
 
-                    return await fetch(request)
+                    return await safeFetch(request)
                 }
 
             })();
@@ -62,6 +62,129 @@ self.addEventListener('fetch', (event) => {
 
 })
 
+/**
+ * This method safely fetches a request.
+ * 
+ * Safely means returning an offline page if the fetch failed
+ * @param {URL|RequestInfo} url 
+ * @param {RequestInit} init 
+ * @param {Promise<Response>} params 
+ */
+async function safeFetch(url, init) {
+    try {
+        return await fetch(...arguments)
+    } catch (e) {
+        if (isHTML(url?.url || url)) {
+            return offlineResponse();
+        }
+
+        throw e
+    }
+}
+
+
+const templates = {
+    offline: `
+        <!DOCTYPE html>
+        <!-- 
+            Copyright 2023 HolyCorn Software
+            The soul system offline page
+        -->
+        <html>
+            <head>
+                <meta name='viewport' content= 'width=device-width,initial-scale=1.0,user-scalable=no' />
+            </head>
+            <body>
+                <div class='all'>
+                    <div class='message'>
+                        <div class='container'>
+                            <div class='title'>Offline</div>
+                            <div class='content'>You seem to be offline.
+                            Please Check your internet connection.
+                            If this is not a problem of internet connection, please contact support.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class='retry'>
+                        <div class='main'>Try again</div>
+                    </div>
+                </div>
+                
+            </body>
+
+            <style>
+                body{
+                    color:white;
+                    background-color: rgba(16, 53, 99, 1);
+                    font-family:k2d,monospace;
+
+                }
+
+                .all{
+                    display:flex;
+                    flex-direction:column;
+                    width:100vw;
+                    height: 100vh;
+                    position:fixed;
+                    align-items:center;
+                    justify-content:center;
+                }
+
+                .all >.retry{
+                    display:flex;
+                    flex-direction:column;
+                    padding-top:3em;
+                }
+                .all >.retry >.main{
+                    display:inline-flex;
+                    background-color:white;
+                    color:rgba(16, 53, 99, 1);
+                    border-radius:8px;
+                    padding:0.5em;
+                    cursor:pointer;
+                    transition:0.5s 0.125s;
+                }
+                .all >.retry >.main:hover{
+                    border-radius:28px;
+                    font-weight:bolder;
+                }
+
+                .all >.message{
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    left: 0px;
+                    top: 0px;
+                }
+                .all >.message >.container{
+                    display:inline-flex;
+                    flex-direction:column;
+                    gap:1.5em;
+                    border:1px solid lightblue;
+                    border-radius:1em;
+                    padding:1.5em;
+                    max-width:clamp(300px, 400px, 80vw);
+                }
+                .all >.message >.container >.title{
+                    font-size:1.5em;
+                    font-weight:bolder;
+                }
+                
+                @font-face {
+                    font-family:k2d;
+                    src: url('/$/system/static/html-hc/lib/fonts/res/K2D-Regular.ttf');
+                }
+            </style>
+
+            <script>
+                document.body.querySelector('.retry >.main').addEventListener('click', ()=>{
+                    window.location.reload()
+                })
+            </script>
+        </html>
+    `
+}
 
 self.addEventListener('install', async (event) => {
     event.waitUntil(self.skipWaiting())
@@ -77,6 +200,35 @@ self.addEventListener('activate', async (event) => {
 
 })
 
+
+function offlineResponse() {
+    const response = new Response(new Blob([templates.offline], { type: 'text/html' }),
+        {
+            headers: {
+                'X-bundle-cache-generated': true
+            }
+        }
+    );
+
+    return response;
+}
+
+let lastOfflineCheck;
+let lastOfflineValue;
+async function isOffline(url) {
+
+    if ((Date.now() - lastOfflineCheck < 20 * 1000) && !lastOfflineCheck) {
+        return lastOfflineValue
+    }
+    try {
+        await fetch(url)
+        lastOfflineCheck = Date.now()
+        lastOfflineValue = true
+        return false
+    } catch {
+        return true
+    }
+}
 
 /**
  * This method checks if a URL path is pointing to an HTML source
@@ -312,16 +464,15 @@ async function findorFetchResource(request, origin) {
     async function fetchNew() {
         const preHeaders = new Headers(request.headers)
         preHeaders.set('x-bundle-cache-src', origin)
-        const response = await fetch(request.url, {
+        const response = await safeFetch(request.url, {
             ...request,
             headers: preHeaders
         })
+        if (response.headers.get('x-bundle-cache-generated')) {
+            return response
+        }
         const headers = new Headers(response.headers)
         headers.append('x-bundle-cache-version', Date.now())
-
-        if (/css/.test(request.url)) {
-            console.log(`Origin is ${origin}\nfor ${request.url}`)
-        }
 
 
         const nwResponse = new Response(new Blob([await response.clone().arrayBuffer()]),
@@ -333,6 +484,9 @@ async function findorFetchResource(request, origin) {
         )
         cache.put(request.url, nwResponse)
         return response
+    }
+    if (isHTML(request.url) && await isOffline(request.url)) {
+        return offlineResponse()
     }
     return (await cache.match(request, { ignoreMethod: true, ignoreVary: true })) || await fetchNew()
 }

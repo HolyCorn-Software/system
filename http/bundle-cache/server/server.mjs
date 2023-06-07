@@ -390,11 +390,23 @@ export default class BundleCacheServer {
 
                     await new Promise(resolve => {
                         zipStream.finalize()
+                        let zipOK
+                        let fileOK
                         const done = () => {
-                            zipStream.removeAllListeners()
-                            resolve()
+                            if (zipOK && fileOK) {
+                                resolve()
+                            }
                         }
-                        fileStream.addListener('close', done)
+                        zipStream.once('end', () => {
+                            zipOK = true
+                            zipStream.removeAllListeners()
+                            done()
+                        })
+                        fileStream.once('finish', () => {
+                            fileOK = true
+                            fileStream.removeAllListeners()
+                            done()
+                        })
                     })
                 })
             }
@@ -403,7 +415,21 @@ export default class BundleCacheServer {
 
             const modifyZip = async () => {
                 // Let's only modify the URLs that have changed
-                const results = await unzipper.Open.buffer(await this[filecache].read(bundlePath))
+                let results
+
+                try {
+                    results = await unzipper.Open.buffer(await this[filecache].read(bundlePath))
+                } catch {
+                    try {
+                        this[filecache].remove(bundlePath)
+                        results = await unzipper.Open.file(bundlePath)
+                    } catch (e) {
+
+                        console.log(`The error was with opening the zip `, bundlePath)
+                        console.error(e)
+                        throw new Error(`Error opening the zip`)
+                    }
+                }
 
                 const nwRelated = this.map.getRelated(path).filter(rel => {
                     const inZip = results.files.findIndex(x => `/${x.path}` == rel.url)
@@ -477,7 +503,9 @@ export default class BundleCacheServer {
                     // Let's finalize things
 
                     await new Promise(resolve => {
-                        tmpZip.finalize()
+                        tmpZip.finalize().catch(e => {
+                            console.log(`Finalize failed!! `, e)
+                        })
                         const done = () => {
                             tmpZip.removeAllListeners()
                             resolve()

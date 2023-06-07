@@ -134,7 +134,7 @@ export default class RequestMap {
         for (const item in this[map]) {
             this[map][item].links = this[map][item]?.links.filter(x => x !== url) || []
         }
-        delete this[map][item]
+        delete this[map][url]
         this[scheduleUpdate]()
     }
 

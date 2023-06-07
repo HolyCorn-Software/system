@@ -8,7 +8,10 @@ import { ErrorEngine } from './engine.mjs'
 import { ErrorUI } from './popup/widget.mjs'
 
 
-const errorMap = await (await fetch('/$/system/maps/errors')).json() //This is a map of which errors mean what, gotten from the faculties
+let errorMap;
+fetch('/$/system/maps/errors').then(async map => {
+    errorMap = await map.json() //This is a map of which errors mean what, gotten from the faculties
+}).catch(e => console.error(e))
 
 
 /**
