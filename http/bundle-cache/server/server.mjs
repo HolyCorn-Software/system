@@ -370,6 +370,9 @@ export default class BundleCacheServer {
                                 )
                                 done = true
                                 if ((results.status < 200) || (results.status >= 300)) {
+                                    if (results.status == 404) {
+                                        this.map.removeURL(entry.url)
+                                    }
                                     return console.log(`Not caching ${entry.url}\nResponse ${results.status}`)
                                 }
                                 const data = Buffer.from(
@@ -475,6 +478,9 @@ export default class BundleCacheServer {
                             try {
                                 const results = await fetch(`http://0.0.0.0${nw.url}`)
                                 if ((results.status < 200) || (results.status >= 300)) {
+                                    if (results.status == 404) {
+                                        this.map.removeURL(nw.url)
+                                    }
                                     return console.log(`Not caching ${nw.url}`)
                                 }
 
