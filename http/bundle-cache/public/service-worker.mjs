@@ -648,9 +648,9 @@ function temporalPageResponse() {
                 function doLoad(){
                     fetch(window.location.href).then((reply)=> {
                         if(!reply.headers.get('x-bundle-cache-temporal-page')){
-                            setTimeout(()=>window.location.reload(), 2_00)
+                            setTimeout(()=>window.location.reload(), 2_000)
                         }else{
-                            return setTimeout(()=>doLoad(), 2_00)
+                            return setTimeout(()=>doLoad(), 2_000)
                         }
                     }).catch(e=>doLoad())
                 }
