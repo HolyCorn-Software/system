@@ -30,7 +30,7 @@ class WildcardEventEmitter extends EventTarget {
      */
     dispatchEvent(event) {
         super.dispatchEvent(new CustomEvent('*', { detail: { type: event.type, data: event.detail } }))
-        super.dispatchEvent(event)
+        super.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
     }
 }
 
@@ -51,14 +51,11 @@ class JSONRPCEventsStub extends WildcardEventEmitter {
     }
     /**
      * Please, don't call this method locally.
+     * Use the dispatchEvent() method
      * 
      */
     emit(rpc, type, data) {
         if (typeof rpc === 'string') { //If called locally
-            // type = arguments[0]
-            // data = Array.prototype.slice.call(arguments, 1)
-            // super.emit(type, ...data);
-            // this[json_rpc_symbol].remote.$rpc.events.emit(type, ...data);
             throw new Error(`This method is not supposed to be called locally.\nJust use the regular dispatchEvent() method.`)
         } else {
             super.dispatchEvent(new CustomEvent(`$remote-event`, { detail: { type, data } }))
