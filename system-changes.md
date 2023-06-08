@@ -1,3 +1,3 @@
 .
 
-Fixed minor routing bug
+Improved robustness of http session management
