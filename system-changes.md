@@ -1,3 +1,3 @@
 .
 
-Improved the loading algorithm to keep the page loading during a grand update
+Added the temporal page feature to the service-worker module, so that pages load perfectly, with no blank screens

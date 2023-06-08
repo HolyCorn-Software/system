@@ -382,7 +382,7 @@ async function grandUpdate(origin) {
         try {
             grandUpdates[path] = main();
             if (isHTML(origin)) {
-                loader.load(`grand:${origin}`, grandUpdates[path]);
+                loader.load(origin, grandUpdates[path]);
             }
             await grandUpdates[path];
             delete grandUpdates[path];
@@ -507,7 +507,159 @@ async function findorFetchResource(request, origin) {
     if (isHTML(request.url) && await isOffline(request.url)) {
         return offlineResponse()
     }
-    return (await cache.match(request, { ignoreMethod: true, ignoreVary: true })) || await fetchNew()
+    const inCache = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
+
+    if (inCache) {
+        return inCache
+    }
+
+
+
+    if (isHTML(request.url)) {
+
+        const tmpPage = new Response(new Blob([`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Please Wait</title>
+                <meta name='viewport' content='width=device-width,initial-scale=1.0,user-scalable=no' />
+            </head>
+
+            <body>
+                <div class='hc-sw-spinner'>
+                    <div class='container'>
+                        <div class='unit'></div>
+                        <div class='unit'></div>
+                        <div class='unit'></div>
+                        <div class='unit'></div>
+                        <div class='unit'></div>
+                        <div class='unit'></div>
+                        <div class='unit'></div>
+                    </div>
+                    <div class='logo'>
+                        <img src='/$/shared/static/logo.png'>
+                    </div>
+                </div>
+            </body>
+
+            <style>
+                body{
+                    background-color:rgba(16, 53, 99, 1);
+                    color:white;
+                }
+                /*
+            Copyright 2023 HolyCorn Software
+            This stylesheet allows us to display a loading page when the servie worker is
+            loading a page
+
+            */
+
+            .hc-sw-spinner {
+                width: calc(100vw + 16px);
+                height: calc(100vh + 16px);
+                z-index: 1000;
+                background-color: rgba(16, 53, 99, 1);
+                position: fixed;
+                margin:-8px;
+            }
+
+            .hc-sw-spinner, .hc-sw-spinner>.container {
+                display: inline-grid;
+                place-items: center;
+            }
+
+            .hc-sw-spinner >.logo{
+                position:absolute;
+                left:calc(50% - 1.25em);
+                top: calc(50% - 1.25em);
+                width:2em;
+                aspect-ratio:1/1;
+                background-color:white;
+                border-radius:100%;
+                padding-left:0.25em;
+                padding-right:0.25em;
+                padding-top:0.25em;
+                padding-bottom:0.25em;
+            }
+            .hc-sw-spinner >.logo >img{
+                width:100%;
+                height:100%;
+                object-fit:contain;
+            }
+
+
+            .hc-sw-spinner .container .unit {
+                border: 0.25em solid transparent;
+                border-radius: 50%;
+                border-top-color: #ffc000;
+                content: '';
+
+                width: 5em;
+                height: 5em;
+
+                position: absolute;
+                animation: 3.5s spin infinite;
+
+                font-size: 0.75em;
+            }
+
+            .hc-sw-spinner>.container {
+                animation: 1s spin infinite;
+            }
+
+            .hc-sw-spinner.paused .unit,
+            .hc-sw-spinner.paused>.container {
+                animation: none !important;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(355deg);
+                }
+            }
+            </style>
+
+            <script>
+                // Here, we make sure we keep trying to fetch the real page, to see if it's available
+                function doLoad(){
+                    fetch(window.location.href).then((reply)=> {
+                        if(!reply.headers.get('x-bundle-cache-temporal-page')){
+                            window.location.reload()
+                        }else{
+                            return doLoad()
+                        }
+                    }).catch(e=>doLoad())
+                }
+
+                doLoad()
+            </script>
+        </html>
+    `], { type: 'text/html' }),
+            {
+                status: 200,
+                statusText: `OK TEMPORAL`,
+                headers: {
+                    'x-bundle-cache-temporal-page': 'true'
+                }
+            }
+        )
+
+
+
+        fetchNew().then(() => {
+            // TODO: Make the client continue
+        })
+
+        return tmpPage
+    } else {
+        return await fetchNew()
+    }
+
+
 }
 
 /**
@@ -524,36 +676,45 @@ let lastGrandVersionCheck = {
  */
 async function grandVersionOkay(origin) {
 
-    // if ((Date.now() - (lastGrandVersionCheck[origin]?.time || 0) < 10_000) && lastGrandVersionCheck[origin].results === true) {
-    //     return true
-    // }
+    if ((Date.now() - (lastGrandVersionCheck[origin]?.time || 0) < 10_000) && lastGrandVersionCheck[origin].results === true) {
+        return true
+    }
 
-    const MAX_TIME = 20_000
-    const path = new URL(origin).pathname;
+    const checkPromise = (async () => {
 
-    const knownRemoteVersion = await storage.getKey(`${path}-remote-version`)
-    const localVersion = (await storage.getKey(`${path}-version`)) || -1
-    const remoteVersion =
-        //If we already know what the remote version is
-        await Promise.race(
-            [
-                new Promise(done => setTimeout(() => done(knownRemoteVersion), MAX_TIME)),
-                (async () => {
-                    try {
-                        await fetchGrandVersion(origin)
-                    } catch (e) {
-                        console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} `)
-                    }
 
-                    // In case it succeeds, localStorage would be updated. If not, we use our older information
-                    return (await storage.getKey(`${path}-remote-version`)) || knownRemoteVersion
-                })()
-            ]
-        );
+        const MAX_TIME = 20_000
+        const path = new URL(origin).pathname;
 
-    (lastGrandVersionCheck[origin] ||= {}).time = Date.now()
+        const knownRemoteVersion = await storage.getKey(`${path}-remote-version`)
+        const localVersion = (await storage.getKey(`${path}-version`)) || -1
+        const remoteVersion =
+            //If we already know what the remote version is
+            await Promise.race(
+                [
+                    new Promise(done => setTimeout(() => done(knownRemoteVersion), MAX_TIME)),
+                    (async () => {
+                        try {
+                            await fetchGrandVersion(origin)
+                        } catch (e) {
+                            console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} `)
+                        }
 
-    return lastGrandVersionCheck[origin].results = localVersion >= remoteVersion
+                        // In case it succeeds, localStorage would be updated. If not, we use our older information
+                        return (await storage.getKey(`${path}-remote-version`)) || knownRemoteVersion
+                    })()
+                ]
+            );
+
+        (lastGrandVersionCheck[origin] ||= {}).time = Date.now()
+
+        return lastGrandVersionCheck[origin].results = localVersion >= remoteVersion
+
+    })()
+
+    loader.load(origin, checkPromise)
+
+    return await checkPromise
 
 }
 
