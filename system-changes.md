@@ -1,3 +1,3 @@
 .
 
-Made the service-worker temporal page more effective
+Added the time-to-live, of grand version checks

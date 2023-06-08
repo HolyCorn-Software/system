@@ -678,7 +678,7 @@ function temporalPageResponse() {
  */
 async function grandVersionOkay(origin) {
 
-    if ((Date.now() - (lastGrandVersionCheck[origin]?.time || 0) < 10_000) && lastGrandVersionCheck[origin].results === true) {
+    if ((Date.now() - (lastGrandVersionCheck[origin]?.time || 0) < 60_000) && lastGrandVersionCheck[origin].results === true) {
         return true
     }
 
