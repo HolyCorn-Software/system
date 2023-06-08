@@ -11,7 +11,7 @@
 
 import { JSONRPCManager } from "./manager/manager.mjs";
 
-import { v4 as uuid } from '../../uuid/index.js'
+import uuid from '../../uuid/uuid.mjs'
 import JSONRPC from "./json-rpc.mjs";
 
 

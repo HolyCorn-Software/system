@@ -7,7 +7,7 @@
  */
 
 import { JSONRPCManager } from "./manager.mjs";
-import uuid from '../../../uuid/v4.js'
+import uuid from '../../../uuid/uuid.mjs'
 
 const ACK_QUEUE = Symbol(`ACK_QUEUE`)
 const PENDING_CALLS = Symbol(`PENDING_CALLS`)

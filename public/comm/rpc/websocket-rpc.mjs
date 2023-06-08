@@ -7,10 +7,8 @@ Updated 2023, by refractoring code to suit modern standards
 */
 
 import GrowRetry from "../../html-hc/lib/retry/retry.mjs";
+import uuid from "../uuid/uuid.mjs";
 import JSONRPC from "./json-rpc/json-rpc.mjs";
-import * as uuidAll from '../uuid/index.js'
-const uuid = uuidAll.v4
-
 
 const reconnect_promise = Symbol()
 

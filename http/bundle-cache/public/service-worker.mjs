@@ -44,7 +44,7 @@ self.addEventListener('fetch', (event) => {
                             console.log(`Grand update to ${origin} failed\n`, e)
                         })
                         if (isHTML(request.url)) {
-                            return temporalPageResponse()
+                            return temporalPageResponse(1000)
                         }
                         await guPromise
                     }
@@ -551,7 +551,7 @@ async function findorFetchResource(request, origin) {
  */
 let lastGrandVersionCheck = {
 }
-function temporalPageResponse() {
+function temporalPageResponse(timing = 100) {
     return new Response(new Blob([`
         <!DOCTYPE html>
         <html>
@@ -663,9 +663,9 @@ function temporalPageResponse() {
                 function doLoad(){
                     fetch(window.location.href).then((reply)=> {
                         if(!reply.headers.get('x-bundle-cache-temporal-page')){
-                            setTimeout(()=>window.location.reload(), 2_000)
+                            setTimeout(()=>window.location.reload(), ${timing})
                         }else{
-                            return setTimeout(()=>doLoad(), 2_000)
+                            return setTimeout(()=>doLoad(), ${timing})
                         }
                     }).catch(e=>doLoad())
                 }

@@ -10,7 +10,7 @@ import { JSONRPCManager } from './manager/manager.mjs';
 import JSONRPCRemote from './remote.mjs';
 import JSONRPCDefaultStub from './stub.mjs';
 
-import { v4 as uuid } from '../../uuid/index.js'
+import uuid  from '../../uuid/uuid.mjs'
 import CleanEventTarget from './clean-event-target.mjs';
 import EventChannelServer from './event-channel/server/sever.mjs';
 import EventChannelClient from './event-channel/client.mjs';
