@@ -1,3 +1,3 @@
 .
 
-Added the time-to-live, of grand version checks
+Improved performance, by reducing the likelihood of duplicate requests, and duplicate grand version checks

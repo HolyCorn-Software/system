@@ -43,7 +43,6 @@ self.addEventListener('fetch', (event) => {
                         }).catch(e => {
                             console.log(`Grand update to ${origin} failed\n`, e)
                         })
-                        console.log(`While fetching ${request.url}, from ${origin}, grandversion was not okay! (${await grandVersionOkay(origin)})`)
                         if (isHTML(request.url)) {
                             return temporalPageResponse()
                         }
@@ -238,20 +237,18 @@ function offlineResponse() {
     return response;
 }
 
-let lastOfflineCheck;
+let lastOfflineCheck = Date.now();
 let lastOfflineValue;
-async function isOffline(url) {
-
-    if ((Date.now() - lastOfflineCheck < 20 * 1000) && !lastOfflineCheck) {
+async function isOffline(request) {
+    if ((Date.now() - lastOfflineCheck < 20 * 1000)) {
         return lastOfflineValue
     }
     try {
-        await fetch(url)
+        await (fetchTasks[request.url] = fetch(url));
         lastOfflineCheck = Date.now()
-        lastOfflineValue = true
-        return false
+        return lastOfflineValue = false
     } catch {
-        return true
+        return lastOfflineValue = true
     }
 }
 
@@ -470,6 +467,8 @@ async function grandUpdate(origin) {
 
 }
 
+const fetchTasks = {}
+
 
 /**
  * This method loads a single resource, whether from the cache, or not
@@ -479,8 +478,20 @@ async function grandUpdate(origin) {
 async function findorFetchResource(request, origin) {
     // First things, first, ... wait for any grand update that's currently ongoing
     try {
-        await Promise.race([grandUpdates[origin], new Promise(x => setTimeout(x, 5000))])
+        await Promise.race([grandUpdates[origin], new Promise(x => setTimeout(x, 15_000))])
     } catch { }
+
+    if (fetchTasks[request.url]) {
+        try {
+            const res = await fetchTasks[request.url]
+            delete fetchTasks[request.url]
+            return res
+        } catch (e) {
+            delete fetchTasks[request.url]
+            throw e
+        }
+
+    }
 
     // Now that the grand updates are done, we check the cache for what we're looking for
 
@@ -520,7 +531,8 @@ async function findorFetchResource(request, origin) {
     }
 
 
-    const nwPromise = fetchNew();
+    const nwPromise = fetchTasks[request.url] = fetchNew();
+    nwPromise.finally(x => delete fetchTasks[request.url])
 
     if (isHTML(request.url) && isHTML(origin)) {
         return temporalPageResponse()
@@ -669,6 +681,8 @@ function temporalPageResponse() {
     );
 }
 
+const grandVersionCheckTasks = {}
+
 /**
  * This method checks if the grand version of what we have stored is okay.
  * This method makes sure, if we already have previous information, we use
@@ -682,41 +696,59 @@ async function grandVersionOkay(origin) {
         return true
     }
 
-    const checkPromise = (async () => {
+    if (grandVersionCheckTasks[origin]) {
+        return await grandVersionCheckTasks[origin]
+    }
+
+    grandVersionCheckTasks[origin] = (async () => {
+
+        const checkPromise = (async () => {
 
 
-        const MAX_TIME = 20_000
-        const path = new URL(origin).pathname;
+            const MAX_TIME = 20_000
+            const path = new URL(origin).pathname;
 
-        const knownRemoteVersion = await storage.getKey(`${path}-remote-version`)
-        const localVersion = (await storage.getKey(`${path}-version`)) || -1
-        const remoteVersion =
-            //If we already know what the remote version is
-            await Promise.race(
-                [
-                    new Promise(done => setTimeout(() => done(knownRemoteVersion), MAX_TIME)),
-                    (async () => {
-                        try {
-                            await fetchGrandVersion(origin)
-                        } catch (e) {
-                            console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} `)
-                        }
+            const knownRemoteVersion = await storage.getKey(`${path}-remote-version`)
+            const localVersion = (await storage.getKey(`${path}-version`)) || -1
+            const remoteVersion =
+                //If we already know what the remote version is
+                await Promise.race(
+                    [
+                        new Promise(done => setTimeout(() => done(knownRemoteVersion), MAX_TIME)),
+                        (async () => {
+                            try {
+                                await fetchGrandVersion(origin)
+                            } catch (e) {
+                                console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} `)
+                            }
 
-                        // In case it succeeds, localStorage would be updated. If not, we use our older information
-                        return (await storage.getKey(`${path}-remote-version`)) || knownRemoteVersion
-                    })()
-                ]
-            );
+                            // In case it succeeds, localStorage would be updated. If not, we use our older information
+                            return (await storage.getKey(`${path}-remote-version`)) || knownRemoteVersion
+                        })()
+                    ]
+                );
 
-        (lastGrandVersionCheck[origin] ||= {}).time = Date.now()
+            (lastGrandVersionCheck[origin] ||= {}).time = Date.now()
 
-        return lastGrandVersionCheck[origin].results = localVersion >= remoteVersion
+            return lastGrandVersionCheck[origin].results = localVersion >= remoteVersion
 
+        })()
+
+        loader.load(origin, checkPromise)
+
+        return await checkPromise
     })()
 
-    loader.load(origin, checkPromise)
+    try {
+        const result = await grandVersionCheckTasks[origin]
+        delete grandVersionCheckTasks[origin]
+        return result
+    } catch (e) {
+        delete grandVersionCheckTasks[origin]
+        throw e
+    }
 
-    return await checkPromise
+
 
 }
 
