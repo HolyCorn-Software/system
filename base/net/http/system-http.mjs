@@ -86,7 +86,7 @@ export default class SystemHTTP extends HTTPServer {
 
         //Now setup the system's rpc, independent of the other faculties.
         //It provides useful functions such as error reporting, usage statistics
-        this.system_rpc_point = `/rpc`
+        this.system_rpc_point = `/$/rpc/system`
 
 
         let rpc_stub = new SystemPublicMethods()

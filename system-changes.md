@@ -1,3 +1,3 @@
 .
 
-Improved robustness of http session management
+Fixed minor bug related to recent change in aggregate-rpc behaviour
