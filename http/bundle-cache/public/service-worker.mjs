@@ -37,11 +37,17 @@ self.addEventListener('fetch', (event) => {
 
                 try {
                     if (isHTML(origin) && !await grandVersionOkay(origin)) {
-                        try {
-                            await grandUpdate(origin)
-                        } catch (e) {
+                        const guPromise = grandUpdate(origin)
+                        guPromise.then(() => {
+                            console.log(`Grand update of ${origin} finished!`)
+                        }).catch(e => {
                             console.log(`Grand update to ${origin} failed\n`, e)
+                        })
+                        console.log(`While fetching ${request.url}, from ${origin}, grandversion was not okay! (${await grandVersionOkay(origin)})`)
+                        if (isHTML(request.url)) {
+                            return temporalPageResponse()
                         }
+                        await guPromise
                     }
                     const result = await findorFetchResource(request, origin)
                     return result
@@ -456,7 +462,7 @@ async function grandUpdate(origin) {
     if (grandUpdates[path]) {
         await Promise.race([
             grandUpdates[path],
-            new Promise((resolve, reject) => setTimeout(reject, 10_000))
+            new Promise((resolve, reject) => setTimeout(reject, 20_000))
         ]).catch(e => freshUpdate())
     } else {
         await freshUpdate();
@@ -514,10 +520,24 @@ async function findorFetchResource(request, origin) {
     }
 
 
+    const nwPromise = fetchNew();
 
-    if (isHTML(request.url)) {
+    if (isHTML(request.url) && isHTML(origin)) {
+        return temporalPageResponse()
+    } else {
+        return await nwPromise
+    }
 
-        const tmpPage = new Response(new Blob([`
+
+}
+
+/**
+ * @type {{[origin: string]: {time: number, results:boolean}}}
+ */
+let lastGrandVersionCheck = {
+}
+function temporalPageResponse() {
+    return new Response(new Blob([`
         <!DOCTYPE html>
         <html>
             <head>
@@ -628,9 +648,9 @@ async function findorFetchResource(request, origin) {
                 function doLoad(){
                     fetch(window.location.href).then((reply)=> {
                         if(!reply.headers.get('x-bundle-cache-temporal-page')){
-                            window.location.reload()
+                            setTimeout(()=>window.location.reload(), 2_00)
                         }else{
-                            return doLoad()
+                            return setTimeout(()=>doLoad(), 2_00)
                         }
                     }).catch(e=>doLoad())
                 }
@@ -639,34 +659,16 @@ async function findorFetchResource(request, origin) {
             </script>
         </html>
     `], { type: 'text/html' }),
-            {
-                status: 200,
-                statusText: `OK TEMPORAL`,
-                headers: {
-                    'x-bundle-cache-temporal-page': 'true'
-                }
+        {
+            status: 200,
+            statusText: `OK TEMPORAL`,
+            headers: {
+                'x-bundle-cache-temporal-page': 'true'
             }
-        )
-
-
-
-        fetchNew().then(() => {
-            // TODO: Make the client continue
-        })
-
-        return tmpPage
-    } else {
-        return await fetchNew()
-    }
-
-
+        }
+    );
 }
 
-/**
- * @type {{[origin: string]: {time: number, results:boolean}}}
- */
-let lastGrandVersionCheck = {
-}
 /**
  * This method checks if the grand version of what we have stored is okay.
  * This method makes sure, if we already have previous information, we use
