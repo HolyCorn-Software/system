@@ -140,7 +140,7 @@ class RemoteFacultyRPCObject {
 
                             await (aggregate[pending_connections_symbol][name] = (async () => {
                                 try {
-                                    let url_point = `/$/rpc/${name}`
+                                    let url_point = name === 'system' ? `/$/system/rpc` : `/$/rpc/${name}`
                                     if (!url_point) {
                                         throw new Error(`We made a request to the server but it could not complete because the feature ('${name}') we requested was non-existent`)
                                     }
