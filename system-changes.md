@@ -1,3 +1,3 @@
 .
 
-Fixed minor bug related to recent change in aggregate-rpc behaviour
+Improved the loading algorithm to keep the page loading during a grand update

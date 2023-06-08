@@ -382,7 +382,7 @@ async function grandUpdate(origin) {
         try {
             grandUpdates[path] = main();
             if (isHTML(origin)) {
-                loader.load(origin, grandUpdates[path]);
+                loader.load(`grand:${origin}`, grandUpdates[path]);
             }
             await grandUpdates[path];
             delete grandUpdates[path];
