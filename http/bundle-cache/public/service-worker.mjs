@@ -240,6 +240,9 @@ function offlineResponse() {
 let lastOfflineCheck = Date.now();
 let lastOfflineValue;
 async function isOffline(request) {
+    if (1) {
+        return false
+    }
     if ((Date.now() - lastOfflineCheck < 20 * 1000)) {
         return lastOfflineValue
     }

@@ -1,3 +1,3 @@
 .
 
-Improved performance, by reducing the likelihood of duplicate requests, and duplicate grand version checks
+Temporary disabled offline checks in order to investigate a bug
