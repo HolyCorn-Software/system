@@ -703,16 +703,20 @@ async function grandVersionOkay(origin) {
         return await grandVersionCheckTasks[origin]
     }
 
+    try {
+        await grandUpdates[new URL(origin).pathname]
+    } catch { }
+
     grandVersionCheckTasks[origin] = (async () => {
 
         const checkPromise = (async () => {
 
 
             const MAX_TIME = 20_000
-            const path = new URL(origin).pathname;
+            const path = origin
 
-            const knownRemoteVersion = await storage.getKey(`${path}-remote-version`)
-            const localVersion = (await storage.getKey(`${path}-version`)) || -1
+            const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
+            const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
             const remoteVersion =
                 //If we already know what the remote version is
                 await Promise.race(
@@ -733,7 +737,13 @@ async function grandVersionOkay(origin) {
 
             (lastGrandVersionCheck[origin] ||= {}).time = Date.now()
 
-            return lastGrandVersionCheck[origin].results = localVersion >= remoteVersion
+            const res = lastGrandVersionCheck[origin].results = localVersion >= remoteVersion
+
+            if (!res) {
+                console.log(`${origin} not okay, because `)
+            }
+
+            return res
 
         })()
 
@@ -744,10 +754,10 @@ async function grandVersionOkay(origin) {
 
     try {
         const result = await grandVersionCheckTasks[origin]
-        delete grandVersionCheckTasks[origin]
+        setTimeout(() => delete grandVersionCheckTasks[origin], 2000)
         return result
     } catch (e) {
-        delete grandVersionCheckTasks[origin]
+        setTimeout(() => delete grandVersionCheckTasks[origin], 2000)
         throw e
     }
 
