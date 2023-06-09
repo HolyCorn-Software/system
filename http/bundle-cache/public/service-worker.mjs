@@ -246,6 +246,12 @@ self.addEventListener('activate', async (event) => {
         console.log(`Activated!!!`)
     }))
 
+    await event.waitUntil(
+        caches.open(CACHE_NAME).then(async cache => {
+            await cache.add('/$/shared/static/logo.png')
+        })
+    )
+
 })
 
 
@@ -389,9 +395,10 @@ const grandUpdates = {}
  * 
  * It doesn't check if the update is deserved
  * @param {string} origin 
+ * @param {boolean} shouldLoad
  * @returns {Promise<void>}
  */
-async function grandUpdate(origin) {
+async function grandUpdate(origin, shouldLoad) {
     const path = new URL(origin).pathname
 
     await waitForAllGrandTasks()
@@ -399,8 +406,8 @@ async function grandUpdate(origin) {
     async function freshUpdate() {
         try {
             grandUpdates[path] = main();
-            if (isHTML(origin)) {
-                // loader.load(origin, grandUpdates[path]);
+            if (isHTML(origin) && shouldLoad) {
+                loader.load(origin, grandUpdates[path]);
             }
             await grandUpdates[path];
             setTimeout(() => delete grandUpdates[path], 15000);
@@ -471,7 +478,7 @@ async function grandUpdate(origin) {
         }
     }
 
-    if (await grandVersionOkay(origin)) {
+    if (await grandVersionOkay(origin, shouldLoad)) {
         return;
     }
 
@@ -502,6 +509,11 @@ async function findorFetchResource(request, origin) {
 
 
     // Now that the grand updates are done, we check the cache for what we're looking for
+
+    if (fetchTasks[request.url]) {
+        loader.load(origin, fetchTasks[request.url])
+        await fetchTasks[request.url]
+    }
 
     const cache = await caches.open(CACHE_NAME)
 
@@ -538,11 +550,27 @@ async function findorFetchResource(request, origin) {
     }
 
 
-    const nwPromise = fetchNew();
+    const gTsks = waitForAllGrandTasks()
+    if (isUIFile(request.url)) {
+        loader.load(origin, gTsks)
+    }
+    await gTsks
 
-    if (isHTML(request.url) && isHTML(origin)) {
-        nwPromise.finally(() => delete fetchTasks[request.url])
+    if (!await grandVersionOkay(origin, true)) {
+        const gup = grandUpdate(origin, true)
+        if (isHTML(request.url)) {
+            return temporalPageResponse(300)
+        }
+        await gup
+        return await findorFetchResource(request, origin)
+    }
+
+    const nwPromise = fetchNew();
+    loader.load(origin, nwPromise)
+
+    if (isHTML(request.url)) {
         fetchTasks[request.url] = nwPromise
+        nwPromise.finally(() => delete fetchTasks[request.url])
         return temporalPageResponse()
     } else {
         return await nwPromise
@@ -706,10 +734,10 @@ const grandVersionCheckTasks = {}
  * This method makes sure, if we already have previous information, we use
  * that information to mitigate delays, by returning immediately
  * @param {string} origin 
- * @param {Request} request
+ * @param {boolean} shouldLoad
  * @returns {Promise<boolean>}
  */
-async function grandVersionOkay(origin, request) {
+async function grandVersionOkay(origin, shouldLoad) {
 
 
     const path = new URL(origin).pathname
@@ -750,7 +778,7 @@ async function grandVersionOkay(origin, request) {
                         new Promise(done => setTimeout(() => done(knownRemoteVersion), MAX_TIME)),
                         (async () => {
                             try {
-                                return await fetchGrandVersion(origin)
+                                return await fetchGrandVersion(origin, shouldLoad)
                             } catch (e) {
                                 console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} `)
                             }
@@ -768,7 +796,9 @@ async function grandVersionOkay(origin, request) {
 
         })()
 
-        // loader.load(origin, checkPromise)
+        if (shouldLoad) {
+            loader.load(origin, checkPromise)
+        }
 
         return await checkPromise
     })()
@@ -791,9 +821,10 @@ const grandVersionTasks = {}
 /**
  * This method gets the grand version of a path, all anew, in an orderly way
  * @param {string} origin 
+ * @param {boolean} shouldLoad
  * @returns {Promise<number>}
  */
-async function fetchGrandVersion(origin) {
+async function fetchGrandVersion(origin, shouldLoad) {
     const path = new URL(origin).pathname;
     async function check() {
         const data = await (await fetch('/$bundle_cache/getGrandVersion', {
@@ -809,8 +840,8 @@ async function fetchGrandVersion(origin) {
     // fetched, no more than once in 5s, and fetched one at a time
     const newFetch = async () => {
         await (grandVersionTasks[path] = check())
-        if (isHTML(origin)) {
-            //loader.load(origin, grandVersionTasks[path])
+        if (isHTML(origin) && shouldLoad) {
+            loader.load(origin, grandVersionTasks[path])
         }
         setTimeout(() => delete grandVersionTasks[path], 15000)
     }

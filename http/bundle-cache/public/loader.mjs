@@ -12,11 +12,11 @@ async function init() {
 
         const loader = new LoadWidget()
 
+        loader.load('sw')
         try {
 
 
 
-            loader.load()
             const control = new SWControllerServer()
             new SWLoaderServer(loader)
 
@@ -40,7 +40,7 @@ async function init() {
         } catch (e) {
             console.error(`Could not install service worker\n`, e)
         }
-        loader.unload()
+        loader.unload('sw')
     }
 }
 
