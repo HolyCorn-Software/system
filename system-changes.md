@@ -1,3 +1,3 @@
 .
 
-Corrected minor bug
+Corrected minor bug with version reporting
