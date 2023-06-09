@@ -24,7 +24,7 @@ async function init() {
             let updated = false
             for (const reg of await navigator.serviceWorker.getRegistrations()) {
                 updated = true
-                await reg.update()
+                reg.update()
             }
 
 
@@ -32,10 +32,8 @@ async function init() {
                 await navigator.serviceWorker.register('/$bundle_cache/public/service-worker.mjs', {
                     scope: "/",
                 });
-                loadNormally()
-            } else {
-                loadNormally()
             }
+            loadNormally()
 
             control.sendUpdates()
 

@@ -1,3 +1,3 @@
 .
 
-Improved speed of service-worker-controlled pages, by removing the wait on grand updates
+Improved speed of service-worker-controlled pages, by making most operations non-blocking

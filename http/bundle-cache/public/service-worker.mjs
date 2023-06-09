@@ -40,17 +40,8 @@ self.addEventListener('fetch', (event) => {
 
             const theClient = await self.clients.get(event.clientId)
             const origin = theClient?.url || request.url
-            const path = new URL(origin).pathname
-
 
             const promise = (async () => {
-
-                if (isHTML(origin) || isUIFile(request.url) || isUISecFile(request.url)) {
-                    // Only wait if there's already a grand update in place
-                    if (grandUpdates[path]) {
-                        await grandUpdates[path]
-                    }
-                }
 
 
                 if ((!isUIFile(request.url) || /^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) && !isUISecFile(request.url)) {
@@ -403,12 +394,13 @@ const grandUpdates = {}
 async function grandUpdate(origin) {
     const path = new URL(origin).pathname
 
+    await waitForAllGrandTasks()
 
     async function freshUpdate() {
         try {
             grandUpdates[path] = main();
             if (isHTML(origin)) {
-                loader.load(origin, grandUpdates[path]);
+                // loader.load(origin, grandUpdates[path]);
             }
             await grandUpdates[path];
             setTimeout(() => delete grandUpdates[path], 15000);
@@ -509,19 +501,6 @@ async function findorFetchResource(request, origin) {
     // First things, first, ... wait for any grand update that's currently ongoing
 
 
-
-    if (fetchTasks[request.url]) {
-        try {
-            const res = await fetchTasks[request.url]
-            delete fetchTasks[request.url]
-            return res
-        } catch (e) {
-            delete fetchTasks[request.url]
-            throw e
-        }
-
-    }
-
     // Now that the grand updates are done, we check the cache for what we're looking for
 
     const cache = await caches.open(CACHE_NAME)
@@ -533,7 +512,7 @@ async function findorFetchResource(request, origin) {
             ...request,
             headers: preHeaders
         })
-        
+
         const headers = new Headers(response.headers)
         headers.append('x-bundle-cache-version', Date.now())
 
@@ -545,7 +524,7 @@ async function findorFetchResource(request, origin) {
                 headers: headers
             }
         )
-        
+
         cache.put(request.url, nwResponse)
         return response
     }
@@ -710,6 +689,16 @@ function temporalPageResponse(timing = 100) {
     );
 }
 
+async function waitForAllGrandTasks() {
+    const tasks = { ...grandVersionCheckTasks, ...grandUpdates };
+    for (const path in tasks) {
+        try {
+            await tasks[path]
+        } catch { }
+    }
+}
+
+
 const grandVersionCheckTasks = {}
 
 /**
@@ -732,13 +721,15 @@ async function grandVersionOkay(origin, request) {
         }
     }
 
+    await waitForAllGrandTasks()
+
 
     if (grandUpdates[path]) {
         await grandUpdates[path]
         return true;
     }
 
-    if ((Date.now() - (lastGrandVersionCheck[path]?.time || 0) < 60_000) && lastGrandVersionCheck[path].results === true) {
+    if ((Date.now() - (lastGrandVersionCheck[path]?.time || 0) < 6_00) && lastGrandVersionCheck[path].results === true) {
         return true
     }
 
@@ -748,7 +739,7 @@ async function grandVersionOkay(origin, request) {
         const checkPromise = (async () => {
 
 
-            const MAX_TIME = 2_000
+            const MAX_TIME = 1_000
 
             const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
             const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
@@ -777,7 +768,7 @@ async function grandVersionOkay(origin, request) {
 
         })()
 
-        loader.load(origin, checkPromise)
+        // loader.load(origin, checkPromise)
 
         return await checkPromise
     })()
@@ -819,7 +810,7 @@ async function fetchGrandVersion(origin) {
     const newFetch = async () => {
         await (grandVersionTasks[path] = check())
         if (isHTML(origin)) {
-            loader.load(origin, grandVersionTasks[path])
+            //loader.load(origin, grandVersionTasks[path])
         }
         setTimeout(() => delete grandVersionTasks[path], 15000)
     }
