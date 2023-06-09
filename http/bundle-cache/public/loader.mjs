@@ -34,7 +34,7 @@ async function init() {
                 });
                 setTimeout(() => loadNormally(), 5000) //In case the service-worker signal fails to reach
             } else {
-                loadNormally()
+                setTimeout(() => loadNormally(), 5_000) // Delay, so that the service-worker could process other things
             }
 
             control.sendUpdates()

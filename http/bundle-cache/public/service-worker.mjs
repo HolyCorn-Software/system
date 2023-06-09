@@ -10,9 +10,26 @@ console.log(`Okay, service worker working (v1) `);
 
 const CACHE_NAME = 'bundle_cache0'
 
-// Let's pull the bundle needed for this page
 
-// First things, first let's keep track of the server's version
+
+/**
+ * This method checks if a URL path is pointing to an HTML source
+ * @param {string} url 
+ * @returns {boolean}
+ */
+function isHTML(url) {
+    return url.endsWith('/') || /\.[a-zA-Z]{0,1}html$/i.test(url)
+}
+
+function isUIFile(url) {
+    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || /\/shared\/static\/logo.png/.test(url)
+}
+
+
+function isUISecFile(url) {
+    return /.((jpeg)|(png)|(jpg)|(otf)|(ttf))$/.test(url)
+}
+
 
 self.addEventListener('fetch', (event) => {
 
@@ -23,30 +40,46 @@ self.addEventListener('fetch', (event) => {
 
             const theClient = await self.clients.get(event.clientId)
             const origin = theClient?.url || request.url
+            const path = new URL(origin).pathname
+
 
             const promise = (async () => {
 
-                if (!isUIFile(request.url) || /^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) {
-                    try {
-                        return await fetch(request)
-                    } catch (e) {
-                        return await findorFetchResource(request, origin)
+                if (isHTML(origin) || isUIFile(request.url) || isUISecFile(request.url)) {
+                    // Only wait if there's already a grand update in place
+                    if (grandUpdates[path]) {
+                        await grandUpdates[path]
                     }
                 }
 
 
+                if ((!isUIFile(request.url) || /^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) && !isUISecFile(request.url)) {
+                    return await fetch(request)
+                }
+
+
                 try {
-                    if (isHTML(origin) && !await grandVersionOkay(origin)) {
-                        const guPromise = grandUpdate(origin)
-                        guPromise.then(() => {
-                            console.log(`Grand update of ${origin} finished!`)
-                        }).catch(e => {
-                            console.log(`Grand update to ${origin} failed\n`, e)
-                        })
-                        if (isHTML(request.url)) {
-                            return temporalPageResponse(1000)
+                    if (isHTML(origin) || isUIFile(request.url)) {
+                        const path = new URL(origin).pathname
+                        if (!grandUpdates[path]) {
+
+                            //allow the request to continue normally, but put a grand update in the background
+
+                            grandVersionOkay(origin).then(async result => {
+                                if (result) {
+                                    return;
+                                }
+
+                                try {
+                                    await grandUpdate(origin)
+                                    theClient?.goto(theClient.url)
+                                    console.log(`Grand update of ${origin} finished!`)
+                                } catch (e) {
+                                    console.log(`Grand update to ${origin} failed\n`, e)
+                                }
+                            }).catch(e => console.error(`Failed to check grand version for ${origin}\n`, e))
+
                         }
-                        await guPromise
                     }
                     const result = await findorFetchResource(request, origin)
                     return result
@@ -71,11 +104,10 @@ self.addEventListener('fetch', (event) => {
  * This method safely fetches a request.
  * 
  * Safely means returning an offline page if the fetch failed
- * @param {URL|RequestInfo} url 
- * @param {RequestInit} init 
+ * @param {URL|Request} url 
  * @param {Promise<Response>} params 
  */
-async function safeFetch(url, init) {
+async function safeFetch(url) {
     try {
         return await fetch(...arguments)
     } catch (e) {
@@ -86,6 +118,8 @@ async function safeFetch(url, init) {
         throw e
     }
 }
+
+
 
 
 const templates = {
@@ -255,19 +289,6 @@ async function isOffline(request) {
     }
 }
 
-/**
- * This method checks if a URL path is pointing to an HTML source
- * @param {string} url 
- * @returns {boolean}
- */
-function isHTML(url) {
-    return url.endsWith('/') || /\.[a-zA-Z]{0,1}html$/i.test(url)
-}
-
-function isUIFile(url) {
-    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || /\/shared\/static\/logo.png/.test(url)
-}
-
 const storageObject = {}
 
 const channel = Symbol()
@@ -391,9 +412,9 @@ async function grandUpdate(origin) {
                 loader.load(origin, grandUpdates[path]);
             }
             await grandUpdates[path];
-            delete grandUpdates[path];
+            setTimeout(() => delete grandUpdates[path], 15000);
         } catch (e) {
-            delete grandUpdates[path];
+            setTimeout(() => delete grandUpdates[path], 15000);
             throw e;
         }
     }
@@ -459,14 +480,21 @@ async function grandUpdate(origin) {
         }
     }
 
+    if (await grandVersionOkay(origin)) {
+        return;
+    }
+
     if (grandUpdates[path]) {
         await Promise.race([
             grandUpdates[path],
-            new Promise((resolve, reject) => setTimeout(reject, 20_000))
+            new Promise((resolve, reject) => setTimeout(reject, 60_000))
         ]).catch(e => freshUpdate())
     } else {
         await freshUpdate();
     }
+
+    lastGrandVersionCheck[path].time = Date.now()
+    lastGrandVersionCheck[path].results = true
 
 }
 
@@ -480,9 +508,27 @@ const fetchTasks = {}
  */
 async function findorFetchResource(request, origin) {
     // First things, first, ... wait for any grand update that's currently ongoing
+
     try {
-        await Promise.race([grandUpdates[origin], new Promise(x => setTimeout(x, 15_000))])
+
+        await Promise.race(
+            [
+                grandUpdates[origin],
+                new Promise(x => {
+                    setTimeout(x,
+                        // If the request is about the page itself, we wait for the grand update for no more than 1s
+                        isHTML(request.url) && (new URL(request.url).pathname === new URL(origin).pathname) ?
+                            100
+                            // For any other request, we can wait up to 25s
+                            : 25_000
+                    )
+                })
+            ]
+        )
+
     } catch { }
+
+
 
     if (fetchTasks[request.url]) {
         try {
@@ -503,13 +549,11 @@ async function findorFetchResource(request, origin) {
     async function fetchNew() {
         const preHeaders = new Headers(request.headers)
         preHeaders.set('x-bundle-cache-src', origin)
-        const response = await safeFetch(request.url, {
+        const response = await fetch(request.url, {
             ...request,
             headers: preHeaders
         })
-        if (response.headers.get('x-bundle-cache-generated')) {
-            return response
-        }
+        
         const headers = new Headers(response.headers)
         headers.append('x-bundle-cache-version', Date.now())
 
@@ -521,6 +565,9 @@ async function findorFetchResource(request, origin) {
                 headers: headers
             }
         )
+        if (/ttf/.test(request.url)) {
+            console.log(`Are we caching? ${request.url}`)
+        }
         cache.put(request.url, nwResponse)
         return response
     }
@@ -534,10 +581,11 @@ async function findorFetchResource(request, origin) {
     }
 
 
-    const nwPromise = fetchTasks[request.url] = fetchNew();
-    nwPromise.finally(x => delete fetchTasks[request.url])
+    const nwPromise = fetchNew();
 
     if (isHTML(request.url) && isHTML(origin)) {
+        nwPromise.finally(() => delete fetchTasks[request.url])
+        fetchTasks[request.url] = nwPromise
         return temporalPageResponse()
     } else {
         return await nwPromise
@@ -691,29 +739,40 @@ const grandVersionCheckTasks = {}
  * This method makes sure, if we already have previous information, we use
  * that information to mitigate delays, by returning immediately
  * @param {string} origin 
+ * @param {Request} request
  * @returns {Promise<boolean>}
  */
-async function grandVersionOkay(origin) {
+async function grandVersionOkay(origin, request) {
 
-    if ((Date.now() - (lastGrandVersionCheck[origin]?.time || 0) < 60_000) && lastGrandVersionCheck[origin].results === true) {
+
+    console.trace(`Calling just now`)
+
+    const path = new URL(origin).pathname
+
+
+    if (grandVersionCheckTasks[path]) {
+        if (await grandVersionCheckTasks[path]) {
+            return true
+        }
+    }
+
+
+    if (grandUpdates[path]) {
+        await grandUpdates[path]
+        return true;
+    }
+
+    if ((Date.now() - (lastGrandVersionCheck[path]?.time || 0) < 60_000) && lastGrandVersionCheck[path].results === true) {
         return true
     }
 
-    if (grandVersionCheckTasks[origin]) {
-        return await grandVersionCheckTasks[origin]
-    }
 
-    try {
-        await grandUpdates[new URL(origin).pathname]
-    } catch { }
-
-    grandVersionCheckTasks[origin] = (async () => {
+    grandVersionCheckTasks[path] = (async () => {
 
         const checkPromise = (async () => {
 
 
-            const MAX_TIME = 20_000
-            const path = origin
+            const MAX_TIME = 2_000
 
             const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
             const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
@@ -724,25 +783,20 @@ async function grandVersionOkay(origin) {
                         new Promise(done => setTimeout(() => done(knownRemoteVersion), MAX_TIME)),
                         (async () => {
                             try {
-                                await fetchGrandVersion(origin)
+                                return await fetchGrandVersion(origin)
                             } catch (e) {
                                 console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} `)
                             }
 
-                            // In case it succeeds, localStorage would be updated. If not, we use our older information
-                            return (await storage.getKey(`${path}-remote-version`)) || knownRemoteVersion
+                            // In case it fails, we use our older information
+                            return knownRemoteVersion
                         })()
                     ]
                 );
 
-            (lastGrandVersionCheck[origin] ||= {}).time = Date.now()
+            (lastGrandVersionCheck[path] ||= {}).time = Date.now()
 
-            const res = lastGrandVersionCheck[origin].results = localVersion >= remoteVersion
-
-            if (!res) {
-                console.log(`${origin} not okay, because `)
-            }
-
+            const res = lastGrandVersionCheck[path].results = localVersion >= remoteVersion
             return res
 
         })()
@@ -753,11 +807,11 @@ async function grandVersionOkay(origin) {
     })()
 
     try {
-        const result = await grandVersionCheckTasks[origin]
-        setTimeout(() => delete grandVersionCheckTasks[origin], 2000)
+        const result = await grandVersionCheckTasks[path]
+        delete grandVersionCheckTasks[path]
         return result
     } catch (e) {
-        setTimeout(() => delete grandVersionCheckTasks[origin], 2000)
+        delete grandVersionCheckTasks[path]
         throw e
     }
 
@@ -781,6 +835,7 @@ async function fetchGrandVersion(origin) {
             }
         })).json()
         await storage.setKey(`${path}-remote-version`, data.version)
+        return data.version
     }
 
     // The following section ensures that the grand version of each path can be 
@@ -790,20 +845,20 @@ async function fetchGrandVersion(origin) {
         if (isHTML(origin)) {
             loader.load(origin, grandVersionTasks[path])
         }
-        setTimeout(() => delete grandVersionTasks[path], 5000)
+        setTimeout(() => delete grandVersionTasks[path], 15000)
     }
     if (grandVersionTasks[path]) {
         try {
-            await grandVersionTasks[path]
+            return await grandVersionTasks[path]
         } catch {
             try {
-                await newFetch()
+                return await newFetch()
             } catch (e) {
                 throw e
             }
         }
     } else {
-        await newFetch()
+        return await newFetch()
     }
 }
 
