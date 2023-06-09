@@ -508,25 +508,6 @@ const fetchTasks = {}
 async function findorFetchResource(request, origin) {
     // First things, first, ... wait for any grand update that's currently ongoing
 
-    try {
-
-        await Promise.race(
-            [
-                grandUpdates[origin],
-                new Promise(x => {
-                    setTimeout(x,
-                        // If the request is about the page itself, we wait for the grand update for no more than 1s
-                        isHTML(request.url) && (new URL(request.url).pathname === new URL(origin).pathname) ?
-                            100
-                            // For any other request, we can wait up to 25s
-                            : 25_000
-                    )
-                })
-            ]
-        )
-
-    } catch { }
-
 
 
     if (fetchTasks[request.url]) {
@@ -564,9 +545,7 @@ async function findorFetchResource(request, origin) {
                 headers: headers
             }
         )
-        if (/ttf/.test(request.url)) {
-            console.log(`Are we caching? ${request.url}`)
-        }
+        
         cache.put(request.url, nwResponse)
         return response
     }
@@ -743,8 +722,6 @@ const grandVersionCheckTasks = {}
  */
 async function grandVersionOkay(origin, request) {
 
-
-    console.trace(`Calling just now`)
 
     const path = new URL(origin).pathname
 

@@ -1,3 +1,3 @@
 .
 
-Fixed minor bug with version reporting
+Improved speed of service-worker-controlled pages, by removing the wait on grand updates
