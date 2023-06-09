@@ -171,7 +171,7 @@ function getAssociatedURLs(url) {
     const urls = [url]
 
     if (url.endsWith('index.html')) {
-        libPath.normalize(urls.push(libPath.dirname(url) + '/'))
+        urls.push(libPath.normalize(libPath.dirname(url) + '/'))
     }
 
     return urls
