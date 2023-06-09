@@ -72,7 +72,6 @@ self.addEventListener('fetch', (event) => {
 
                                 try {
                                     await grandUpdate(origin)
-                                    theClient?.goto(theClient.url)
                                     console.log(`Grand update of ${origin} finished!`)
                                 } catch (e) {
                                     console.log(`Grand update to ${origin} failed\n`, e)
