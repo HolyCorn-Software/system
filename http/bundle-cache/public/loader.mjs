@@ -32,9 +32,9 @@ async function init() {
                 await navigator.serviceWorker.register('/$bundle_cache/public/service-worker.mjs', {
                     scope: "/",
                 });
-                setTimeout(() => loadNormally(), 5000) //In case the service-worker signal fails to reach
+                loadNormally()
             } else {
-                setTimeout(() => loadNormally(), 5_000) // Delay, so that the service-worker could process other things
+                loadNormally()
             }
 
             control.sendUpdates()
