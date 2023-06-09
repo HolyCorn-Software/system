@@ -35,6 +35,17 @@ export default class RequestMap {
         const dbData = (await this[collection].findOne()) || {};
         delete dbData._id
         this[map] = dbData
+
+        // Now, our way of detecting deleted links, is by checking on the app after 60s, to remove any paths that haven't been updated since
+        const limit = Date.now()
+        setTimeout(() => {
+            for (const item in this[map]) {
+                if (!(this[map][item].version?.emperical > limit)) {
+                    console.log(`${item.magenta.bold} removed. Perhaps the file is no more.`)
+                    this.removeURL(item)
+                }
+            }
+        }, 60_000)
     }
 
     /**
