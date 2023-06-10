@@ -298,7 +298,7 @@ const loader = new LoadWidget()
 let hasLoaded = false
 async function loadNormally() {
     if (hasLoaded) {
-        window.location.reload()
+        return;
     }
     loader.unload('sw')
     hasLoaded = true

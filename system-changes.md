@@ -1,3 +1,3 @@
 .
 
-Improved service-worker, and service-worker loader algorithms, to reduce waste
+Fixed minor reload bug with service-worker loader
