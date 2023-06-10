@@ -1,7 +1,5 @@
 .
 
-Improved the offline detection algorithm
+Added support for browsers that don't support service workers
 
-Made service-worker more efficient, and economical
-
-Made service-worker loader more robust
+Improved the UX of the loader

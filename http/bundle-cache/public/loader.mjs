@@ -46,6 +46,16 @@ async function init() {
         } catch (e) {
             console.error(`Could not install service worker\n`, e)
         }
+    } else {
+        loader.load('page-content')
+        loadNormally()
+        new MutationObserver(() => {
+            const children = [...document.body.children].filter(x => (x.tagName !== 'SCRIPT') && x != loader.html)
+            if (children.length > 0) {
+                loader.unload('page-content')
+            }
+        }).observe(document.body, { childList: true })
+
     }
 }
 
@@ -167,7 +177,7 @@ class LoadWidget {
             .hc-sw-spinner {
                 width: calc(100vw + 16px);
                 height: calc(100vh + 16px);
-                z-index: 1000;
+                z-index: 2000;
                 background-color: rgba(16, 53, 99, 1);
                 position: fixed;
                 margin:-8px;
@@ -304,8 +314,6 @@ async function loadNormally() {
     }
     loader.unload('sw')
     hasLoaded = true
-    // The service worker cache
-    console.trace(`Processing scripts!!`)
     document.querySelectorAll('script').forEach(script => {
         const srd = script.getAttribute('srd')
         if (srd) {
