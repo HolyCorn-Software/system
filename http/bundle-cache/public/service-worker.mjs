@@ -43,33 +43,13 @@ self.addEventListener('fetch', (event) => {
 
             const promise = (async () => {
 
-
                 if ((!isUIFile(request.url) || /^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) && !isUISecFile(request.url)) {
                     return await fetch(request)
                 }
 
-
                 try {
                     if (isHTML(origin) || isUIFile(request.url)) {
-                        const path = new URL(origin).pathname
-                        if (!grandUpdates[path]) {
-
-                            //allow the request to continue normally, but put a grand update in the background
-
-                            grandVersionOkay(origin).then(async result => {
-                                if (result) {
-                                    return;
-                                }
-
-                                try {
-                                    await grandUpdate(origin)
-                                    console.log(`Grand update of ${origin} finished!`)
-                                } catch (e) {
-                                    console.log(`Grand update to ${origin} failed\n`, e)
-                                }
-                            }).catch(e => console.error(`Failed to check grand version for ${origin}\n`, e))
-
-                        }
+                        makeGrandChecks(origin)
                     }
                     const result = await findorFetchResource(request, origin)
                     return result
@@ -89,6 +69,45 @@ self.addEventListener('fetch', (event) => {
     )
 
 })
+
+/** @type {{[path: string]: Promise<void>}} */
+const grandChecks = {}
+
+/**
+ * This method checks if the grand version isn't okay, and does a grand update
+ * It does so, in a way that prevents duplicate requests
+ * @param {string} origin 
+ * @returns {Promise<void>}
+ */
+async function makeGrandChecks(origin) {
+    if (grandChecks[origin]) {
+        return grandChecks[origin]
+    }
+    return grandChecks[origin] = (async () => {
+        function okay() {
+            setTimeout(() => delete grandChecks[origin], 5000)
+        }
+        if (grandUpdates[new URL(origin).pathname]) {
+            return okay()
+        }
+        await grandVersionOkay(origin).then(async result => {
+
+            if (result) {
+                return okay();
+            }
+
+            try {
+                await grandUpdate(origin)
+                console.log(`Grand update of ${origin} finished!`)
+            } catch (e) {
+                console.log(`Grand update to ${origin} failed\n`, e)
+            }
+
+            okay()
+
+        })
+    })()
+}
 
 /**
  * This method safely fetches a request.
@@ -238,7 +257,6 @@ self.addEventListener('install', async (event) => {
 
 
 self.addEventListener('activate', async (event) => {
-    controller.continueLoad()
     console.log(`Activate called.`)
     await event.waitUntil(self.clients.claim().then(async () => {
         controller.updateStorage()

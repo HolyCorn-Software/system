@@ -1,3 +1,3 @@
 .
 
-Added feature to automatically remove unused URL endpoints from the cache
+Improved service-worker, and service-worker loader algorithms, to reduce waste

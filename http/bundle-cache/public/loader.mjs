@@ -6,11 +6,11 @@
 */
 
 
+
 async function init() {
 
     if (navigator.serviceWorker) {
 
-        const loader = new LoadWidget()
 
         loader.load('sw')
         try {
@@ -33,14 +33,17 @@ async function init() {
                     scope: "/",
                 });
             }
-            loadNormally()
 
             control.sendUpdates()
+
+            if (updated) {
+                loadNormally()
+            }
+            // The service-worker will ask this page to continue loading normally
 
         } catch (e) {
             console.error(`Could not install service worker\n`, e)
         }
-        loader.unload('sw')
     }
 }
 
@@ -290,13 +293,17 @@ class LoadWidget {
 
 }
 
+const loader = new LoadWidget()
+
 let hasLoaded = false
 async function loadNormally() {
     if (hasLoaded) {
         window.location.reload()
     }
+    loader.unload('sw')
     hasLoaded = true
     // The service worker cache
+    console.trace(`Processing scripts!!`)
     document.querySelectorAll('script').forEach(script => {
         const srd = script.getAttribute('srd')
         if (srd) {
