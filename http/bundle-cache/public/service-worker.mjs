@@ -22,7 +22,7 @@ function isHTML(url) {
 }
 
 function isUIFile(url) {
-    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || /\/shared\/static\/logo.png/.test(url)
+    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || /\/shared\/static\/logo.png/.test(url) || url.endsWith('/$/system/maps/errors')
 }
 
 
@@ -85,7 +85,7 @@ async function makeGrandChecks(origin) {
     }
     return grandChecks[origin] = (async () => {
         function okay() {
-            setTimeout(() => delete grandChecks[origin], 5000)
+            setTimeout(() => delete grandChecks[origin], 15000)
         }
         if (grandUpdates[new URL(origin).pathname]) {
             return okay()
@@ -274,33 +274,7 @@ self.addEventListener('activate', async (event) => {
 
 
 function offlineResponse() {
-    const response = new Response(new Blob([templates.offline], { type: 'text/html' }),
-        {
-            headers: {
-                'X-bundle-cache-generated': true
-            }
-        }
-    );
-
-    return response;
-}
-
-let lastOfflineCheck = Date.now();
-let lastOfflineValue;
-async function isOffline(request) {
-    if (1) {
-        return false
-    }
-    if ((Date.now() - lastOfflineCheck < 20 * 1000)) {
-        return lastOfflineValue
-    }
-    try {
-        await (fetchTasks[request.url] = fetch(url));
-        lastOfflineCheck = Date.now()
-        return lastOfflineValue = false
-    } catch {
-        return lastOfflineValue = true
-    }
+    return new Response(new Blob([templates.offline], { type: 'text/html' }));
 }
 
 const storageObject = {}
@@ -536,31 +510,37 @@ async function findorFetchResource(request, origin) {
     const cache = await caches.open(CACHE_NAME)
 
     async function fetchNew() {
-        const preHeaders = new Headers(request.headers)
-        preHeaders.set('x-bundle-cache-src', origin)
-        const response = await fetch(request.url, {
-            ...request,
-            headers: preHeaders
-        })
+        try {
+            const preHeaders = new Headers(request.headers)
+            preHeaders.set('x-bundle-cache-src', origin)
+            const response = await fetch(request.url, {
+                ...request,
+                headers: preHeaders
+            })
 
-        const headers = new Headers(response.headers)
-        headers.append('x-bundle-cache-version', Date.now())
+            const headers = new Headers(response.headers)
+            headers.append('x-bundle-cache-version', Date.now())
 
 
-        const nwResponse = new Response(new Blob([await response.clone().arrayBuffer()]),
-            {
-                status: response.status,
-                statusText: response.statusText,
-                headers: headers
+            const nwResponse = new Response(new Blob([await response.clone().arrayBuffer()]),
+                {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: headers
+                }
+            )
+
+            cache.put(request.url, nwResponse)
+            return response
+        } catch (e) {
+            if (isHTML(request.url)) {
+                console.log(`Offline because:\n`, e)
+                return offlineResponse()
             }
-        )
+            throw e
+        }
+    }
 
-        cache.put(request.url, nwResponse)
-        return response
-    }
-    if (isHTML(request.url) && await isOffline(request.url)) {
-        return offlineResponse()
-    }
     const inCache = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
 
     if (inCache) {
@@ -576,7 +556,8 @@ async function findorFetchResource(request, origin) {
 
     if (!await grandVersionOkay(origin, true)) {
         const gup = grandUpdate(origin, true)
-        if (isHTML(request.url)) {
+        const isTestReq = request.headers.get('x-bundle-cache-test-request');
+        if (isHTML(request.url) && !isTestReq) {
             return temporalPageResponse(300)
         }
         await gup
@@ -586,7 +567,7 @@ async function findorFetchResource(request, origin) {
     const nwPromise = fetchNew();
     loader.load(origin, nwPromise)
 
-    if (isHTML(request.url)) {
+    if (isHTML(request.url) && !isTestReq) {
         fetchTasks[request.url] = nwPromise
         nwPromise.finally(() => delete fetchTasks[request.url])
         return temporalPageResponse()
@@ -712,7 +693,7 @@ function temporalPageResponse(timing = 100) {
             <script>
                 // Here, we make sure we keep trying to fetch the real page, to see if it's available
                 function doLoad(){
-                    fetch(window.location.href).then((reply)=> {
+                    fetch(window.location.href, {headers: {'x-bundle-cache-test-request':true} } ).then((reply)=> {
                         if(!reply.headers.get('x-bundle-cache-temporal-page')){
                             setTimeout(()=>window.location.reload(), ${timing})
                         }else{
@@ -775,7 +756,7 @@ async function grandVersionOkay(origin, shouldLoad) {
         return true;
     }
 
-    if ((Date.now() - (lastGrandVersionCheck[path]?.time || 0) < 6_00) && lastGrandVersionCheck[path].results === true) {
+    if ((Date.now() - (lastGrandVersionCheck[path]?.time || 0) < 20_000) && lastGrandVersionCheck[path].results === true) {
         return true
     }
 
