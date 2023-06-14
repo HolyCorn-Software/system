@@ -62,33 +62,29 @@ export class BackendHandler {
         //Since this might be called before the Platform, whether Base or Faculty, is initialized,
         //We make a continous function that'll initialize the error handler once the platform is ready
 
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
 
 
-            let error_engine_init_key = setInterval(async () => {
 
-                try {
-                    if ((platform = Platform.get())) {
+            try {
+                if ((platform = Platform.get())) {
 
-                        if (platform.type === 'faculty') { //If FacultyPlatform
-                            map = await platform.base.channel.remote.errors.getMap()
-                        } else {
-                            if (!(map = platform.errors?.map)) {
-                                return
-                            }
+                    if (platform.type === 'faculty') { //If FacultyPlatform
+                        map = await platform.base.channel.remote.errors.getMap()
+                    } else {
+                        if (!(map = platform.errors?.map)) {
+                            return
                         }
+                    }
 
-                        this.map = map
+                    this.map = map
 
-                        this.engine = new ErrorEngine(this.map)
-                        clearInterval(error_engine_init_key);
-                        resolve()
-                    } else { }
-                } catch (e) {
-                    console.error(e)
-                    clearInterval(error_engine_init_key)
-                }
-            }, 50)
+                    this.engine = new ErrorEngine(this.map)
+                    resolve()
+                } else { }
+            } catch (e) {
+                reject(e)
+            }
 
         })
     }

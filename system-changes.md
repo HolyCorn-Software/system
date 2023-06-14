@@ -1,5 +1,5 @@
 .
 
-Added support for browsers that don't support service workers
+Improved the startup time of the soul system
 
-Improved the UX of the loader
+Improved UX of the loader

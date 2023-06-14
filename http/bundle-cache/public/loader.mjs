@@ -165,13 +165,10 @@ class LoadWidget {
             */
 
             body.hidden >*:not(.hc-sw-spinner){
-                transition:0s;
                 opacity:0;
-                transition:0s;
             }
             body.showing >*:not(.hc-sw-spinner){
                 opacity:1;
-                transition:1s;
             }
 
             .hc-sw-spinner {
@@ -230,6 +227,12 @@ class LoadWidget {
             .hc-sw-spinner.paused .unit,
             .hc-sw-spinner.paused>.container {
                 animation: none !important;
+            }
+
+
+            .hc-sw-spinner.removing {
+                opacity:0;
+                transition:0.75s 0.125s;
             }
 
             @keyframes spin {
@@ -298,7 +301,11 @@ class LoadWidget {
             ]
         ).then(() => {
             LoadWidget.showBody()
-            this.html.remove()
+            this.html.classList.add('removing')
+            setTimeout(() => {
+                this.html.remove()
+                this.html.classList.remove('removing')
+            }, 1000)
         }).finally(() => this.onloading = false)
 
     }
