@@ -29,14 +29,12 @@ export class SessionStorage {
      */
     constructor(basePlatform) {
 
-        this.#sessions = []
+        this.#sessions = new Set()
         this.#base = basePlatform
 
         basePlatform.events.on('booted', async () => {
             console.log(`Now restoring sessions from database`)
-            await this.restoreFromDatabase();
-            this.#setErrorsOnBase();
-            
+
             try {
                 const indices = await collections.sessionStorage.listIndexes().toArray()
                 for (const index of indices) {
@@ -65,9 +63,15 @@ export class SessionStorage {
             } catch (e) {
                 console.error(e)
             }
+
+
+            await this.restoreFromDatabase();
+            this.#setErrorsOnBase();
+
+
         })
     }
-    /** @type {import("./types.js").SessionData[]} */
+    /** @type {Set<import("./types.js").SessionData>} */
     #sessions
     #base
 
@@ -76,10 +80,24 @@ export class SessionStorage {
      * @returns {Promise<void>}
      */
     async restoreFromDatabase() {
-        let sessions = await (collections.sessionStorage.find()).toArray();
-        //Filter the expired sessions first
+        await this.#checkSessions(
+            await (collections.sessionStorage.find()).toArray()
+        )
+
+    }
+
+    /**
+     * This method runs after sessions have been pulled from the database, in order
+     * to filter invalid sessions, and make important changes.
+     * @param {import("./types.js").SessionData[]} sessions 
+     * @returns {Promise<import("./types.js").SessionData[]>}
+     */
+    async #checkSessions(sessions) {
+
+
         let expired = []; //The ids of expired sessions
         let valid = []
+
 
         for (let session of sessions) {
             if (session.expires < Date.now()) {
@@ -90,22 +108,25 @@ export class SessionStorage {
         }
 
         //Now delete all the expired sessions from the database
-        await collections.sessionStorage.deleteMany({
-            id: { $in: expired }
-        })
+        if (expired.length > 0) {
+            await collections.sessionStorage.deleteMany({
+                id: { $in: expired }
+            })
+        }
 
-        this.#sessions.push(...valid);
+        this.#sessions.add(...valid);
 
+        return valid
     }
 
     /**
      * This method is owned and called at the BasePlatform in order to retrieve a session variable
      * @param {string} id The id of the session to be read
      * @param {string} key The key to be read from the session
-     * @returns {string}
+     * @returns {Promise<any>}
      */
-    getVar(id, key) {
-        let value = this.getSessionById(id).store[key]
+    async getVar(id, key) {
+        let value = (await this.getSessionById(id)).store[key]
         collections.sessionStorage.updateOne({ id: { $eq: id } }, { $set: { expires: Date.now() + SessionStorage.defaultDuration } })
         return value;
     }
@@ -115,8 +136,8 @@ export class SessionStorage {
      * @param {string} key The key to be set
      * @param {string} value The new value
      */
-    setVar(id, key, value) {
-        let client = this.getSessionById(id);
+    async setVar(id, key, value) {
+        let client = await this.getSessionById(id);
         client.store[key] = value
         client.expires = Date.now() + SessionStorage.defaultDuration //extend the session, since it was just used
         collections.sessionStorage.updateOne({ id: { $eq: id } }, { $set: client })
@@ -127,8 +148,8 @@ export class SessionStorage {
      * @param {string} id The session to be altered
      * @param {string} key The key to be deleted
      */
-    rmVar(id, key) {
-        delete this.getSessionById(id).store[key]
+    async rmVar(id, key) {
+        delete (await this.getSessionById(id)).store[key]
         collections.sessionStorage.updateOne({ id: { $eq: id } }, { $unset: key, $set: { expires: Date.now() + SessionStorage.defaultDuration } })
     }
 
@@ -136,8 +157,8 @@ export class SessionStorage {
      * This method is created and employed in the BasePlatform in order to retrieve the expiry time of a given session
      * @param {string} id Session id
      */
-    getExpiry(id) {
-        return this.getSessionById(id).expires;
+    async getExpiry(id) {
+        return await this.getSessionById(id).expires;
     }
 
     /**
@@ -154,7 +175,7 @@ export class SessionStorage {
             store: {},
             expires: Date.now() + SessionStorage.defaultDuration
         }
-        this.#sessions.push(client);
+        this.#sessions.add(client);
         collections.sessionStorage.insertOne({ id, cookie, store: {} })
         return { sessionID: id, cookie }
     }
@@ -163,11 +184,17 @@ export class SessionStorage {
      * Gets a session id by using the cookie value
      * Note that is method is not intended for Faculties. Faculties have a similarly named method, that however resides on the SessionStorageAPI
      * @param {string} cookie 
-     * @returns {string}
+     * @returns {Promise<string>}
      */
-    getSessionID(cookie) {
+    async getSessionID(cookie) {
 
-        let client = this.#sessions.filter(x => x.cookie === cookie)[0]
+        let client = [...this.#sessions].filter(x => x.cookie === cookie)[0] || await (async () => {
+            const single = await collections.sessionStorage.findOne({ cookie })
+            if (!single) {
+                return
+            }
+            return (await this.#checkSessions([single]))[0]
+        })()
         if (!client) {
             throw new Exception(`The client with cookie '${cookie}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${cookie}")` })
         }
@@ -179,8 +206,14 @@ export class SessionStorage {
      * @param {string} id 
      * @returns {import("./types.js").SessionData}
      */
-    getSessionById(id) {
-        let client = this.#sessions.filter(x => x.id === id)?.[0]
+    async getSessionById(id) {
+        let client = [...this.#sessions].filter(x => x.id === id)?.[0]
+        if (!client || (Date.now() - (client.lastUpdate ||= Date.now())) > 30_000) {
+            client = await collections.sessionStorage.findOne({ id })
+            if (client) {
+                client.lastUpdate = Date.now()
+            }
+        }
         if (!client) {
             throw new Exception(`The session with id '${id}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${id}")` })
         }
@@ -188,6 +221,7 @@ export class SessionStorage {
         if (client.expires < Date.now()) {
             throw new Exception(`The session '${id}' has expired`, { code: `${SessionStorage.#errorNamespace}.session_expired` })
         }
+
         return client;
     }
 

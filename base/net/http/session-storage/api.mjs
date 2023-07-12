@@ -43,7 +43,7 @@ export class BaseSessionStorageAPI {
         //arguments[1] because the first automatically passed argument is the handle to the remote calling faculty
         var { sessionID, varname } = arguments[1]
 
-        return BaseSessionStorageAPI.#getAPI().getVar(sessionID, varname);
+        return await BaseSessionStorageAPI.#getAPI().getVar(sessionID, varname);
     }
 
     /**
@@ -69,7 +69,7 @@ export class BaseSessionStorageAPI {
         // Remote methods usually have the attribute that their first arguments are always a handle to the calling client, therefore all other arguments are shifted by one place. Reason why signature is different from implementation
         sessionID = arguments[1]
         varname = arguments[2]
-        BaseSessionStorageAPI.#getAPI().rmVar(sessionID, varname);
+        await BaseSessionStorageAPI.#getAPI().rmVar(sessionID, varname);
     }
 
     /**

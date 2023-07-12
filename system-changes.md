@@ -1,3 +1,3 @@
 .
 
-Improved logging of the plugin manager
+Corrected minor bug affecting fetch of session data
