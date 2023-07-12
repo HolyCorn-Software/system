@@ -1,3 +1,3 @@
 .
 
-Corrected minor bug affecting fetch of session data
+Updated to the latest version of html-hc, featuring better cookie management
