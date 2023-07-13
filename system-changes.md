@@ -1,3 +1,3 @@
 .
 
-Added ability to limit transpiler tasks, to reduce unnecessary consumption of resources
+Made system more fault tolerant to service-worker installation problems
