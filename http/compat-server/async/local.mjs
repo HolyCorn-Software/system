@@ -9,24 +9,55 @@
 import child_process from 'node:child_process'
 import libUrl from 'node:url'
 
-const list = []
+/** @type {Set<{path:string, stack: string, promise:Promise<void>}>} */
+const list = new Set()
+
+const MAX_TASKS = 1
 
 
-export default function remoteTranspile(path, compatRoot) {
-    const existing = list.findIndex(x => x.path === path)
-    if (existing !== -1) {
-        return //console.log(`Not double transpiling ${path}\nby caller\n${new Error().stack}\nBecause originally it came from\n${list[existing].stack}`)
+export default async function remoteTranspile(path, compatRoot) {
+
+    if (list.has(path)) {
+        return
     }
-    list.push({ path, stack: new Error().stack })
-    return new Promise((resolve, reject) => {
-        const executorModulePath = libUrl.fileURLToPath(new URL('./executor.mjs', import.meta.url).href)
-        child_process.exec(`node ${executorModulePath}`, { env: { srcPath: path, compatRoot } }, (error, output) => {
-            if (error) {
-                reject(error)
-            } else {
-                resolve()
-            }
+
+    // And now, since transpiling is a CPU-intensive task, let's limit the number of transpiling tasks
+
+    if (list.size >= MAX_TASKS) {
+        await new Promise(resolve => {
+            list.forEach(it => {
+                it.promise.finally(() => {
+                    setTimeout(() => {
+                        if (list.size < MAX_TASKS) {
+                            resolve()
+                        }
+                    }, Math.random() * 100)
+                })
+            })
+        });
+    }
+
+    const entry = {
+        path,
+        stack: new Error().stack,
+        promise: new Promise((resolve, reject) => {
+            const executorModulePath = libUrl.fileURLToPath(new URL('./executor.mjs', import.meta.url).href)
+            child_process.exec(`node ${executorModulePath}`, { env: { srcPath: path, compatRoot } }, (error, output) => {
+                if (error) {
+                    reject(error)
+                } else {
+                    resolve()
+                }
+            })
         })
+    }
+
+
+    list.add(entry)
+
+    entry.promise.finally(() => {
+        list.delete(path)
     })
 
+    return await entry.promise
 }
