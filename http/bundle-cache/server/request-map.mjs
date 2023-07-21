@@ -108,6 +108,9 @@ export default class RequestMap {
      */
     updateVersion(url) {
         const now = Date.now()
+        if (!this[map][url]) {
+            this.addURL(url)
+        }
         this[map][url].version.emperical = this[map][url].version.grand = now
 
 
