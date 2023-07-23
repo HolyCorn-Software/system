@@ -128,6 +128,11 @@ export default class BundleCacheServer {
 
                     const url = `${req.url}`
 
+                    if (req.headers['x-bundle-cache-ignore']) {
+                        return false
+
+                    }
+
 
                     // Here, first things first, if the request is pointing
                     // to a publicly needed resource

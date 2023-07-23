@@ -1,3 +1,3 @@
 .
 
-Updated to the latest version of html-hc featuring better code
+Added ability to ignore bundle-cache, especially, for internal requests
