@@ -8,7 +8,6 @@ import { fileURLToPath } from 'url'
 import libPath from 'path'
 import fs from 'node:fs';
 import CompatFileServer from "./compat-server/server.mjs";
-import FileCache from "./file-cache/cache.mjs";
 
 const compatServer = Symbol()
 
@@ -16,7 +15,7 @@ export class StrictFileServer {
 
     /**
      * 
-     * @param {{http:HTTPServer, urlPath:string, refFolder:string, cors:boolean, cache: boolean|number}} param0 
+     * @param {{http:HTTPServer, urlPath:string, refFolder:string, cors:boolean}} param0 
      * @param {string} importURL
      * 
      * Note, initializing a StrictFileServer doesn't give access to any file.
@@ -44,7 +43,7 @@ export class StrictFileServer {
      * 
      * 
      */
-    constructor({ http, urlPath, refFolder, cors, cache }, importURL = soulUtils.getCaller()) {
+    constructor({ http, urlPath, refFolder, cors }, importURL = soulUtils.getCaller()) {
         if (!http instanceof HTTPServer) {
             throw new Error(`Please pass an HTTP server as the http parameter`)
         }
@@ -69,7 +68,7 @@ export class StrictFileServer {
 
         this[compatServer] = new CompatFileServer()
 
-        const cacheObject = cache ? new FileCache({ max_size: typeof cache === 'number' ? cache : undefined }) : undefined
+        const cacheObject = undefined
 
 
 
@@ -81,7 +80,7 @@ export class StrictFileServer {
             vPath: '/',
             callback: (req, res) => {
                 //Decide where the file to be accessed by the user is stored
-                let path = libPath.resolve(`${refFolder}${req.url}`)
+                let path = libPath.resolve(`${refFolder}${new URL(req.url, 'https://holycornsoftware.com').pathname}`)
 
                 //Now check if the user is trying to access unwanted resources
                 if (!this.whitelist.some(aPublicFolder => path.startsWith(aPublicFolder))) {

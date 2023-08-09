@@ -28,7 +28,7 @@ export class BasePlatformFacultiesAPI {
 
     }
 
-    add = async (path) => {
+    async add(path) {
         //Start a faculty
         let faculty = new Faculty(path);
         await faculty.start(this.base);

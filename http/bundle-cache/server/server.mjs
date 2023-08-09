@@ -8,9 +8,7 @@
  */
 
 import RequestMap from "./request-map.mjs"
-import chokidar from 'chokidar'
 import libUrl from 'node:url'
-import babel from '@babel/core'
 import libFs from 'node:fs'
 import libPath from 'node:path'
 import shortUUID from "short-uuid"
@@ -20,13 +18,13 @@ import unzipper from "unzipper"
 import { SuperResponse } from "../../../lib/nodeHC/http/super-response.js"
 import FileCache from "../../file-cache/cache.mjs"
 import { SuperRequest } from "../../../lib/nodeHC/http/super-request.js"
+import { BasePlatform } from "../../../base/platform.mjs"
 
 
 
 const setup = Symbol()
 
 const injectionData = Symbol()
-const lastUpdateTime = Symbol()
 
 const watcher = Symbol()
 const bundlesPath = Symbol()
@@ -40,16 +38,17 @@ export default class BundleCacheServer {
     /**
      * 
      * @param {HTTPServer} httpServer 
-     * @param {string[]} domains
      * @param {soul.http.bundlecache.RequestMapCollection} collection
      */
-    constructor(httpServer, domains, collection) {
+    constructor(httpServer, collection) {
 
-        this[setup](httpServer, domains)
+        this[setup](httpServer)
         this.map = new RequestMap(collection)
         this.setupInjection()
         /** @type {[url: string]: Promise<void>} */
         this[bundlingTasks] = {}
+
+        /** @type {string[]} An array of domains which the server should respond on*/ this.domains
 
     }
 
@@ -60,61 +59,30 @@ export default class BundleCacheServer {
      */
     async setupInjection() {
 
-        const scriptPath = `${publicPath}/loader.mjs`
-
-        /**
-         * This method is used to regenerate the data for injection
-         * @param {libFs.Stats} stat 
-         */
-        const createData = async (stat) => {
-            stat ||= await libFs.promises.stat(scriptPath)
-            if ((this[lastUpdateTime] || 0) >= stat.mtimeMs) {
-                return;
-            }
-            this[lastUpdateTime] = Date.now() + 10
-            return this[injectionData] = `<!DOCTYPE html>\n<script type='module'>${(await babel.transformFileAsync(scriptPath,
-                {
-                    presets: [
-                        [
-                            '@babel/preset-env',
-                            { modules: false }
-                        ]
-                    ]
-                }
-            )).code
-                }\n</script>`
-        }
-
-        if (!this[watcher]) {
-            this[watcher] = chokidar.watch(scriptPath)
-            const doCreate = (path, stat) => {
-                createData().catch(e => console.warn(`Caching may not work\n`, e))
-            }
-            this[watcher].on('change', doCreate);
-
-            this[watcher].on('add', doCreate)
-            createData().catch(e => console.warn(`Caching may not work\n`, e))
-        }
-
+        BasePlatform.get().compat.transpile(`${publicPath}/loader.mjs`)
 
         await libFs.promises.mkdir(
-            this[bundlesPath] = `/tmp/${shortUUID.generate()}`
+            this[bundlesPath] = `/tmp/${shortUUID.generate()}${shortUUID.generate()}`
         );
+
         process.addListener('SIGINT', () => {
             libFs.rmSync(this[bundlesPath], { force: true, recursive: true })
         })
 
     }
 
+    async getInjectionData() {
+        return this[injectionData] ||= `<!DOCTYPE html>\n<script type='module'>${(await libFs.promises.readFile(`${publicPath}/loader.mjs`)).toString()}\n</script>`
+    }
+
     /**
      * This method sets up the BundleCache, for intercepting requests, to
      * be subsequently used in building maps, and responding with bundles
-     * @param {HTTPServer} httpServer 
-     * @param {string[]} domains A list of domains which this server is known
+     * @param {HTTPServer} httpServer
      * to operate on. This is to prevent cross-origin request poisoning
      * @returns {void}
      */
-    [setup](httpServer, domains) {
+    [setup](httpServer) {
 
         this[filecache] = new FileCache(
             {
@@ -158,6 +126,8 @@ export default class BundleCacheServer {
 
                     let intercepted = false
 
+                    const injectedData = await this.getInjectionData() || '<!-- No data -->\n'
+
                     res.write = (...args) => {
 
                         // Making sure we intercept only the first call to write()
@@ -181,9 +151,8 @@ export default class BundleCacheServer {
                         // service worker script
 
                         const intercept = /html/gi.test(res.getHeader('content-type'))
-                        if (intercept) {
 
-                            const injectedData = this[injectionData] || '<!-- No data -->\n'
+                        if (intercept) {
                             res.setHeader(
                                 'Content-Length',
                                 `${new Number(res.getHeader('content-length')) + injectedData.length}`
@@ -226,7 +195,7 @@ export default class BundleCacheServer {
 
                             const refURL = new URL(src)
 
-                            if (domains.findIndex(x => x == refURL.host) === -1) {
+                            if ((this.domains || []).findIndex(x => x == refURL.host) === -1) {
                                 // We need not bother about this request, if it came
                                 // from a foreign domain
                                 return;

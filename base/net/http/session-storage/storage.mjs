@@ -5,10 +5,11 @@ It allows that even in faculties, clients should be identified and variables per
 
 */
 
-import { Exception } from "../../../../errors/backend/exception.js";
 import shortuuid from 'short-uuid'
 
 import collections from './collections.mjs'
+
+const lastAccess = Symbol()
 
 
 
@@ -28,12 +29,9 @@ export class SessionStorage {
      * @param {import('../../../platform.mjs').BasePlatform} basePlatform 
      */
     constructor(basePlatform) {
-
         this.#sessions = new Set()
-        this.#base = basePlatform
 
         basePlatform.events.on('booted', async () => {
-            console.log(`Now restoring sessions from database`)
 
             try {
                 const indices = await collections.sessionStorage.listIndexes().toArray()
@@ -65,26 +63,18 @@ export class SessionStorage {
             }
 
 
-            await this.restoreFromDatabase();
-            this.#setErrorsOnBase();
+        });
 
-
-        })
+        // Every 10s, all sessions that have not been accessed within the last 30s, will be
+        // removed from memory
+        setInterval(() => {
+            this.#sessions = new Set([...this.#sessions].filter(
+                session => !(session[lastAccess] < (Date.now() - 30_000))
+            ))
+        }, 10_000)
     }
     /** @type {Set<import("./types.js").SessionData>} */
     #sessions
-    #base
-
-    /**
-     * This method resides on the BasePlatform and is used internally during startup to pull sessions from the database
-     * @returns {Promise<void>}
-     */
-    async restoreFromDatabase() {
-        await this.#checkSessions(
-            await (collections.sessionStorage.find()).toArray()
-        )
-
-    }
 
     /**
      * This method runs after sessions have been pulled from the database, in order
@@ -207,43 +197,24 @@ export class SessionStorage {
      * @returns {import("./types.js").SessionData}
      */
     async getSessionById(id) {
-        let client = [...this.#sessions].filter(x => x.id === id)?.[0]
-        if (!client || (Date.now() - (client.lastUpdate ||= Date.now())) > 30_000) {
-            client = await collections.sessionStorage.findOne({ id })
-            if (client) {
-                client.lastUpdate = Date.now()
+        let session = [...this.#sessions].filter(x => x?.id === id)?.[0]
+        if (!session || (Date.now() - (session[lastAccess] ||= Date.now())) > 30_000) {
+            session = await collections.sessionStorage.findOne({ id })
+            if (session) {
+                session[lastAccess] = Date.now()
             }
         }
-        if (!client) {
+        if (!session) {
             throw new Exception(`The session with id '${id}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${id}")` })
         }
         //Now if the client's session has expired
-        if (client.expires < Date.now()) {
+        if (session.expires < Date.now()) {
             throw new Exception(`The session '${id}' has expired`, { code: `${SessionStorage.#errorNamespace}.session_expired` })
         }
 
-        return client;
-    }
+        this.#sessions.add(session)
 
-    /**
-     * 
-     * This method is called in order to append errors contributed by this module (SessionStorage)
-     * This method is owned and available from the BasePlatform only
-     * 
-     */
-    #setErrorsOnBase() {
-        //Check if custom errors have been previously set before
-        //How do we do that? We take the first error from our set of custom errors and check if it exists
-        let error0 = Reflect.ownKeys(SessionStorage.customErrors)[0]
-        if (!error0) {
-            //Then this module doesn't have any custom errors to contribute in the first place
-            return;
-        }
-        if (this.#base.errors.custom[error0]) {
-            return; //Then our custom errors have already been applied
-        }
-
-        this.#base.errors.setCustomErrors(SessionStorage.customErrors);
+        return session;
     }
     static #errorNamespace = 'net.sessionStorage'
     /**

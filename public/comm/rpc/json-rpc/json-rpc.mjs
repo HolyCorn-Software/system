@@ -10,7 +10,7 @@ import { JSONRPCManager } from './manager/manager.mjs';
 import JSONRPCRemote from './remote.mjs';
 import JSONRPCDefaultStub from './stub.mjs';
 
-import uuid  from '../../uuid/uuid.mjs'
+import uuid from '../../uuid/uuid.mjs'
 import CleanEventTarget from './clean-event-target.mjs';
 import EventChannelServer from './event-channel/server/sever.mjs';
 import EventChannelClient from './event-channel/client.mjs';
@@ -110,13 +110,13 @@ export default class JSONRPC extends CleanEventTarget {
          * The destroy event is called when json-rpc is about to be cleaned from the memory
          * The 'reinit' is dispatched by any object that owns json-rpc, telling other listeners,
          * that json-rpc recovered from a stalled state, and is now processing requests
-         * @type {(event: "destroy"|"reinit", cb: (event: CustomEvent)=> void )=> void} 
+         * @type {(event: "destroy"|"reinit", cb: (event: CustomEvent)=> void, opts: AddEventListenerOptions )=> void} 
         */ this.addEventListener
 
         this.addEventListener('destroy', () => {
             // 1s after destroy, cleanup the event listener
             setTimeout(() => this.cleanup(), 1000)
-        })
+        }, { once: true })
     }
 
     /** 

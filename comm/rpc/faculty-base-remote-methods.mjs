@@ -9,6 +9,9 @@ import FacultySettingsBaseRemote from '../../../system/base/settings/remote.mjs'
 import LanguageInternalMethods from '../../base/lang/terminals/internal.mjs';
 import BasePluginAPIMethods from '../../base/plugin/terminal.mjs';
 import FacultyManagementRemote from '../../lib/libFaculty/management/manager.mjs';
+import FunctionProxy from '../../util/function-proxy.mjs';
+
+let instance;
 
 /**
  * @typedef BasePlatform
@@ -28,6 +31,11 @@ export class BaseToFacultyRemoteMethods {
      */
     constructor(platform) {
 
+        if (instance) {
+            return instance
+        }
+        instance = this
+
         /**@type {import('../../base/platform.mjs').BasePlatform} */
 
         this[basePlatform] = platform
@@ -38,15 +46,16 @@ export class BaseToFacultyRemoteMethods {
 
         /** @type {typeof platform.faculty_http_api} */ this.http
 
-
-        this.errors = new BaseToFacultyErrorAPIMethods(this[basePlatform])
-
         this.lang = new LanguageInternalMethods()
         this.plugin = new BasePluginAPIMethods()
         this.settings = new FacultySettingsBaseRemote(platform)
-        
+
+        /** @type {platform['compat']} */
+        this.compat = new FunctionProxy.SkipArgOne(platform.compat)
+
+
     }
-    get bundlecache(){
+    get bundlecache() {
         return this[basePlatform].bundlecache.remote
 
     }
@@ -80,7 +89,7 @@ export class BaseToFacultyRemoteMethods {
                 }
 
                 const interval = setInterval(() => {
-                    if (fs.existsSync(`${faculty.descriptor.path}/socket`) && faculty.flags.networkEnabled) {
+                    if (fs.existsSync(`${faculty.descriptor.path}/socket`)) {
                         details = {
                             local: `${faculty.descriptor.path}/socket`
                         }
@@ -91,7 +100,6 @@ export class BaseToFacultyRemoteMethods {
             }),
             new Promise(resolve => setTimeout(resolve, timeout))
         ])
-
 
         return details;
     }
@@ -149,42 +157,14 @@ export class BaseToFacultyRemoteMethods {
     }.bind(this)
 
 
+    get bootTasks() {
+        return this[basePlatform].bootTasks
+    }
+
 
 
 
 }
-
-
-
-class BaseToFacultyErrorAPIMethods {
-
-    /**
-     * 
-     * @param {import('../../base/platform.mjs').BasePlatform} base 
-     */
-    constructor(base) {
-        this[basePlatform] = base
-    }
-    /**
-     * This method returns error information for the system
-     * @returns {Promise<import('system/errors/handler.mjs').ErrorMapV2>}
-     */
-    getMap() {
-        return this[basePlatform].errors.map
-    }
-
-    /**
-     * Use this method to add error information to the entire system at runtime
-     * @param  {import('system/errors/handler.mjs').ErrorMapV2} args 
-     * @returns {Promise<void>}
-     */
-    setCustomErrors(callerFaculty, errors) {
-        return this[basePlatform].errors.setCustomErrors(errors);
-    }
-
-
-}
-
 
 
 /**
@@ -218,5 +198,3 @@ export class FacultyToBaseRemoteMethods {
     }
 
 }
-
-const pluginRemote = Symbol()

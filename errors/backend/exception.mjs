@@ -5,21 +5,11 @@ It is used to prevent embarrassing errors
 */
 
 import short from 'short-uuid'
-import { BackendHandler } from '../handler.mjs';
 
 function shortUniqueID() {
     let generator = short(short.constants.flickrBase58)
     return generator.new()
 }
-
-
-
-/** @type {import('../handler.mjs').BackendHandler} */
-let handler = new BackendHandler();
-setImmediate(async () => {
-    await handler.init()
-
-})
 
 
 export class Exception extends Error {
@@ -69,40 +59,12 @@ export class Exception extends Error {
     }
 
     /**
-     * Returns detailed information about the error, from the error code
-     * @returns {import('../handler.mjs').ResolvedErrorV2}
-     */
-    resolve() {
-        if (this.code) {
-            return {
-                ...handler.resolve(this.code),
-                id: this.id,
-                code: this.code
-            }
-        } else {
-            throw new Error(`Could not resolve exception ${this.id} since the 'code' attribute is not set`)
-        }
-    }
-
-    /**
      * This defines a set of attributes that are visible and helpful to the client
      * 
      * @returns {{id:string, code:string, httpCode: number, message:string, version:2}}
      */
     get userObject() {
-
-        /** @type {Exception|import('../handler.mjs').ResolvedErrorV2} */
-        let final = this;
-        try {
-            final = this.resolve()
-        } catch { }
-
-        return {
-            id: final.id,
-            code: final.code,
-            httpCode: final.backend?.httpCode,
-            message: final.frontend?.message || final.message
-        }
+        return this
     }
 
 }
