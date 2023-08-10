@@ -14,4 +14,24 @@ export type ClientTable = {
     [id: string]: JSONRPC[]
 }
 
-type ExtractRegisterData<T> = T extends EventChannelServer<infer RegistrationData> ? RegistrationData : undefined
+export type ExtractRegisterData<T> = T extends EventChannelServer<infer RegistrationData> ? RegistrationData : undefined
+
+interface ClientOptions {
+    timeout?: number
+    precallWait?: number
+    retries?: number
+    retryDelay?: number
+}
+
+type MassCallReturns<value> = Promise<{
+    [id: string]: (Promise<Awaited<value>>)[]
+}>
+
+export type MassCallInterface<T> =
+    T extends (...args: (infer input)[]) => infer value ? (...args: input[]) => MassCallReturns<value>
+    :
+    T extends string | number | boolean | symbol | undefined ? T
+    :
+    {
+        [K in keyof T]: MassCallInterface<T[K]>
+    }

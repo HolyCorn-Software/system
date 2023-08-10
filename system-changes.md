@@ -1,5 +1,3 @@
 .
 
-Improved the startup time of the soul system
-
-Improved UX of the loader
+Updated to the latest version of html-hc, with rpc, and UI libraries.

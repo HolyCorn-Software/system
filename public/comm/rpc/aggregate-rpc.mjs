@@ -15,10 +15,14 @@ import ClientJSONRPC from './websocket-rpc.mjs';
 const established_connections = Symbol('get [connections]');
 let pending_connections_symbol = Symbol(`Pending connnections for AggregateRPCProxy`)
 
-class AggregateRPCProxy {
+/**
+ * @extends rpc.HcAggregateRPC
+ */
+export class AggregateRPCProxy extends Object {
 
     constructor() {
 
+        super()
 
         this[pending_connections_symbol] = {}
 
@@ -126,9 +130,6 @@ class RemoteFacultyRPCObject {
                     const store_connection = (connection) => {
                         let connection_name = name;
                         aggregate[established_connections][connection_name] = connection;
-                        // connection.socket.addEventListener('close', () => {
-                        //     delete aggregate[established_connections][connection_name]
-                        // })
                     }
 
 
@@ -295,10 +296,6 @@ const session_auth = async (connection) => {
 }
 
 
-
-/**
- * @type {import('./types.js').AggregateRPCTransform<rpc.Public>}
- */
 let hcRpc = window.hcRpc = new AggregateRPCProxy();
 
 export default hcRpc;

@@ -13,6 +13,7 @@ export default class JSONRPCDefaultStub {
 
     constructor(json_rpc) {
         this.events = new JSONRPCEventsStub(json_rpc)
+        this.activeObject = {}
     }
 
 }

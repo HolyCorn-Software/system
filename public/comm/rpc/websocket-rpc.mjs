@@ -12,6 +12,8 @@ import JSONRPC from "./json-rpc/json-rpc.mjs";
 
 const reconnect_promise = Symbol()
 
+const abort = Symbol()
+
 export default class ClientJSONRPC extends JSONRPC {
 
 
@@ -44,6 +46,8 @@ export default class ClientJSONRPC extends JSONRPC {
                 buffer = [residue]
             }
         }
+        this[abort] = new AbortController()
+
         socket.addEventListener('message', (event) => {
             if (socket !== this.socket) {
                 this.socket.dispatchEvent('message', event);
@@ -51,7 +55,7 @@ export default class ClientJSONRPC extends JSONRPC {
                 return socket.removeEventListener('message', socket_on_message)
             }
             socket_on_message(event)
-        })
+        }, { signal: this[abort].signal })
 
 
         this.ondata = async d => {
@@ -74,14 +78,22 @@ export default class ClientJSONRPC extends JSONRPC {
         }
 
 
-        socket.onclose = () => {
+        socket.addEventListener('close', () => {
             //Reconnect if and only if the socket is still our socket
             if (this.socket === socket) {
                 this.socket.onclose = undefined; //Prevent this recovery method from happening again
                 this.reconnect()
             }
-        }
+        }, { once: true, signal: this[abort].signal })
         this.__socket__ = socket;
+    }
+
+    detachSocket() {
+        const { socket } = this;
+        delete this.__socket__
+        this[abort].abort()
+
+        return socket
     }
 
     reconnect() {

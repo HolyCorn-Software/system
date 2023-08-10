@@ -33,7 +33,7 @@ export class JSONRPCManager extends CleanEventTarget {
 
     /**
      * This method is called when data comes into the manager.
-     * @param {JSONRPCMessage} object 
+     * @param {import("../types").JSONRPCMessage} object 
      */
     async accept(object) {
 
@@ -101,6 +101,17 @@ export class JSONRPCManager extends CleanEventTarget {
 
                 if ((ResultPrototypeConstructor === Generator) || (ResultPrototypeConstructor === AsyncGenerator)) {
                     this.transmission.startLoopReply(result, object)
+                } else if (result instanceof JSONRPC.ActiveObject) {
+                    this.transmission.activeObjectReply(result, object)
+                    const id = JSONRPC.ActiveObject.getId(result);
+                    this.json_rpc.$rpc.activeObject[id] = JSONRPC.ActiveObject.getData(result)
+                    const abort = new AbortController()
+                    const ondestroy = () => {
+                        delete this.json_rpc.$rpc.activeObject[id]
+                        abort.abort()
+                    }
+                    result.addEventListener('destroy', ondestroy, { once: true, signal: abort.signal })
+                    this.json_rpc.addEventListener('destroy', ondestroy, { once: true, signal: abort.signal })
                 } else {
                     this.transmission.dataReply(result, object)
                 }
@@ -134,9 +145,7 @@ export class JSONRPCManager extends CleanEventTarget {
             this.dispatchEvent(new CustomEvent(`reject-${object.return.message}`, { detail: object.return.error }))
         } else {
             if (typeof object.return != 'undefined') {
-                if (object.return.type === 'data') {  //Straightforward
-                    this.dispatchEvent(new CustomEvent(`resolve-${object.return.message}`, { detail: object.return.data }))
-                }
+
                 if (object.return.type === 'loop') {
                     //Now, let's fabricate a generator, that continuously fetches the data remotely
                     const manager = this
@@ -204,6 +213,26 @@ export class JSONRPCManager extends CleanEventTarget {
 
                     this.dispatchEvent(new CustomEvent(`resolve-${object.return.message}`, { detail: gen() }))
                 }
+                if (object.return.type === 'data') {
+
+                    if (object.activeObjectID) {
+                        // When the object returned is an ActiveObject 
+                        // An active object can be contain methods which can be invoked remotely
+                        this.dispatchEvent(
+                            new CustomEvent(`resolve-${object.return.message}`, {
+                                detail: new ActiveObjectConsumer(
+                                    object.return.data,
+                                    object.activeObjectID,
+                                    this.json_rpc
+                                )
+                            })
+                        )
+                    } else {
+                        //Straightforward
+                        this.dispatchEvent(new CustomEvent(`resolve-${object.return.message}`, { detail: object.return.data }))
+                    }
+                }
+
             }
         }
 
@@ -230,5 +259,38 @@ export class JSONRPCManager extends CleanEventTarget {
         }
     }
 
+
+}
+
+
+class ActiveObjectConsumer {
+
+    /**
+     * This is the representation of an ActiveObject on the receiving end
+     * @param {object} data 
+     * @param {string} path
+     * @param {JSONRPC} jsonrpc
+     */
+    constructor(data, path, jsonrpc) {
+
+        return new Proxy(() => undefined, {
+            get: (target, property, receiver) => {
+                if (property in data) {
+                    return Reflect.get(data, property, receiver)
+                }
+                if (typeof property === 'symbol' || property === 'then') {
+                    return undefined
+                }
+                return new ActiveObjectConsumer(data, `${path}.${property}`, jsonrpc)
+            },
+            apply: (target, thisArg, argArray) => {
+                return Reflect.apply(jsonrpc.remote.$rpc.activeObject[path], thisArg, argArray)
+            },
+            set: (target, property, value, receiver) => {
+                throw new Error(`Sorry, it's not possible to set anything on an ActiveObject`)
+            }
+        })
+
+    }
 
 }

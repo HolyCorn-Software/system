@@ -4,6 +4,9 @@
  * This module contains type definitions needed by the json-rpc module
  */
 
+import { Collection } from "mongodb"
+
+
 
 interface JSONRPCMessage {
     /** A unique id representing the message */
@@ -41,6 +44,9 @@ interface JSONRPCMessage {
         data: any
 
     }
+
+    /** This field is set when the data returned, or parameter passed, is an ActiveObject */
+    activeObjectID: string
     /**
      * This field is present when the message received is a chunk of data from a loop
      * or, when the message is an outgoing packet requesting for items of a loop
@@ -72,4 +78,25 @@ interface JSONRPCMessage {
     /** The number of times we've tried to resend this message */
     resends: number
 
-} 
+}
+
+interface ActiveObjectConfig {
+    /** 
+     * This specify the number of milliseconds since last access,
+     * that the object is allowed to live
+     * 
+     */
+    timeout: number
+}
+
+
+global {
+    namespace soul.jsonrpc {
+        declare var ActiveObjectSource: {
+            new <T>(): {
+                $0: T
+            }
+        }
+
+    }
+}

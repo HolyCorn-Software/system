@@ -10,7 +10,7 @@ import { JSONRPCManager } from './manager/manager.mjs';
 import JSONRPCRemote from './remote.mjs';
 import JSONRPCDefaultStub from './stub.mjs';
 
-import uuid  from '../../uuid/uuid.mjs'
+import uuid from '../../uuid/uuid.mjs'
 import CleanEventTarget from './clean-event-target.mjs';
 import EventChannelServer from './event-channel/server/sever.mjs';
 import EventChannelClient from './event-channel/client.mjs';
@@ -110,13 +110,15 @@ export default class JSONRPC extends CleanEventTarget {
          * The destroy event is called when json-rpc is about to be cleaned from the memory
          * The 'reinit' is dispatched by any object that owns json-rpc, telling other listeners,
          * that json-rpc recovered from a stalled state, and is now processing requests
-         * @type {(event: "destroy"|"reinit", cb: (event: CustomEvent)=> void )=> void} 
+         * @type {(event: "destroy"|"reinit", cb: (event: CustomEvent)=> void, opts: AddEventListenerOptions )=> void} 
         */ this.addEventListener
 
         this.addEventListener('destroy', () => {
             // 1s after destroy, cleanup the event listener
             setTimeout(() => this.cleanup(), 1000)
-        })
+            this.accept = () => undefined
+            this.ondata = () => undefined
+        }, { once: true })
     }
 
     /** 
@@ -191,6 +193,125 @@ export default class JSONRPC extends CleanEventTarget {
         }
     }
 
+    static {
+
+        this.ActiveObject =
+            /**
+             * @template T
+             * @extends soul.jsonrpc.ActiveObjectSource<T>
+             */
+            class ActiveObject extends CleanEventTarget {
+
+                /**
+                 * This initializes an object that can be used on the frontend, like it was there.
+                 * A consumer can call any of the functions on the object
+                 * @param {T} object 
+                 * @param {ActiveObjectConfig} config 
+                 */
+                constructor(object, config = {}) {
+                    super()
+                    this[activeObjectConfig] = config
+                    this[activeObjectID] = uuid()
+
+                    // Let's make sure the active object lives only for a short short time
+                    // for the sake of saving memory
+                    let timeoutKey;
+                    const setDestroy = () => {
+                        clearTimeout(timeoutKey)
+                        timeoutKey = setTimeout(() => {
+                            this.dispatchEvent(new CustomEvent('destroy'))
+                            this.cleanup()
+                        }, config.timeout || 2 * 60 * 60 * 1000)
+                    }
+
+                    /** @type {(event: "destroy", cb: (event: CustomEvent)=> void, opts: AddEventListenerOptions )=> void} */ this.addEventListener
+
+
+                    // Let's make sure every operation performed on the ActiveObject extends
+                    // it's life
+                    this[activeObjectData] = new Proxy(object, {
+                        get: (target, property, receiver) => {
+                            setDestroy()
+                            return Reflect.get(target, property, receiver)
+                        },
+                        set: (target, property, value, receiver) => {
+                            setDestroy()
+                            return Reflect.set(target, property, value, receiver)
+                        },
+                        apply: (target, thisArg, argArray) => {
+                            setDestroy()
+                            return Reflect.apply(target, thisArg, argArray)
+                        }
+                    })
+
+                }
+
+                /**
+                 * This method returns the data in an active object
+                 * @param {JSONRPC.ActiveObject<T>} activeObject 
+                 * @returns {T}
+                 */
+                static getData(activeObject) {
+                    return activeObject[activeObjectData]
+                }
+
+                /**
+                 * This method returns the configuration data in an active object
+                 * @param {ActiveObject<T>} activeObject 
+                 * @returns {T}
+                 */
+                static getConfig(activeObject) {
+                    return activeObject[activeObjectConfig]
+                }
+
+                /**
+                 * This method returns the id of an active object
+                 * @param {ActiveObject<T>} activeObject 
+                 * @returns {T}
+                 */
+                static getId(activeObject) {
+                    return activeObject[activeObjectID]
+                }
+
+
+                /**
+                 * This method returns the parts of an active object that do not change.
+                 * 
+                 * The parts that can be safely transmitted to the client
+                 * @param {ActiveObject} object0 
+                 * @returns {object}
+                 */
+                static getStaticData(object0) {
+                    const object = object0 instanceof ActiveObject ? ActiveObject.getData(object0) : object0
+                    function isSafe(item) {
+                        const type = typeof item
+                        return type !== 'function' && type !== 'bigint'
+                    }
+                    if (isSafe(object)) {
+                        return object
+                    }
+
+                    if (typeof object == 'object') {
+                        const safe = {}
+
+                        for (const key of Reflect.ownKeys(object)) {
+                            if (isSafe(object[key])) {
+                                safe[key] = object[key]
+                            }
+                            if (typeof object[key] === 'object') {
+                                safe[key] = this.computeActiveStatic(object[key])
+                            }
+                        }
+
+                        return safe
+                    }
+                }
+            }
+    }
+
 
 }
 
+const activeObjectData = Symbol()
+const activeObjectConfig = Symbol()
+const activeObjectID = Symbol()

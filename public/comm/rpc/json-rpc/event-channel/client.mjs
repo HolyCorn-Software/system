@@ -10,6 +10,8 @@ import JSONRPC from "../json-rpc.mjs";
 
 const jsonrpc = Symbol()
 const init_fxn = Symbol()
+const force = Symbol()
+const init_done = Symbol()
 
 export default class EventChannelClient {
 
@@ -25,14 +27,20 @@ export default class EventChannelClient {
         this[init_fxn] = init
 
 
-        this[jsonrpc].addEventListener('reinit', () => this.init().catch(e => console.error(e)))
+        this[jsonrpc].addEventListener('reinit', () => this.init(force).catch(e => console.error(e)))
 
     }
     get events() {
         return this[jsonrpc].$rpc.events
     }
     async init() {
+        if (this[init_done] && arguments[0] !== force) {
+            return
+        }
         await this[init_fxn]()
+        this[init_done] = true
+        this.events.dispatchEvent(new CustomEvent('init'))
+        return true
     }
 
 

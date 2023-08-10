@@ -42,7 +42,6 @@ export default class EventChannelPublicMethods {
             throw new Error(`The register() method, is supposed to return an array of strings, which are ids used to identify the client`)
         }
 
-        // console.log(`Adding \n`, ...ids.map(x => `${x}\n`), `\nto client `, client.id)
 
         this[server][internal].addClient(ids, client)
 
