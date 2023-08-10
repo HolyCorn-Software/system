@@ -56,7 +56,7 @@ export default class SystemHTTP extends HTTPServer {
         this.route({
             point: '/maps/errors',
             callback: (req, res) => {
-                res.endJSON(manager.base.errors.map)
+                res.endJSON({ error: "Not Supported" })
             }
         })
 
@@ -72,14 +72,12 @@ export default class SystemHTTP extends HTTPServer {
         );
 
         BasePlatform.get().events.addListener('booted', () => {
-            setTimeout(() => {
-                new VersionReporter(
-                    BasePlatform.get().bundlecache.base
-                ).watch(
-                    libPath.normalize(`${this.system_path}/static`) + '/',
-                    libUrl.fileURLToPath(new URL(publicDir, import.meta.url).href)
-                )
-            }, 1000)
+            new VersionReporter(
+                BasePlatform.get().bundlecache.base
+            ).watch(
+                libPath.normalize(`${this.system_path}/static`) + '/',
+                libUrl.fileURLToPath(new URL(publicDir, import.meta.url).href)
+            )
         })
 
 

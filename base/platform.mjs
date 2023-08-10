@@ -18,9 +18,9 @@ import quick from '../database/quick.mjs';
 import { BasePlatformHTTPAPI } from "./net/http/api/api.mjs";
 import util from 'util';
 import { BasePlatformHTTPManager } from "./net/http/platform-http-manager.js";
-import { BasePlatformErrorAPI } from "./errors.js";
 import LanguageController from "./lang/controller.mjs";
 import BaseBundleCacheAPI from "./net/http/bundle-cache/api.mjs";
+import BaseCompatServer from "./net/http/compat/server.mjs";
 
 const startHTTP = Symbol()
 const init0 = Symbol()
@@ -121,6 +121,9 @@ export class BasePlatform extends Platform {
             throw new Error(`Please pass the following parameters: 'port', 'key', 'cert', and (optionally) 'ca'`)
         }
 
+
+        this.compat = new BaseCompatServer()
+
         /**
          * RPC server, to communicate with brother-platforms
          */
@@ -154,9 +157,6 @@ export class BasePlatform extends Platform {
 
         await super.init()
 
-
-        this.errors = new BasePlatformErrorAPI(this);
-
         this.faculties = new BasePlatformFacultiesAPI(this);
 
 
@@ -172,6 +172,7 @@ export class BasePlatform extends Platform {
 
 
         this.lang = new LanguageController()
+
     }
 
 
@@ -184,7 +185,14 @@ export class BasePlatform extends Platform {
         let http_manager = new BasePlatformHTTPManager(this, { http_port, https_port })
         await http_manager.init()
         this.http_manager = http_manager;
-        this.events.addListener('booted', () => this.bundlecache = new BaseBundleCacheAPI())
+        this.bundlecache = new BaseBundleCacheAPI()
+        this.events.addListener('booted', () => {
+            this.compat.allDone().then(() => {
+                console.log(`Done transpiling all frontend files`)
+                this.http_manager.platform_http.isHalted = false
+                console.log(`The server has started accepting HTTP requests`.cyan)
+            })
+        })
     }
 
     async exit() {
@@ -192,7 +200,8 @@ export class BasePlatform extends Platform {
         //Close faculties
         for (var faculty of this.faculties?.members || []) {
             try {
-                await faculty.process.kill()
+                // TODO: Send stop signal
+                await faculty.channel.terminate()
                 console.log(`Stopped ${faculty.descriptor.label.blue}`)
             } catch (e) {
                 console.log(`Could not stop ${faculty.descriptor.label.blue} !\n`, e)
@@ -205,17 +214,6 @@ export class BasePlatform extends Platform {
     }
     get type() {
         return 'base'
-    }
-
-
-
-    /**
-     * 
-     * @param {string} ip 
-     * This method is used to connect to a remote platform, for the purposes of reaching other faculties and enjoying their services
-     */
-    async connect(ip) {
-
     }
 
     /** @returns {BasePlatform} */ static get() {

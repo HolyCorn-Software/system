@@ -5,7 +5,7 @@
  */
 
 import { BasePlatform } from "../platform.mjs"
-import { Exception } from '../../errors/backend/exception.js'
+import { Exception } from '../../errors/backend/exception.mjs'
 
 
 

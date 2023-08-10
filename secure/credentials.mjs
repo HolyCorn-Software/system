@@ -6,9 +6,6 @@ As well as the private key and certificate
 
 import fs from 'fs'
 import libPath from 'path'
-
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
 import colors from 'colors'
 colors.enable()
 
@@ -60,7 +57,7 @@ class Credentials {
             throw new Error(`The system needs the path to the file ${requirement_full_name.blue}. Specify this in the environment variables `)
         }
 
-        const platform_database = require(`${process.cwd()}/` + process.env.DATABASE_CONFIG);
+        const platform_database = JSON.parse(fs.readFileSync(`${process.cwd()}/` + process.env.DATABASE_CONFIG));
 
 
 

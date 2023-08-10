@@ -55,11 +55,6 @@ export class BasePlatformHTTPManager {
         console.log(`
         ${'System related features on SystemHTTP\n\tare running on port '.cyan}${this.system_http.port.toString().blue}, ${'routed to '.cyan}${this.system_http.system_path.green}
         `)
-
-        setTimeout(() => {
-            this.platform_http.isHalted = false;
-            console.log(`The server has started accepting HTTP requests`.cyan)
-        }, 3000)
     }
 
     enforceSSL() {

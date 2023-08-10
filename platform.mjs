@@ -55,7 +55,7 @@ export class Platform {
         //Now, make some classes global
         global.HTTPServer = (await import('./http/server.mjs')).HTTPServer;
 
-        import('./errors/backend/exception.js').then(x => {
+        import('./errors/backend/exception.mjs').then(x => {
             global.Exception = x.Exception
         });
         import('./lib/libFaculty/platform.mjs').then(x => {
@@ -93,6 +93,7 @@ export class Platform {
         });
 
 
+        this.bootTasks = new soulUtils.WaitList()
 
 
     }

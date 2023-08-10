@@ -4,48 +4,50 @@ This defines the interface between a BasePlatform and FacultyPlatform using proc
 */
 
 
+import { BasePlatform } from '../../base/platform.mjs';
 import { BaseToFacultyRemoteMethods, FacultyToBaseRemoteMethods } from '../rpc/faculty-base-remote-methods.mjs'
 import { CommInterface } from './interface.mjs'
+import worker_threads from 'node:worker_threads'
 
 
 export class FacultyBaseCommInterface extends CommInterface {
     //Common interface that defines communications between client and server
 
     /**
-     * @param {object} methods An object containing methods that will automatically be registered once the the interface is created
-     * @param {NodeJS.Process|undefined} process The process to communicate with
      * @param {import('../../base/platform.mjs').BasePlatform} basePlatform
+     * @param {import('soul:lib/libFaculty/faculty.mjs').Faculty} faculty
      */
-    constructor(methods = {}, process = global.process, basePlatform) {
+    constructor(basePlatform, faculty) {
+
 
         super();
 
-        process.on('message', (d) => {
-            this.rpc.accept(d.toString())
-        })
+        if (BasePlatform.get() instanceof BasePlatform) {
+            // In base platform
+            faculty.channel.addListener('message', (data) => this.rpc.accept(data))
+            this.rpc.flags.first_arguments = [faculty]
+            this.rpc.ondata = d => faculty.channel.postMessage(d)
+            this.rpc.stub = new BaseToFacultyRemoteMethods(basePlatform)
 
-        this.rpc.ondata = d => {
-            process.send(d)
-        }
 
-        this.rpc.stub = methods;
+        } else {
 
-        //If in Faculty Platform
-        if (process === global.process) {
+            //If in Faculty Platform
+
+            worker_threads.parentPort.addListener('message', (data) => {
+                this.rpc.accept(data)
+            })
+
+
+
+            this.rpc.ondata = d => {
+                worker_threads.parentPort.postMessage(d)
+            }
+
+
             this.rpc.flags.first_arguments = [] //Don't inject the default JSON RPC Object as first argument
             this.rpc.sub = new FacultyToBaseRemoteMethods()
-        } else {
-            this.rpc.flags.first_arguments = [basePlatform.faculties.findByJSONRPC(this.rpc)]
-            Reflect.defineProperty(this.rpc.flags, 'first_arguments', {
-                get: () => {
-                    const faculty = basePlatform.faculties.findByJSONRPC(this.rpc)
-                    if (!faculty) {
-                        throw new Error(`Cannot invoke method on BasePlatform without being a registered faculty`)
-                    } else {
-                        return [faculty]
-                    }
-                }
-            })
+
         }
     }
     /**

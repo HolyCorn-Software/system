@@ -6,13 +6,12 @@
  * as well as the versions of each url
  */
 
+import { BasePlatform } from '../../../base/platform.mjs';
 import DelayedAction from '../../../public/html-hc/lib/util/delayed-action/action.mjs';
 
 const map = Symbol()
 const scheduleUpdate = Symbol()
 const collection = Symbol()
-
-const isTarget = (url) => /\/doctor-home\/widget.mjs/gi.test(url)
 
 export default class RequestMap {
 
@@ -32,20 +31,29 @@ export default class RequestMap {
     }
 
     async init() {
-        const dbData = (await this[collection].findOne()) || {};
-        delete dbData._id
-        this[map] = dbData
+
+        const limit = Date.now()
 
         // Now, our way of detecting deleted links, is by checking on the app after 60s, to remove any paths that haven't been updated since
-        const limit = Date.now()
-        setTimeout(() => {
-            for (const item in this[map]) {
-                if (!(this[map][item].version?.emperical > limit)) {
-                    console.log(`${item.magenta.bold} removed. Perhaps the file is no more.`)
-                    this.removeURL(item)
-                }
-            }
-        }, 60_000)
+        BasePlatform.get().events.addListener('booted', () => {
+
+            BasePlatform.get().bootTasks.zeroWait().then(() => {
+                BasePlatform.get().compat.allDone().then(async () => {
+                    const dbData = (await this[collection].findOne()) || {};
+                    delete dbData._id
+                    this[map] = dbData
+
+                    for (const item in this[map]) {
+                        if (!(this[map][item].version?.emperical > limit)) {
+                            console.log(`${item.magenta.bold} removed. Perhaps the file is no more. Last time was ${new Date(this[map][item].version?.emperical)}`)
+                            this.removeURL(item)
+                        }
+                    }
+                })
+
+            })
+
+        })
     }
 
     /**
@@ -108,6 +116,9 @@ export default class RequestMap {
      */
     updateVersion(url) {
         const now = Date.now()
+        if (!this[map][url]) {
+            this.addURL(url)
+        }
         this[map][url].version.emperical = this[map][url].version.grand = now
 
 

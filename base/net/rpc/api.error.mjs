@@ -20,7 +20,7 @@ export class BasePublicErrorAPI {
         let [, ...errordata] = arguments;
         /** @type {SocketPublicJSONRPC} */
         let client = arguments[0]
-        console.warn(`${'Client Error'.bold.red}\n\n`, ...errordata, `\n${'.'.repeat(process.stdout.columns * 0.75)}\n\t\tAddress: ${client.socketClient.socket.address().address?.blue?.bold}\n\tTime: ${new Date()}`)
+        console.error(`${'Client Error'.bold.red}\n\n`, ...errordata, `\n${'.'.repeat(process.stdout.columns * 0.75)}\n\t\tAddress: ${client.socketClient.socket.address().address?.blue?.bold}\n\tTime: ${new Date()}`)
     }
 
 }

@@ -116,8 +116,11 @@ export default class JSONRPC extends CleanEventTarget {
         this.addEventListener('destroy', () => {
             // 1s after destroy, cleanup the event listener
             setTimeout(() => this.cleanup(), 1000)
+<<<<<<< HEAD
             this.accept = () => undefined
             this.ondata = () => undefined
+=======
+>>>>>>> be8c14704d30e7745752bcb6df1d4cff8b6e4a59
         }, { once: true })
     }
 

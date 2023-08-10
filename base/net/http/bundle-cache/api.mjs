@@ -19,12 +19,13 @@ export default class BaseBundleCacheAPI {
 
         this[server] = new BundleCacheServer(
             base.http_manager.platform_http,
-            [
-                base.server_domains.plaintext,
-                base.server_domains.secure
-            ],
             collections.requestMap
         );
+
+        Reflect.defineProperty(this[server], 'domains', {
+            get: () => [base.server_domains?.plaintext, base.server_domains?.secure],
+            configurable: true
+        })
 
         this.remote = new Remote(this)
         this.base = this[server].map

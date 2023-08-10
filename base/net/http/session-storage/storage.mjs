@@ -5,10 +5,11 @@ It allows that even in faculties, clients should be identified and variables per
 
 */
 
-import { Exception } from "../../../../errors/backend/exception.js";
 import shortuuid from 'short-uuid'
 
 import collections from './collections.mjs'
+
+const lastAccess = Symbol()
 
 
 
@@ -28,15 +29,10 @@ export class SessionStorage {
      * @param {import('../../../platform.mjs').BasePlatform} basePlatform 
      */
     constructor(basePlatform) {
-
-        this.#sessions = []
-        this.#base = basePlatform
+        this.#sessions = new Set()
 
         basePlatform.events.on('booted', async () => {
-            console.log(`Now restoring sessions from database`)
-            await this.restoreFromDatabase();
-            this.#setErrorsOnBase();
-            
+
             try {
                 const indices = await collections.sessionStorage.listIndexes().toArray()
                 for (const index of indices) {
@@ -65,21 +61,33 @@ export class SessionStorage {
             } catch (e) {
                 console.error(e)
             }
-        })
+
+
+        });
+
+        // Every 10s, all sessions that have not been accessed within the last 30s, will be
+        // removed from memory
+        setInterval(() => {
+            this.#sessions = new Set([...this.#sessions].filter(
+                session => !(session[lastAccess] < (Date.now() - 30_000))
+            ))
+        }, 10_000)
     }
-    /** @type {import("./types.js").SessionData[]} */
+    /** @type {Set<import("./types.js").SessionData>} */
     #sessions
-    #base
 
     /**
-     * This method resides on the BasePlatform and is used internally during startup to pull sessions from the database
-     * @returns {Promise<void>}
+     * This method runs after sessions have been pulled from the database, in order
+     * to filter invalid sessions, and make important changes.
+     * @param {import("./types.js").SessionData[]} sessions 
+     * @returns {Promise<import("./types.js").SessionData[]>}
      */
-    async restoreFromDatabase() {
-        let sessions = await (collections.sessionStorage.find()).toArray();
-        //Filter the expired sessions first
+    async #checkSessions(sessions) {
+
+
         let expired = []; //The ids of expired sessions
         let valid = []
+
 
         for (let session of sessions) {
             if (session.expires < Date.now()) {
@@ -90,22 +98,25 @@ export class SessionStorage {
         }
 
         //Now delete all the expired sessions from the database
-        await collections.sessionStorage.deleteMany({
-            id: { $in: expired }
-        })
+        if (expired.length > 0) {
+            await collections.sessionStorage.deleteMany({
+                id: { $in: expired }
+            })
+        }
 
-        this.#sessions.push(...valid);
+        this.#sessions.add(...valid);
 
+        return valid
     }
 
     /**
      * This method is owned and called at the BasePlatform in order to retrieve a session variable
      * @param {string} id The id of the session to be read
      * @param {string} key The key to be read from the session
-     * @returns {string}
+     * @returns {Promise<any>}
      */
-    getVar(id, key) {
-        let value = this.getSessionById(id).store[key]
+    async getVar(id, key) {
+        let value = (await this.getSessionById(id)).store[key]
         collections.sessionStorage.updateOne({ id: { $eq: id } }, { $set: { expires: Date.now() + SessionStorage.defaultDuration } })
         return value;
     }
@@ -115,8 +126,8 @@ export class SessionStorage {
      * @param {string} key The key to be set
      * @param {string} value The new value
      */
-    setVar(id, key, value) {
-        let client = this.getSessionById(id);
+    async setVar(id, key, value) {
+        let client = await this.getSessionById(id);
         client.store[key] = value
         client.expires = Date.now() + SessionStorage.defaultDuration //extend the session, since it was just used
         collections.sessionStorage.updateOne({ id: { $eq: id } }, { $set: client })
@@ -127,8 +138,8 @@ export class SessionStorage {
      * @param {string} id The session to be altered
      * @param {string} key The key to be deleted
      */
-    rmVar(id, key) {
-        delete this.getSessionById(id).store[key]
+    async rmVar(id, key) {
+        delete (await this.getSessionById(id)).store[key]
         collections.sessionStorage.updateOne({ id: { $eq: id } }, { $unset: key, $set: { expires: Date.now() + SessionStorage.defaultDuration } })
     }
 
@@ -136,8 +147,8 @@ export class SessionStorage {
      * This method is created and employed in the BasePlatform in order to retrieve the expiry time of a given session
      * @param {string} id Session id
      */
-    getExpiry(id) {
-        return this.getSessionById(id).expires;
+    async getExpiry(id) {
+        return await this.getSessionById(id).expires;
     }
 
     /**
@@ -154,7 +165,7 @@ export class SessionStorage {
             store: {},
             expires: Date.now() + SessionStorage.defaultDuration
         }
-        this.#sessions.push(client);
+        this.#sessions.add(client);
         collections.sessionStorage.insertOne({ id, cookie, store: {} })
         return { sessionID: id, cookie }
     }
@@ -163,11 +174,17 @@ export class SessionStorage {
      * Gets a session id by using the cookie value
      * Note that is method is not intended for Faculties. Faculties have a similarly named method, that however resides on the SessionStorageAPI
      * @param {string} cookie 
-     * @returns {string}
+     * @returns {Promise<string>}
      */
-    getSessionID(cookie) {
+    async getSessionID(cookie) {
 
-        let client = this.#sessions.filter(x => x.cookie === cookie)[0]
+        let client = [...this.#sessions].filter(x => x.cookie === cookie)[0] || await (async () => {
+            const single = await collections.sessionStorage.findOne({ cookie })
+            if (!single) {
+                return
+            }
+            return (await this.#checkSessions([single]))[0]
+        })()
         if (!client) {
             throw new Exception(`The client with cookie '${cookie}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${cookie}")` })
         }
@@ -179,37 +196,25 @@ export class SessionStorage {
      * @param {string} id 
      * @returns {import("./types.js").SessionData}
      */
-    getSessionById(id) {
-        let client = this.#sessions.filter(x => x.id === id)?.[0]
-        if (!client) {
+    async getSessionById(id) {
+        let session = [...this.#sessions].filter(x => x?.id === id)?.[0]
+        if (!session || (Date.now() - (session[lastAccess] ||= Date.now())) > 30_000) {
+            session = await collections.sessionStorage.findOne({ id })
+            if (session) {
+                session[lastAccess] = Date.now()
+            }
+        }
+        if (!session) {
             throw new Exception(`The session with id '${id}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${id}")` })
         }
         //Now if the client's session has expired
-        if (client.expires < Date.now()) {
+        if (session.expires < Date.now()) {
             throw new Exception(`The session '${id}' has expired`, { code: `${SessionStorage.#errorNamespace}.session_expired` })
         }
-        return client;
-    }
 
-    /**
-     * 
-     * This method is called in order to append errors contributed by this module (SessionStorage)
-     * This method is owned and available from the BasePlatform only
-     * 
-     */
-    #setErrorsOnBase() {
-        //Check if custom errors have been previously set before
-        //How do we do that? We take the first error from our set of custom errors and check if it exists
-        let error0 = Reflect.ownKeys(SessionStorage.customErrors)[0]
-        if (!error0) {
-            //Then this module doesn't have any custom errors to contribute in the first place
-            return;
-        }
-        if (this.#base.errors.custom[error0]) {
-            return; //Then our custom errors have already been applied
-        }
+        this.#sessions.add(session)
 
-        this.#base.errors.setCustomErrors(SessionStorage.customErrors);
+        return session;
     }
     static #errorNamespace = 'net.sessionStorage'
     /**

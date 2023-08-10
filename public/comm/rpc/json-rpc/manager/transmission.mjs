@@ -162,31 +162,30 @@ export default class TransmissionManager {
             let ack_timeout;
             const events = ['resolve', 'reject']
             //First thing, send an ACK if calling this method takes more than 2s (Transmissionmanager.expectedMethodTimeLocal)
-            new Promise((resolve) => {
 
-                const cleanup = (...args) => {
-                    resolve(...args);
 
-                    //Proper clean up
-                    clearTimeout(ack_timeout)
+            const cleanup = (...args) => {
 
-                    for (const event of events) {
-                        this.manager.removeEventListener(`${event}-${object.id}`, cleanup)
-                    }
-                    this[PENDING_CALLS] = this[PENDING_CALLS].filter(x => x !== object.id)
-
-                }
-
+                //Proper clean up
+                clearTimeout(ack_timeout)
 
                 for (const event of events) {
-                    this.manager.addEventListener(`${event}-${object.id}`, cleanup, { once: true, cleanup })
+                    this.manager.removeEventListener(`${event}-${object.id}`, cleanup)
                 }
+                this[PENDING_CALLS] = this[PENDING_CALLS].filter(x => x !== object.id)
+
+            }
 
 
-                ack_timeout = setTimeout(() => {
-                    this.sendACK(object.id)
-                }, TransmissionManager.expectedMethodTimeLocal);
-            })
+            for (const event of events) {
+                this.manager.addEventListener(`${event}-${object.id}`, cleanup, { once: true, cleanup })
+            }
+
+
+            ack_timeout = setTimeout(() => {
+                this.sendACK(object.id)
+            }, TransmissionManager.expectedMethodTimeLocal);
+
         }
 
         return true

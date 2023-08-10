@@ -13,7 +13,7 @@ export class SocketPublicJSONRPC extends JSONRPC {
 
     /**
      * Provide methods to a public client by specifying the client and the stub (source of methods)
-     * @param {import('../websockets/incomingClient.js').WSIncomingClient} socket 
+     * @param {import('../websockets/incomingClient.js').WSIncomingClient} client 
      * @param {Object|undefined} stub Ignore this and the function will use the default public stub remote methods (faculty.remote.public)
      */
     constructor(client, stub) {
@@ -25,13 +25,13 @@ export class SocketPublicJSONRPC extends JSONRPC {
 
         this.ondata = d => {
             try {
-                this.socketClient.send(d, 'text')
+                client.send(d, 'text')
             } catch (e) {
                 console.error(e);
             }
         }
 
-        this.socketClient.on('data', (d) => {
+        client.on('data', (d) => {
             if (d.type === 'text') {
                 this.accept(d.data.toString())
             }
@@ -39,12 +39,10 @@ export class SocketPublicJSONRPC extends JSONRPC {
 
 
         this.flags.expose_stack_traces = false;
-        
+
         this.flags.stripColors = true;
 
         /** @type {FacultyPublicJSONRPCMeta} */ this.meta
-
-        /** @type {import('../websockets/incomingClient.js').WSIncomingClient} */ this.socketClient
     }
 
     /**

@@ -6,7 +6,6 @@ This module allows Faculties to declare methods that are widely available to the
 As word of caution, don't use private fields (#myPrivateFields). Use Symbols instead (this[someSymbol].doSomething() )
 */
 
-import { Exception } from "../../errors/backend/exception.js";
 import { FacultyPlatform } from "../../lib/libFaculty/platform.mjs";
 import { PublicRPCSessionAPI } from "./api/session.mjs";
 
@@ -25,16 +24,14 @@ export class FacultyPublicMethods {
         let faculty = FacultyPlatform.get()
 
         if (!(faculty instanceof FacultyPlatform)) {
-            throw new Exception(`A module tried to create an instance of the FacultyPublicMethods, but unfortunately, a faculty environment was not detected`, {
-                code: 'error.system.unplanned'
-            })
+            throw new Error(`A module tried to create an instance of the FacultyPublicMethods, but unfortunately, a faculty environment was not detected`)
         }
     }
 
     /**
      * @returns {FacultyPublicSessionAPI}
      */
-    get $session(){
+    get $session() {
         return this[session_api_symbol] ||= new FacultyPublicSessionAPI()
     }
 
@@ -44,6 +41,6 @@ export class FacultyPublicMethods {
 const session_api_symbol = Symbol(`FacultyPublicMethods.prototype.session_api`)
 
 
-export class FacultyPublicSessionAPI extends PublicRPCSessionAPI{
+export class FacultyPublicSessionAPI extends PublicRPCSessionAPI {
 
 }

@@ -10,7 +10,6 @@ Because this is a remote interface, the first parameter to every method will be 
 Therefore, method description signatures will differ from the actual method signatures.
 */
 
-import { Exception } from "../../../../errors/backend/exception.js"
 import { Platform } from "../../../../platform.mjs"
 import { BasePlatform } from "../../../platform.mjs"
 
@@ -43,7 +42,7 @@ export class BaseSessionStorageAPI {
         //arguments[1] because the first automatically passed argument is the handle to the remote calling faculty
         var { sessionID, varname } = arguments[1]
 
-        return BaseSessionStorageAPI.#getAPI().getVar(sessionID, varname);
+        return await BaseSessionStorageAPI.#getAPI().getVar(sessionID, varname);
     }
 
     /**
@@ -69,7 +68,7 @@ export class BaseSessionStorageAPI {
         // Remote methods usually have the attribute that their first arguments are always a handle to the calling client, therefore all other arguments are shifted by one place. Reason why signature is different from implementation
         sessionID = arguments[1]
         varname = arguments[2]
-        BaseSessionStorageAPI.#getAPI().rmVar(sessionID, varname);
+        await BaseSessionStorageAPI.#getAPI().rmVar(sessionID, varname);
     }
 
     /**
@@ -96,7 +95,7 @@ export class BaseSessionStorageAPI {
      */
     static #getAPI() {
         if (!(Platform.get() instanceof BasePlatform)) {
-            throw new Exception(`There's a misconfiguration that caused the BaseSessionStorageAPI to be found running in an environment other than the BasePlatform`, { code: 'error.system.unplanned' })
+            throw new Error(`There's a misconfiguration that caused the BaseSessionStorageAPI to be found running in an environment other than the BasePlatform`)
         }
         return BasePlatform.get().http_manager.platform_http.sessionStorage
     }

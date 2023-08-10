@@ -119,14 +119,19 @@ class JSONRPCRemoteObject {
 
 
                     //What happens when the response has been given ?
-                    manager.addEventListener(`resolve-${id}`, function ({ detail: result }) {
+                    const onResolve = function ({ detail: result }) {
+                        cleanup()
                         ok(result)
-                    }, { once: true })
+                    }
+
+                    manager.addEventListener(`resolve-${id}`, onResolve, { once: true })
+
 
 
                     // And what happens if it has been rejected
-                    manager.addEventListener(`reject-${id}`, function ({ detail: error }) {
+                    const onReject = function ({ detail: error }) {
                         if (error) {
+                            cleanup()
                             switch (error.code) {
                                 case -32601:
                                     {
@@ -152,9 +157,24 @@ class JSONRPCRemoteObject {
                             return;
                         }
                         failed('unknown error')
-                    }, { once: true });
+                    }
+                    manager.addEventListener(`reject-${id}`, onReject, { once: true });
 
-                    setTimeout(() => failed(new Error(`Timeout reaching server`)), 300_000)
+                    const onACK = function () {
+                        clearTimeout(timeout)
+                    }
+
+                    manager.addEventListener(`ACK-${id}`, onACK, { once: true })
+
+
+                    function cleanup() {
+                        clearTimeout(timeout)
+                        manager.removeEventListener(`resolve-${id}`, onResolve)
+                        manager.removeEventListener(`reject-${id}`, onReject)
+                        manager.removeEventListener(`ACK-${id}`, onACK)
+                    }
+
+                    let timeout = setTimeout(() => failed(new Error(`Timeout reaching server`)), 30_000)
                 });
             }
         })

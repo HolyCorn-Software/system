@@ -9,6 +9,7 @@
 import chokidar from 'chokidar'
 import libPath from 'node:path'
 import BundleCacheServer from '../server/server.mjs'
+import { Platform } from '../../../platform.mjs'
 
 const watcher = Symbol()
 const paths = Symbol()
@@ -18,7 +19,19 @@ const getURLPaths = Symbol()
 const hooks = Symbol()
 const configureWatcher = Symbol()
 
-const bootPromise = new Promise(done => setTimeout(done, 2_000))
+let bootPromise
+function awaitBoot() {
+    return bootPromise ||= (async () => {
+        try {
+            if (Platform.get().type == 'faculty') {
+                await FacultyPlatform.get().base.channel.remote.bootTasks.zeroWait()
+            }
+        } catch (e) {
+            console.error(e)
+        }
+    })()
+
+}
 
 export default class VersionReporter {
 
@@ -50,7 +63,9 @@ export default class VersionReporter {
      * @param {string} dirPath 
      * @returns {void}
      */
-    watch(urlPath, dirPath) {
+    async watch(urlPath, dirPath) {
+        await awaitBoot()
+
         if (!this[watcher]) {
             this[watcher] = chokidar.watch(dirPath)
 
@@ -79,7 +94,7 @@ export default class VersionReporter {
                 // Let's make sure this path exists in the server
                 try {
                     for (const urlPath of this[getURLPaths](path)) {
-                        await bootPromise
+                        await awaitBoot()
                         if (action === 'add') {
                             this[addURLToServer](urlPath)
                         } else {
@@ -145,7 +160,7 @@ export default class VersionReporter {
      * @returns {void}
      */
     async [addURLToServer](url) {
-        await bootPromise
+        await awaitBoot()
         for (const assoc of getAssociatedURLs(url)) {
             this[hooks].addURL(assoc)
         }
@@ -158,7 +173,8 @@ export default class VersionReporter {
      * @returns {void}
      */
     async [removeURLFromServer](url) {
-        await bootPromise
+        await awaitBoot()
+
         for (const assoc of getAssociatedURLs(url)) {
             this[hooks].removeURL(assoc)
         }

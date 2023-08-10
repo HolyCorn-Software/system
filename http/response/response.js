@@ -5,7 +5,6 @@ The http module
 This module defines a custom extension to the SuperRequest object for providing extra features such as session management
 */
 
-import { Exception } from "../../errors/backend/exception.js";
 import { SuperResponse } from "../../lib/nodeHC/http/super-response.js";
 import { Session } from "../session/session.js";
 

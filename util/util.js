@@ -7,6 +7,7 @@ import vm from 'node:vm'
 import exclusiveUpdate from "./exclusive-update.mjs";
 import SimpleCache from "./simple-cache.mjs";
 import recursePath from "./recursive-path.mjs";
+import WaitList from './wait-list.mjs';
 
 /**
  * 
@@ -339,5 +340,6 @@ export default {
     cleanPath,
     exclusiveUpdate,
     SimpleCache: SimpleCache,
-    recursePath
+    recursePath,
+    WaitList: WaitList
 }

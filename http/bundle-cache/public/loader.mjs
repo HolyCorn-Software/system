@@ -45,6 +45,7 @@ async function init() {
 
         } catch (e) {
             console.error(`Could not install service worker\n`, e)
+            loadNormally()
         }
     } else {
         loader.load('page-content')

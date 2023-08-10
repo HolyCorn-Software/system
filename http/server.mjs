@@ -6,14 +6,12 @@ This module allows faculty platforms to create HTTP Servers
 
 import { Server } from "../lib/nodeHC/http/server.js";
 import utils from "../comm/utils/utils.mjs";
-import { BackendHandler } from '../errors/handler.mjs'
 
 import fs from 'node:fs'
 import node_static from 'node-static'
 import { SuperRequest } from "../lib/nodeHC/http/super-request.js";
 import { SuperResponse } from "../lib/nodeHC/http/super-response.js";
 import FileCache from "./file-cache/cache.mjs";
-import libStream from 'node:stream'
 
 
 
@@ -25,14 +23,6 @@ export class HTTPServer extends Server {
      */
     static async new() {
         let server = new this(await utils.findOpenPort())
-        //Initialize the error handler
-        server.errorHandler = new BackendHandler()
-        try {
-            await server.errorHandler.init()
-        } catch (e) {
-            console.log(`Throwing \n${e}.`)
-            throw e
-        }
         return server;
     }
 
