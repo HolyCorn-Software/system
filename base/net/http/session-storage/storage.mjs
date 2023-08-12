@@ -64,14 +64,6 @@ export class SessionStorage {
 
 
         });
-
-        // Every 10s, all sessions that have not been accessed within the last 30s, will be
-        // removed from memory
-        setInterval(() => {
-            this.#sessions = new Set([...this.#sessions].filter(
-                session => !(session[lastAccess] < (Date.now() - 30_000))
-            ))
-        }, 10_000)
     }
     /** @type {Set<import("./types.js").SessionData>} */
     #sessions
