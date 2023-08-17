@@ -50,8 +50,8 @@ export default class ClientJSONRPC extends JSONRPC {
 
         socket.addEventListener('message', (event) => {
             if (socket !== this.socket) {
-                this.socket.dispatchEvent('message', event);
-                console.log(`data came from  the wrong source !!`)
+                this.socket.dispatchEvent(event);
+                console.trace(`data came from  the wrong source !!`)
                 return socket.removeEventListener('message', socket_on_message)
             }
             socket_on_message(event)
