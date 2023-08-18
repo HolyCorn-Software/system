@@ -60,8 +60,11 @@ export class BasePlatform extends Platform {
             this.exit()
         })
 
-        process.on('uncaughtException', (e) => {
-            console.log(`Uncaught exception in the BasePlatform\n`, e)
+        process.on('uncaughtException', (e, src) => {
+            if (e?.code === 'ECONNRESET') {
+                return; // A common socket issue
+            }
+            console.log(`Uncaught exception in the BasePlatform\n`, e, `\nfrom\n`, src)
         })
 
 

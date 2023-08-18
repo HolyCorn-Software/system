@@ -59,6 +59,9 @@ export class SessionStorage {
                 );
 
             } catch (e) {
+                if (e.code == 26) { // code 26 means namespace not found. And that's okay, as it might be the first time the system is launched
+                    return;
+                }
                 console.error(e)
             }
 
