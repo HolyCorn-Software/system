@@ -1,5 +1,5 @@
 .
 
-Improved error management for both session-storage, and BasePlatform.
+Improved logging, by passing information about process.stdout.columns, to faculties.
 
-Fixed minor bug that caused CPU-overuse when forwarding websockets.
+Switched uses of node-fetch, with the globally available fetch

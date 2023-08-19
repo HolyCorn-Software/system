@@ -12,7 +12,6 @@ import libUrl from 'node:url'
 import libFs from 'node:fs'
 import libPath from 'node:path'
 import shortUUID from "short-uuid"
-import fetch from 'node-fetch'
 import archiver from 'archiver'
 import unzipper from "unzipper"
 import { SuperResponse } from "../../../lib/nodeHC/http/super-response.js"
