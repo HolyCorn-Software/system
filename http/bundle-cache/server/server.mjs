@@ -72,7 +72,7 @@ export default class BundleCacheServer {
     }
 
     async getInjectionData() {
-        return this[injectionData] ||= `<!DOCTYPE html>\n<script type='module'>${(await libFs.promises.readFile(`${publicPath}/loader.mjs`)).toString()}\n</script>`
+        return this[injectionData] ||= `<!DOCTYPE html>\n<link rel="icon" href="/$/shared/static/logo.png">\n\n<script type='module'>${(await libFs.promises.readFile(`${publicPath}/loader.mjs`)).toString()}\n</script>`
     }
 
     /**
