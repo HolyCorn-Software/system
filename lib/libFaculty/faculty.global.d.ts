@@ -55,5 +55,6 @@ interface SoulArgs {
     messageChannel: {
         ondata: (str: string) => void
         send: (str: string) => void
-    }
+    },
+    columns: number
 }
