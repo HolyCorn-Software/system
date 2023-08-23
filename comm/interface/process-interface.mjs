@@ -15,7 +15,7 @@ export class FacultyBaseCommInterface extends CommInterface {
 
     /**
      * @param {import('../../base/platform.mjs').BasePlatform} basePlatform
-     * @param {import('soul:lib/libFaculty/faculty.mjs').Faculty} faculty
+     * @param {import('system/lib/libFaculty/faculty.mjs').Faculty} faculty
      */
     constructor(basePlatform, faculty) {
 

@@ -6,7 +6,7 @@
 import { FacultyFacultyRemoteMethods as _FacultyFacultyRemoteMethods } from "system/comm/rpc/faculty-faculty-rpc.mjs";
 import { FacultyPublicMethods as _FacultyPublicMethods } from "system/comm/rpc/faculty-public-methods.mjs";
 import { FacultyPublicJSONRPC as _FacultyPublicJSONRPC, FacultyPublicRPCServer as _FacultyPublicRPCServer } from "system/comm/rpc/faculty-public-rpc.mjs";
-import { Exception as _Exception } from "soul:errors/backend/exception.mjs";
+import { Exception as _Exception } from "system/errors/backend/exception.mjs";
 import { FacultyPlatform as _FacultyPlatform } from "./platform.mjs";
 import { FacultyDescriptor } from "./types";
 
