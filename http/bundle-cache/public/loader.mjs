@@ -5,6 +5,16 @@
  * browser client-side work
 */
 
+let pageCompleteValue;
+let pageCompleteTimeout;
+function pageComplete() {
+    const compute = () => {
+        if ([...document.body.children].filter(x => (x.tagName !== 'SCRIPT') && x != loader.html).length > 0) {
+            pageCompleteTimeout ||= setTimeout(() => pageCompleteValue = true, 2000)
+        }
+    }
+    return pageCompleteValue || compute()
+}
 
 
 async function init() {
@@ -78,6 +88,9 @@ class SWLoaderServer {
             if (event.data?.load) {
                 if (!loader) {
                     loader = new LoadWidget()
+                }
+                if (pageComplete()) {
+                    return;
                 }
                 loader.load(event.data.load)
             }
@@ -287,18 +300,25 @@ class LoadWidget {
             return;
         }
 
-        if (this.onloading || !this.html.isConnected) {
+        if (this.unloading || !this.html.isConnected) {
             return;
         }
-        this.onloading = true
+        this.unloading = true
         LoadWidget.hideBody()
-        Promise.race(
+        new Promise(done => {
+            const interval = setInterval(() => {
+                if (pageComplete()) {
+                    clearInterval(interval)
+                    done()
+                }
+            }, 20)
+        }).then(() => Promise.race(
             [
                 new Promise(resolve => {
                     window.addEventListener('transitionend', resolve, { once: true, passive: true })
                     window.addEventListener('animationend', resolve, { once: true, passive: true })
                 }),
-                new Promise(x => setTimeout(x, 1500))
+                new Promise(x => setTimeout(x, 500))
             ]
         ).then(() => {
             LoadWidget.showBody()
@@ -306,8 +326,8 @@ class LoadWidget {
             setTimeout(() => {
                 this.html.remove()
                 this.html.classList.remove('removing')
-            }, 1000)
-        }).finally(() => this.onloading = false)
+            }, 500)
+        }).finally(() => this.unloading = false))
 
     }
 
