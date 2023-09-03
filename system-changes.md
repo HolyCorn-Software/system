@@ -1,3 +1,3 @@
 .
 
-Updated to the latest version of html-hc with minor UI improvements, and more stability.
+Updated to the latest version of html-hc with UX improvements, and better code completion.
