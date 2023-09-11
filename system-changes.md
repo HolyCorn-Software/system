@@ -1,3 +1,5 @@
 .
 
-Updated to the latest version of html-hc with UX improvements, better typing, and a new widget called flex-reveal.
+Improved typing.
+
+Added worker-world utility module, which allows for subsequent creation of task management systems that have guarantee.

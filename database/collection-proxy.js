@@ -39,7 +39,11 @@ export class CollectionProxy {
      * ```
      * {
      * users:'user_profiles',
-     * credentials:'settings_and_credentials.credentials'
+     * credentials:'settings_and_credentials.credentials',
+     * profile: {
+     *      internal: 'profile.internal',
+     *      public: 'profile.public'
+     * }
      * }
      * ```
      * In the above, users is the object we'll have access to at runtime. 'user_profiles' is the name of the collection

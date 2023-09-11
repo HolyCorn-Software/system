@@ -23,9 +23,9 @@ type AggregateRPCTransform<T> = {
  * This type ensures that all functions in the input parameter return a promise
  */
 type Promisify<T> =
-    T extends (...args: (infer Input)[]) => Promise<infer Ret> ? (...args: Input[]) => Promise<Awaited<Promisify<Ret>>>
+    T extends (...args: infer Input) => Promise<infer Ret> ? (...args: Input) => Promise<Awaited<Promisify<Ret>>>
     :
-    T extends (...args: (infer Input)[]) => infer Ret ? (...args: Input[]) => Promise<Promisify<Ret>>
+    T extends (...args: infer Input) => infer Ret ? (...args: Input) => Promise<Promisify<Ret>>
     :
     T extends string | number | boolean | symbol | undefined ? T
     :
@@ -62,7 +62,7 @@ type Merge$0<T> = T extends ZeroType ? Merge$0<T['$0']>
     :
     T extends string | number | boolean | symbol | undefined ? T
     :
-    T extends (...args: (infer Input)[]) => infer Ret ? (...args: Input[]) => MaintainPromise<Ret>
+    T extends (...args: infer Input) => infer Ret ? (...args: Input) => MaintainPromise<Ret>
     : {
         [K in keyof T]: Merge$0<T[K]>
     }
