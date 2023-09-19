@@ -207,33 +207,39 @@ class Worker {
             const results = await this[args].execute(task)
 
             if (results?.error) {
+                (task.retries ||= []).push({
+                    error: `${results.error}`,
+                    time: Date.now()
+                })
+
                 if (results.error.fatal) {
                     task.expires = Date.now() + (24 * 60 * 60 * 1000)
                     task.dead = true
+                }
+
+                return await update()
+            } else {
+
+                // In case we're moving to a different stage abruptly..
+                let stage;
+                if (results?.newStage) {
+                    stage = this[args].stages.find(x => x.name == results.newStage)
+                    if (!stage) {
+                        console.warn(`After execution of task ${task.id.magenta}, the asked for movement to a non-existent stage: ${results.newStage.red}`)
+                        stage = this[args].stages[this[args].stageIndex + 1]
+                    }
+                }
+
+                if (results?.ignored) {
+                    task.hibernation = results.ignored
                     return await update()
                 }
+
+                await stage?.collection.insertOne(task)
+                await this[args].stages[this[args].stageIndex].collection.deleteOne({ id: task.id })
+
+                return true;
             }
-
-            // In case we're moving to a different stage abruptly..
-            let stage;
-            if (results?.newStage) {
-                stage = this[args].stages.find(x => x.name == results.newStage)
-                if (!stage) {
-                    console.warn(`After execution of task ${task.id.magenta}, the asked for movement to a non-existent stage. ${results.newStage.red}`)
-                    stage = this[args].stages[this[args].stageIndex + 1]
-                }
-            }
-
-            if (results?.ignored) {
-                task.hibernation = results.ignored
-                return await update()
-            }
-
-            await stage?.collection.insertOne(task)
-            await this[args].stages[this[args].stageIndex].collection.deleteOne({ id: task.id })
-
-
-            return true;
 
         }
 

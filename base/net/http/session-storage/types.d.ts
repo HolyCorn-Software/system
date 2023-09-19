@@ -4,9 +4,12 @@ The Soul System
 This module (types.js) contains a formal definition of the data types used by the session-storage grand module
 */
 
-export interface SessionData {
+export interface SessionData extends SessionPublicData {
+    store: { [key: string]: string }
+}
+
+export interface SessionPublicData {
     id: string
     cookie: string
     expires: number
-    store: { [key: string]: string }
 }

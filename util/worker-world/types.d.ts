@@ -36,6 +36,11 @@ global {
             created: number
             expires: number
             dead: boolean
+            retries: Retry[]
+        }
+        interface Retry {
+            time: number
+            error: string
         }
         type ExecuteFunction<T = {}> = (input: Task<T>) => Promise<TaskResults>
 

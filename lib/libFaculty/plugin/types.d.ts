@@ -102,6 +102,9 @@ type PluginStatus = Pick<PluginLoadResult, "state" | "descriptor" | "enabled"> &
 type ArrayUnpacked<T> = T extends Array<infer X> ? X : T extends Array<Array<infer DX>> ? ArrayUnpacked<DX> : T
 
 
+type DefaultNamespaceMap = {
+    [key: string]: PluginModelModel<{}>
+}
 type AllPlugins<M> = (M[keyof M])[]
 
 

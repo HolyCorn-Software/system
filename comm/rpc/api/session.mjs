@@ -19,15 +19,15 @@ export class PublicRPCSessionAPI {
      * @returns {Promise<{cookieName:string, cookieValue:string, expires:number}>}
     */
     async sessionAuth(param0) {
-        
+
         let client = arguments[0]
 
         let { cookie } = arguments[1]
 
         let session = await Session.getSessionFromCookieOrStartNew(cookie);
         client.meta.hcSessionId = session.id;
-        
-        return { cookieName: Session.cookieName, cookieValue: session.cookie, expires:await session.getExpiryTime() }
+
+        return { cookieName: Session.cookieName, cookieValue: session.cookie, expires: await session.getExpiryTime() }
     }
 
     /**

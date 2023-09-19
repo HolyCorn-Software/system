@@ -27,7 +27,7 @@ type Promisify<T> =
     :
     T extends (...args: infer Input) => infer Ret ? (...args: Input) => Promise<Promisify<Ret>>
     :
-    T extends string | number | boolean | symbol | undefined ? T
+    T extends string | number | boolean | symbol | undefined | AsyncGenerator ? T
     :
     {
         [K in keyof T]: Promisify<T[K]>

@@ -143,13 +143,13 @@ export class SessionStorage {
      * @param {string} id Session id
      */
     async getExpiry(id) {
-        return await this.getSessionById(id).expires;
+        return (await this.getSessionById(id)).expires;
     }
 
     /**
      * Creates a new session.
      * Note that this method is not for Faculties Faculties call the api method `generateSession()`
-     * @returns {Promise<{cookie:string, sessionID:string}>}
+     * @returns {Promise<import('./types.js').SessionPublicData>}
      */
     async generateSession() {
         let cookie = `${shortuuid.generate()}${shortuuid.generate()}`
@@ -161,8 +161,8 @@ export class SessionStorage {
             expires: Date.now() + SessionStorage.defaultDuration
         }
         this.#sessions.add(client);
-        collections.sessionStorage.insertOne({ id, cookie, store: {} })
-        return { sessionID: id, cookie }
+        await collections.sessionStorage.insertOne({ id, cookie, store: {}, expires: client.expires })
+        return { sessionID: id, cookie, expires: client.expires }
     }
 
     /**

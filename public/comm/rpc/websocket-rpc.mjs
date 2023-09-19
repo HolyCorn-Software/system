@@ -50,7 +50,7 @@ export default class ClientJSONRPC extends JSONRPC {
 
         socket.addEventListener('message', (event) => {
             if (socket !== this.socket) {
-                this.socket.dispatchEvent(event);
+                this.socket.dispatchEvent(new CustomEvent(event.type, { detail: event.detail, bubbles: event.bubbles, cancelable: event.cancelable, composed: event.composed }));
                 console.trace(`data came from  the wrong source !!`)
                 return socket.removeEventListener('message', socket_on_message)
             }
@@ -81,7 +81,7 @@ export default class ClientJSONRPC extends JSONRPC {
         socket.addEventListener('close', () => {
             //Reconnect if and only if the socket is still our socket
             if (this.socket === socket) {
-                this.socket.onclose = undefined; //Prevent this recovery method from happening again
+                socket.removeEventListener('message', socket_on_message)
                 this.reconnect()
             }
         }, { once: true, signal: this[abort].signal })
