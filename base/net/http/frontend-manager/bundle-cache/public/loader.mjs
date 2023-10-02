@@ -1,7 +1,7 @@
 /**
  * Copyright 2023 HolyCorn Software
  * The soul system
- * This script is part of the bundle-cache module, and is responsible for doing the 
+ * This script is part of the bundle-cache module (part of frontend-manager), and is responsible for doing the 
  * browser client-side work
 */
 
@@ -39,7 +39,7 @@ async function init() {
 
 
             if (!updated) {
-                await navigator.serviceWorker.register('/$bundle_cache/public/service-worker.mjs', {
+                await navigator.serviceWorker.register('/$/system/frontend-manager/bundle-cache/public/service-worker.mjs', {
                     scope: "/",
                 });
             }

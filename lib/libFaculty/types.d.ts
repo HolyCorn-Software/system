@@ -7,7 +7,7 @@ import { PluginSupportDefinition } from "./plugin/types"
 
 
 export interface FacultyDescriptor {
-    name: string
+    name: keyof faculty.faculties
     label: string
     init: string
     plugin: PluginSupportDefinition

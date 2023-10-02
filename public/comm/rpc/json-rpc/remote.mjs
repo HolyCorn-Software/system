@@ -102,80 +102,135 @@ class JSONRPCRemoteObject {
                     //Then the stack trace from calling this method
                     new Error().stack.split('\n').slice(6,).join('\n')
 
-                return new Promise(async (ok, failed) => {
-                    let id = uuid();
+                const timeoutError = new Error(`Timeout reaching server`);
 
-                    manager.transmission.doOutput(
-                        {
-                            jsonrpc: '3.0',
-                            id,
-                            call: {
-                                method: methodName,
-                                params: args,
-                                stack: manager.json_rpc.flags.expose_stack_traces ? stack : undefined
-                            },
-                        }
-                    );
+                return new Promise(async (resolve, reject) => {
+
+                    /**
+                     * 
+                     * @returns {Promise<void>}
+                     */
+                    const freshExec = () => {
 
 
-                    //What happens when the response has been given ?
-                    const onResolve = function ({ detail: result }) {
-                        cleanup()
-                        ok(result)
-                    }
+                        return new Promise((ok, failed) => {
 
-                    manager.addEventListener(`resolve-${id}`, onResolve, { once: true })
+                            let id = uuid();
+
+                            manager.transmission.doOutput(
+                                {
+                                    jsonrpc: '3.0',
+                                    id,
+                                    call: {
+                                        method: methodName,
+                                        params: args,
+                                        stack: manager.json_rpc.flags.expose_stack_traces ? stack : undefined
+                                    },
+                                }
+                            );
 
 
-
-                    // And what happens if it has been rejected
-                    const onReject = function ({ detail: error }) {
-                        if (error) {
-                            cleanup()
-                            switch (error.code) {
-                                case -32601:
-                                    {
-                                        let exception = new Error(`The method ${methodName} is not available!`);
-                                        exception.stack = `${exception.message}\n${stack}`;
-                                        console.log(exception)
-                                        failed(exception)
-                                        break;
-                                    }
-
-                                default:
-                                    {
-
-                                        let exception = {}
-                                        exception.code = error.code
-                                        exception.id = error.id
-                                        exception.message = `${error.message}`
-                                        exception.stack = `${error.stack || ''}\n${stack}`;
-                                        exception.handled = error.handled
-                                        failed(exception);
-                                    }
+                            //What happens when the response has been given ?
+                            const onResolve = function ({ detail: result }) {
+                                cleanup()
+                                ok(result)
                             }
-                            return;
+
+                            manager.addEventListener(`resolve-${id}`, onResolve, { once: true })
+
+                            // What happens if the response needs to be cached
+                            /**
+                             * 
+                             * @param {CustomEvent<import("./types.js").JSONRPCMessage['return']>} param0 
+                             */
+                            const onCache = ({ detail: data }) => {
+                                manager.json_rpc.flags.cache?.set(methodName, args, data.data, Date.now() + data.cache.expiry)
+                            }
+
+                            manager.addEventListener(`cache-${id}`, onCache, { once: true })
+
+
+
+                            // And what happens if it has been rejected
+                            const onReject = function ({ detail: error }) {
+                                if (error) {
+                                    cleanup()
+                                    switch (error.code) {
+                                        case -32601:
+                                            {
+                                                let exception = new Error(`The method ${methodName} is not available!`);
+                                                exception.stack = `${exception.message}\n${stack}`;
+                                                console.log(exception)
+                                                failed(exception)
+                                                break;
+                                            }
+
+                                        default:
+                                            {
+
+                                                let exception = {}
+                                                exception.code = error.code
+                                                exception.id = error.id
+                                                exception.message = `${error.message}`
+                                                exception.stack = `${error.stack || ''}\n${stack}`;
+                                                exception.handled = error.handled
+                                                failed(exception);
+                                            }
+                                    }
+                                    return;
+                                }
+                                failed('unknown error')
+                            }
+                            manager.addEventListener(`reject-${id}`, onReject, { once: true });
+
+                            const onACK = function () {
+                                clearTimeout(timeout)
+                            }
+
+                            manager.addEventListener(`ACK-${id}`, onACK, { once: true })
+
+
+                            function cleanup() {
+                                clearTimeout(timeout)
+                                manager.removeEventListener(`resolve-${id}`, onResolve)
+                                manager.removeEventListener(`reject-${id}`, onReject)
+                                manager.removeEventListener(`ACK-${id}`, onACK)
+                                manager.removeEventListener(`cache-${id}`, onCache)
+                            }
+
+                            let timeout = setTimeout(() => failed(timeoutError), 30_000)
+
+
+                        })
+
+
+                    }
+
+
+                    // First things first, is our info found in the cache?
+                    let cachedData;
+                    try {
+                        cachedData = await manager.json_rpc.flags.cache?.get(methodName, args)
+
+                        if (!cachedData || cachedData.expiry < Date.now()) {
+                            return freshExec().then(resolve, reject)
                         }
-                        failed('unknown error')
+
+                        // Now, if found in the cache, we return it.
+                        resolve(cachedData.value)
+
+                    } catch {
+                        freshExec().then(resolve, (error) => {
+                            if (error?.code == 'system' || error == timeoutError) {
+                                console.warn(`${timeoutError ? 'Time out' : 'System'} Error when calling ${methodName}, so we returned cached data`)
+                                resolve(cachedData.value)
+                            }
+
+                        })
                     }
-                    manager.addEventListener(`reject-${id}`, onReject, { once: true });
-
-                    const onACK = function () {
-                        clearTimeout(timeout)
-                    }
-
-                    manager.addEventListener(`ACK-${id}`, onACK, { once: true })
-
-
-                    function cleanup() {
-                        clearTimeout(timeout)
-                        manager.removeEventListener(`resolve-${id}`, onResolve)
-                        manager.removeEventListener(`reject-${id}`, onReject)
-                        manager.removeEventListener(`ACK-${id}`, onACK)
-                    }
-
-                    let timeout = setTimeout(() => failed(new Error(`Timeout reaching server`)), 30_000)
                 });
+
+
             }
         })
 

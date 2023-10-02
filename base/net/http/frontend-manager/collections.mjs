@@ -9,11 +9,11 @@ import { CollectionProxy } from "../../../../database/collection-proxy.js";
 
 
 /**
- * @type {{requestMap: soul.http.bundlecache.RequestMapCollection}}
+ * @type {{versionInfo: soul.http.frontendManager.fileManager.VersionInfoCollection}}
  */
 const collections = new CollectionProxy(
     {
-        'requestMap': 'bundlecache.requestMap'
+        'versionInfo': 'frontendManager.versionInfo'
     }
 )
 

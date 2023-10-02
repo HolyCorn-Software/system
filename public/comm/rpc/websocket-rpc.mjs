@@ -151,10 +151,13 @@ export default class ClientJSONRPC extends JSONRPC {
     /**
      * 
      * @param {string} url A fully qualified url or a relative path
+     * @param {import("./json-rpc/types.js").JSONRPCCache} cache
      * @returns {Promise<ClientJSONRPC>}
      */
-    static async connect(url) {
-        return new ClientJSONRPC(await this.socketConnect(url))
+    static async connect(url, cache) {
+        const client = new ClientJSONRPC(await this.socketConnect(url))
+        client.flags.cache = cache
+        return client
     }
 
 

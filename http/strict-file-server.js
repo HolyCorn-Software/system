@@ -80,7 +80,8 @@ export class StrictFileServer {
             vPath: '/',
             callback: (req, res) => {
                 //Decide where the file to be accessed by the user is stored
-                let path = libPath.resolve(`${refFolder}${new URL(req.url, 'https://holycornsoftware.com').pathname}`)
+                const isIndex = req.url.split('?')[0].endsWith('/')
+                let path = `${libPath.resolve(`${refFolder}${new URL(req.url, 'https://holycornsoftware.com').pathname}`)}${isIndex ? '/index.html' : ''}`
 
                 //Now check if the user is trying to access unwanted resources
                 if (!this.whitelist.some(aPublicFolder => path.startsWith(aPublicFolder))) {

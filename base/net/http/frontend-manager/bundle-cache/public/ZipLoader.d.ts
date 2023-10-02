@@ -10,7 +10,7 @@ declare const ZipLoader: {
         /** @type {String|undefined} */
         url: string | undefined;
         /** @type {import('./types.ts').Files | null} */
-        files: import('./types.ts').Files | null;
+        files: import('./types.js').Files | null;
         /**
          * Loads the ZIP archive specified by the url property.
          * Returns a Promise that resolves when the ZIP archive has been loaded and extracted.
@@ -42,13 +42,13 @@ declare const ZipLoader: {
          * @param {string} type event name
          * @param {import('./types.ts').Listener} listener handler function
          */
-        on(type: string, listener: import('./types.ts').Listener): void;
+        on(type: string, listener: import('./types.js').Listener): void;
         /**
          * Removes the specified event listener
          * @param {string} type event name
          * @param {import('./types.ts').Listener} listener handler function
          */
-        off(type: string, listener: import('./types.ts').Listener): void;
+        off(type: string, listener: import('./types.js').Listener): void;
         dispatch(event: any): void;
         /** @param {string=} filename */
         clear(filename?: string | undefined): void;
@@ -65,7 +65,7 @@ declare const ZipLoader: {
         /** @type {String|undefined} */
         url: string | undefined;
         /** @type {import('./types.ts').Files | null} */
-        files: import('./types.ts').Files | null;
+        files: import('./types.js').Files | null;
         /**
          * Loads the ZIP archive specified by the url property.
          * Returns a Promise that resolves when the ZIP archive has been loaded and extracted.
@@ -97,13 +97,13 @@ declare const ZipLoader: {
          * @param {string} type event name
          * @param {import('./types.ts').Listener} listener handler function
          */
-        on(type: string, listener: import('./types.ts').Listener): void;
+        on(type: string, listener: import('./types.js').Listener): void;
         /**
          * Removes the specified event listener
          * @param {string} type event name
          * @param {import('./types.ts').Listener} listener handler function
          */
-        off(type: string, listener: import('./types.ts').Listener): void;
+        off(type: string, listener: import('./types.js').Listener): void;
         dispatch(event: any): void;
         /** @param {string=} filename */
         clear(filename?: string | undefined): void;

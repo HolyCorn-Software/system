@@ -7,6 +7,7 @@ This module sits in the front end providing an easy-to-use rpc interface with al
 
 import CookieManager from '../../html-hc/lib/cookies/manager.mjs';
 import GrowRetry from '../../html-hc/lib/retry/retry.mjs';
+import DelayedAction from '../../html-hc/lib/util/delayed-action/action.mjs';
 import ClientJSONRPC from './websocket-rpc.mjs';
 
 
@@ -155,6 +156,14 @@ class RemoteFacultyRPCObject {
                                     call_method()
                                     return connection
                                 } catch (e) {
+                                    // A problem with connection, and authentication.
+                                    // In that case, let's check the cache
+                                    try {
+                                        const cachedData = await localStorageCache.get(path, argArray)
+                                        if (cachedData) {
+                                            return fxn_done(cachedData.value)
+                                        }
+                                    } catch { }
                                     fxn_failed(e)
                                     throw e;
                                 }
@@ -206,7 +215,7 @@ class RemoteFacultyRPCObject {
 const connect_and_auth = async (url) => {
 
 
-    const client = await ClientJSONRPC.connect(url);
+    const client = await ClientJSONRPC.connect(url, localStorageCache);
     let connection = client.remote;
     connection.rpc = client;
 
@@ -218,7 +227,7 @@ const connect_and_auth = async (url) => {
         }).catch(e => {
             //If during reconnection, we could not authenticate, we destroy the connection and let a new one form organically
             client.socket?.close()
-            setTimeout(() => client.reconnect(), 3000);
+            setTimeout(() => client.reconnect(), 8000);
         })
 
     });
@@ -294,6 +303,59 @@ const session_auth = async (connection) => {
 
     return await pending_session_auth_promise;
 }
+
+
+
+const data = Symbol()
+const update = Symbol()
+
+const eq = (a, b) => JSON.stringify(a) == JSON.stringify(b)
+
+class LocalStorageCache {
+
+    constructor() {
+
+        /** @type {import("./types.js").LocalStorageJSONRPCCacheStorage} */
+        this[data] = {};
+
+        try {
+            this[data] = JSON.parse(localStorage.getItem('jsonrpc-cache')) || {}
+        } catch {
+            localStorage.removeItem('jsonrpc-cache')
+        }
+
+    }
+
+    /** @type {import("./json-rpc/types.js").JSONRPCCache['set']} */
+    set(method, params, value, expiry) {
+
+        this[data][method] ||= [];
+
+        this[data][method] = this[data][method].filter(x => !eq(x.params, params))
+        this[data][method].push(
+            {
+                expiry,
+                params,
+                value
+            }
+        );
+
+        this[update]();
+    }
+
+    [update] = new DelayedAction(() => {
+        localStorage.setItem('jsonrpc-cache', JSON.stringify(this[data]))
+    }, 250, 3000);
+
+    /** @type {import("./json-rpc/types.js").JSONRPCCache['get']} */
+    get(method, params) {
+        return this[data][method]?.find(x => eq(x.params, params))
+    }
+
+}
+
+
+let localStorageCache = new LocalStorageCache()
 
 
 let hcRpc = window.hcRpc = new AggregateRPCProxy();

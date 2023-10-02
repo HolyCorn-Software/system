@@ -43,6 +43,14 @@ interface JSONRPCMessage {
         /** The actual data that is message is meant to carry */
         data: any
 
+        /**
+         * If this field is set, the client would cache the data, to reduce subsequent calls.
+         */
+        cache?: {
+            /** The time the object is expected to be considered false in the cache.  */
+            expiry: number
+        }
+
     }
 
     /** This field is set when the data returned, or parameter passed, is an ActiveObject */
@@ -76,7 +84,7 @@ interface JSONRPCMessage {
     }
 
     /** The number of times we've tried to resend this message */
-    resends: number
+    resends?: number
 
 }
 
@@ -89,10 +97,22 @@ interface ActiveObjectConfig {
     timeout: number
 }
 
+interface JSONRPCCache {
+    set: (method: string, params: any[], value: any, expiry: number) => Promise<void>
+    get: (method: string, params: any[]) => Promise<{ value: any, expiry: number }>
+    erase: () => Promise<void>
+}
+
 
 global {
     namespace soul.jsonrpc {
         declare var ActiveObjectSource: {
+            new <T>(): {
+                $0: T
+            }
+        }
+
+        declare var ZeroWrapper: {
             new <T>(): {
                 $0: T
             }

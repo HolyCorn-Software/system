@@ -11,6 +11,7 @@ import { PublicRPCSessionAPI } from "../../../comm/rpc/api/session.mjs";
 import { BasePublicErrorAPI } from "./api.error.mjs";
 import BaseLanguagePublicMethods from "./api.lang.mjs";
 import BaseSettingsPublicMethods from "./api.settings.mjs";
+import FrontendManagerPublicMethods from "../http/frontend-manager/public.mjs";
 
 
 export class SystemPublicMethods {
@@ -46,9 +47,17 @@ export class SystemPublicMethods {
     get settings() {
         return this[settingsAPI] ||= new BaseSettingsPublicMethods(BasePlatform.get())
     }
+
+    /**
+     * @returns {FrontendManagerPublicMethods}
+     */
+    get frontendManager() {
+        return this[frontendManagerPub] ||= new FrontendManagerPublicMethods()
+    }
 }
 
 const lang_api = Symbol()
 const session_api_symbol = Symbol(`BasePublicMethods.prototype.session_api`)
 const error_api_symbol = Symbol(`BasePublicMethods.prototype.error`)
 const settingsAPI = Symbol()
+const frontendManagerPub = Symbol()

@@ -55,13 +55,11 @@ class JSONRPCEventsStub extends WildcardEventEmitter {
      * Use the dispatchEvent() method
      * 
      */
-    emit(rpc, type, data) {
-        if (typeof rpc === 'string') { //If called locally
-            throw new Error(`This method is not supposed to be called locally.\nJust use the regular dispatchEvent() method.`)
-        } else {
-            super.dispatchEvent(new CustomEvent(`$remote-event`, { detail: { type, data } }))
-            super.dispatchEvent(new CustomEvent(type, { detail: data }))
-        }
+    emit(type, data) {
+
+        super.dispatchEvent(new CustomEvent(`$remote-event`, { detail: { type, data } }))
+        super.dispatchEvent(new CustomEvent(type, { detail: data }))
+
     }
     /**
      * Dispatching an event, will also cause the event to be dispatched remotely

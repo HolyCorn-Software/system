@@ -15,6 +15,7 @@ class JSONRPC extends _JSONRPC {
             const id = shortUUID.generate()
             console.error(`Unexpected error\nid: ${id}\nWhen calling ${methodName}\n`, e, `\n\nwith parameters`, params)
             const exception = new Exception(`System Error\nid: ${id}`)
+            exception.code = 'system'
             exception.id = id
 
             return exception

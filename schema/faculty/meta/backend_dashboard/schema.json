@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/schema",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "title": "This object is a key-value pair, where the key signifies the name of the dashboard, and the details specify the actions, and groups to be added to that dashboard",
     "additionalProperties": {

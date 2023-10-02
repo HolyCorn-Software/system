@@ -43,7 +43,7 @@ self.addEventListener('fetch', (event) => {
 
             const promise = (async () => {
 
-                if ((!isUIFile(request.url) || /^\$bundle_cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) && !isUISecFile(request.url)) {
+                if ((!isUIFile(request.url) || /^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) && !isUISecFile(request.url)) {
                     return await fetch(request)
                 }
 
@@ -420,7 +420,7 @@ async function grandUpdate(origin, shouldLoad) {
             // by sending the server information of the files we already have in cache
 
 
-            const response = await fetch('/$bundle_cache/grand', {
+            const response = await fetch('/$/system/frontend-manager/bundle-cache/grand', {
                 method: 'GET',
                 headers: {
                     'x-bundle-cache-path': path,
@@ -826,7 +826,7 @@ const grandVersionTasks = {}
 async function fetchGrandVersion(origin, shouldLoad) {
     const path = new URL(origin).pathname;
     async function check() {
-        const data = await (await fetch('/$bundle_cache/getGrandVersion', {
+        const data = await (await fetch('/$/system/frontend-manager/bundle-cache/getGrandVersion', {
             headers: {
                 'x-bundle-cache-path': path
             }
@@ -1217,7 +1217,7 @@ const ZipLoader = class ZipLoader {
         /** @type {String|undefined} */
         this.url = url;
 
-        /** @type {import('./types.ts').Files | null} */
+        /** @type {import('./types.js').Files | null} */
         this.files = null;
     }
 
@@ -1306,7 +1306,7 @@ const ZipLoader = class ZipLoader {
     /**
      * Adds the specified event listener.
      * @param {string} type event name
-     * @param {import('./types.ts').Listener} listener handler function
+     * @param {import('./types.js').Listener} listener handler function
      */
     on(type, listener) {
         if (!this._listeners[type]) {
@@ -1320,7 +1320,7 @@ const ZipLoader = class ZipLoader {
     /**
      * Removes the specified event listener
      * @param {string} type event name
-     * @param {import('./types.ts').Listener} listener handler function
+     * @param {import('./types.js').Listener} listener handler function
      */
     off(type, listener) {
         const listenerArray = this._listeners[type];

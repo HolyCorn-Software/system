@@ -45,7 +45,7 @@ export default class FunctionProxy {
                                 }.bind(this))()
                             } else {
                                 const ret = value.call(this, ...modifiedParams)
-                                return ret instanceof Promise ? (async () => wrapReturn(methodMetadata, await ret))() : wrapReturn(ret)
+                                return ret instanceof Promise ? (async () => wrapReturn(methodMetadata, await ret))() : wrapReturn(methodMetadata, ret)
                             }
                         }.bind(object)
                     case 'object':
@@ -75,18 +75,16 @@ export default class FunctionProxy {
         /**
          * @class
          * @template Type
-         * @extends Type
-         * @augments Type
+         * @extends soul.jsonrpc.ZeroWrapper<Type>
          */
-        this.SkipArgOne = class {
+        class SkipArgOne extends Object {
 
             /**
              * This returns a wrapped object, whereby every first argument of every function called, will be removed
              * @param {Type} target 
-             * @returns {Type}
-             * @constructor
              */
             constructor(target) {
+                super()
 
                 return new FunctionProxy(target, {
                     arguments: (data, ...args) => {
@@ -95,6 +93,7 @@ export default class FunctionProxy {
                 })
             }
         }
+        this.SkipArgOne = SkipArgOne
     }
 
 }

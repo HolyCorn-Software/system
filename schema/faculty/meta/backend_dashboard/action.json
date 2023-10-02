@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/schema",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "title": "This is a single action on the dashboard",
     "allOf": [
@@ -14,7 +14,7 @@
         },
         "group": {
             "type": "string",
-            "title": "The name of the group which contains this action. If this "
+            "title": "The name of the group which contains this action."
         }
     }
 }

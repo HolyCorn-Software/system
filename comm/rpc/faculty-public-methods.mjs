@@ -6,6 +6,7 @@ This module allows Faculties to declare methods that are widely available to the
 As word of caution, don't use private fields (#myPrivateFields). Use Symbols instead (this[someSymbol].doSomething() )
 */
 
+import PluginsCustomPublicMethods from "../../lib/libFaculty/plugin/remote/public.mjs";
 import { FacultyPlatform } from "../../lib/libFaculty/platform.mjs";
 import { PublicRPCSessionAPI } from "./api/session.mjs";
 
@@ -35,10 +36,19 @@ export class FacultyPublicMethods {
         return this[session_api_symbol] ||= new FacultyPublicSessionAPI()
     }
 
+    /**
+     * @returns {PluginsCustomPublicMethods}
+     */
+    get $plugins() {
+        return this[plugins_public] ||= new PluginsCustomPublicMethods()
+    }
+
 
 }
 
 const session_api_symbol = Symbol(`FacultyPublicMethods.prototype.session_api`)
+
+const plugins_public = Symbol()
 
 
 export class FacultyPublicSessionAPI extends PublicRPCSessionAPI {

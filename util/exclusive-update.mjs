@@ -50,7 +50,7 @@ export default function ____exclusiveUpdate____(pattern, data, updateTarget) {
     {
         'src': 'string',
         'dst': 'string',
-        'amounts.src_amount': {
+        'record.src': {
             'src_amount': {
                 'value': 'number',
                 'currency': 'string'

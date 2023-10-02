@@ -19,15 +19,19 @@ type AggregateRPCTransform<T> = {
     } & Promisify<Merge$0<T[K]>>
 }
 
+
+
+type Primitive = string | number | boolean | symbol | undefined | AsyncGenerator
+
 /**
  * This type ensures that all functions in the input parameter return a promise
  */
 type Promisify<T> =
-    T extends (...args: infer Input) => Promise<infer Ret> ? (...args: Input) => Promise<Awaited<Promisify<Ret>>>
+    T extends Primitive ? T
+    :
+    T extends (...args: infer Input) => Promise<infer Ret> ? (...args: Input) => Promise<Promisify<Awaited<Ret>>>
     :
     T extends (...args: infer Input) => infer Ret ? (...args: Input) => Promise<Promisify<Ret>>
-    :
-    T extends string | number | boolean | symbol | undefined | AsyncGenerator ? T
     :
     {
         [K in keyof T]: Promisify<T[K]>
@@ -46,21 +50,22 @@ type Promisify<T> =
  * ```
  * 
  * So, we do this
- * 
+ * ```
  * declare var ActiveObjectSource: {
  *      new <T>(): {
  *          $0: T
  *      }
  * }
+ * ```
  * 
  * And now, we want a way to get rid of the $0.
  * 
  * That's where the Merge$0 comes in
  * 
  */
-type Merge$0<T> = T extends ZeroType ? Merge$0<T['$0']>
+type Merge$0<T> = T extends ZeroType<infer ZerT> ? Merge$0<ZerT>
     :
-    T extends string | number | boolean | symbol | undefined ? T
+    T extends Primitive ? T
     :
     T extends (...args: infer Input) => infer Ret ? (...args: Input) => MaintainPromise<Ret>
     : {
@@ -68,8 +73,8 @@ type Merge$0<T> = T extends ZeroType ? Merge$0<T['$0']>
     }
 
 
-interface ZeroType {
-    $0: any
+interface ZeroType<T = {}> {
+    $0: T
 }
 type MaintainPromise<T> = T extends Promise<infer Dat> ? Promise<Awaited<Merge$0<Dat>>> : Merge$0<T>
 
@@ -82,6 +87,24 @@ global {
         declare var HcAggregateRPC: {
             new(): hcRPC
         }
+
+
     }
 
+    namespace soul.comm.rpc {
+
+        type AggregateRPCTransform<T> = {
+            [K in keyof T]: {
+                $jsonrpc: ClientJSONRPC
+            } & Promisify<Merge$0<T[K]>>
+        }
+
+    }
+
+
+}
+
+
+type LocalStorageJSONRPCCacheStorage = {
+    [method: string]: { params: any[], value: any, expiry: number }[]
 }

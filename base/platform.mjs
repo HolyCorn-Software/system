@@ -19,8 +19,8 @@ import { BasePlatformHTTPAPI } from "./net/http/api/api.mjs";
 import util from 'util';
 import { BasePlatformHTTPManager } from "./net/http/platform-http-manager.js";
 import LanguageController from "./lang/controller.mjs";
-import BaseBundleCacheAPI from "./net/http/bundle-cache/api.mjs";
 import BaseCompatServer from "./net/http/compat/server.mjs";
+import FrontendManager from "./net/http/frontend-manager/manager.mjs";
 
 const startHTTP = Symbol()
 const init0 = Symbol()
@@ -188,12 +188,15 @@ export class BasePlatform extends Platform {
         let http_manager = new BasePlatformHTTPManager(this, { http_port, https_port })
         await http_manager.init()
         this.http_manager = http_manager;
-        this.bundlecache = new BaseBundleCacheAPI()
+        this.frontendManager = new FrontendManager()
+
         this.events.addListener('booted', () => {
-            this.compat.allDone().then(() => {
-                console.log(`Done transpiling all frontend files`)
-                this.http_manager.platform_http.isHalted = false
-                console.log(`The server has started accepting HTTP requests`.cyan)
+            this.frontendManager.setup().then(() => {
+                this.compat.allDone().then(() => {
+                    console.log(`Done transpiling all frontend files`)
+                    this.http_manager.platform_http.isHalted = false
+                    console.log(`The server has started accepting HTTP requests`.cyan)
+                })
             })
         })
     }
@@ -203,7 +206,6 @@ export class BasePlatform extends Platform {
         //Close faculties
         for (var faculty of this.faculties?.members || []) {
             try {
-                // TODO: Send stop signal
                 await faculty.channel.terminate()
                 console.log(`Stopped ${faculty.descriptor.label.blue}`)
             } catch (e) {

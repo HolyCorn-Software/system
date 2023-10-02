@@ -40,8 +40,6 @@ export default class ____FilesCheck____ {
      */
     load() {
 
-        const pathSep = libPath.sep
-
         /**
          * @param {string} path 
          * @param {DirectoryDefinition} structure 

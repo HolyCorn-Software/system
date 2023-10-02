@@ -56,8 +56,14 @@ export class BaseToFacultyRemoteMethods {
 
     }
     get bundlecache() {
-        return this[basePlatform].bundlecache.remote
+        return this[basePlatform].frontendManager.bundlecache.remote
+    }
 
+    /** @type {this[basePlatform]['frontendManager']} */
+    get frontendManager() {
+        return new FunctionProxy.SkipArgOne(
+            this[basePlatform].frontendManager
+        )
     }
 
 

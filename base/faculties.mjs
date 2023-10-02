@@ -7,6 +7,8 @@ It calls the Faculty object to start the particular faculty
 
 import { Faculty } from '../lib/libFaculty/faculty.mjs';
 
+const faculties = Symbol()
+
 
 export class BasePlatformFacultiesAPI {
 
@@ -24,7 +26,9 @@ export class BasePlatformFacultiesAPI {
             for (var member of this.members) {
                 yield member
             }
-        }
+        };
+
+        this.events = new FacultiesEventAPI(this)
 
     }
 
@@ -36,6 +40,15 @@ export class BasePlatformFacultiesAPI {
         faculty.descriptor.resolveVariables()
 
         this.members.push(faculty) //Include in the list of faculties
+
+        //Then watch for events
+        faculty.comm_interface.rpc.$rpc.events.addEventListener('$remote-event', (event) => {
+            const { type, data } = event.detail
+            EventTarget.prototype.dispatchEvent.call(
+                this.events,
+                new CustomEvent(type, { detail: data })
+            )
+        })
     }
 
     remove(process) {
@@ -61,5 +74,33 @@ export class BasePlatformFacultiesAPI {
     }
 
 
+
+}
+
+
+
+
+class FacultiesEventAPI extends EventTarget {
+
+    /**
+     * 
+     * @param {BasePlatformFacultiesAPI} facultiesAPI 
+     */
+    constructor(facultiesAPI) {
+        super()
+        this[faculties] = facultiesAPI
+    }
+
+
+    /**
+     * 
+     * @param {Event|CustomEvent} event 
+     */
+    dispatchEvent(event) {
+        this[faculties].members.forEach(faculty => {
+            faculty.comm_interface.rpc.$rpc.events.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+        });
+        super.dispatchEvent(event)
+    }
 
 }

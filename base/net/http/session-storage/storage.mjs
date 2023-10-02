@@ -173,7 +173,7 @@ export class SessionStorage {
      */
     async getSessionID(cookie) {
 
-        let client = [...this.#sessions].filter(x => x.cookie === cookie)[0] || await (async () => {
+        let client = [...this.#sessions].filter(x => x?.cookie === cookie)[0] || await (async () => {
             const single = await collections.sessionStorage.findOne({ cookie })
             if (!single) {
                 return

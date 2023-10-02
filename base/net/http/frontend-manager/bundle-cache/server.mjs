@@ -7,48 +7,52 @@
  * 
  */
 
-import RequestMap from "./request-map.mjs"
 import libUrl from 'node:url'
 import libFs from 'node:fs'
 import libPath from 'node:path'
 import shortUUID from "short-uuid"
 import archiver from 'archiver'
 import unzipper from "unzipper"
-import { SuperResponse } from "../../../lib/nodeHC/http/super-response.js"
-import FileCache from "../../file-cache/cache.mjs"
-import { SuperRequest } from "../../../lib/nodeHC/http/super-request.js"
-import { BasePlatform } from "../../../base/platform.mjs"
+import { SuperResponse } from "../../../../../lib/nodeHC/http/super-response.js"
+import FileCache from "../../../../../http/file-cache/cache.mjs"
+import { SuperRequest } from "../../../../../lib/nodeHC/http/super-request.js"
+import { BasePlatform } from "../../../../platform.mjs"
+import chokidar from 'chokidar'
 
-
-
-const setup = Symbol()
 
 const injectionData = Symbol()
 
 const watcher = Symbol()
 const bundlesPath = Symbol()
-const publicPath = libUrl.fileURLToPath(new URL('../public/', import.meta.url).href)
+const publicPath = libUrl.fileURLToPath(new URL('./public/', import.meta.url).href)
 const bundlingTasks = Symbol()
 const filecache = Symbol()
+const setupInjection = Symbol()
 
 
 export default class BundleCacheServer {
 
     /**
      * 
-     * @param {HTTPServer} httpServer 
-     * @param {soul.http.bundlecache.RequestMapCollection} collection
+     * @param {HTTPServer} httpServer
      */
-    constructor(httpServer, collection) {
+    constructor() {
 
-        this[setup](httpServer)
-        this.map = new RequestMap(collection)
-        this.setupInjection()
         /** @type {[url: string]: Promise<void>} */
         this[bundlingTasks] = {}
 
-        /** @type {string[]} An array of domains which the server should respond on*/ this.domains
+    }
 
+    get domains() {
+        const domains = BasePlatform.get().server_domains
+        return [domains.secure, domains.plaintext]
+    }
+
+    get fileManager() {
+        return BasePlatform.get().frontendManager.fileManager
+    }
+    getRelated(path) {
+        return this.fileManager.getRelated(path).filter(x => (x.size || 0) <= BundleCacheServer.MAX_RESOURCE_SIZE)
     }
 
     /**
@@ -56,9 +60,11 @@ export default class BundleCacheServer {
      * to allow for caching at the client side; and make provisions for updating the code
      * @returns {Promise<void>}
      */
-    async setupInjection() {
+    async [setupInjection]() {
 
-        BasePlatform.get().compat.transpile(`${publicPath}/loader.mjs`)
+        const loaderPath = `${publicPath}/loader.mjs`
+
+        BasePlatform.get().compat.transpile(loaderPath)
 
         await libFs.promises.mkdir(
             this[bundlesPath] = `/tmp/${shortUUID.generate()}${shortUUID.generate()}`
@@ -66,7 +72,13 @@ export default class BundleCacheServer {
 
         process.addListener('SIGINT', () => {
             libFs.rmSync(this[bundlesPath], { force: true, recursive: true })
+        });
+
+
+        (this[watcher] ||= chokidar.watch(loaderPath)).on('change', () => {
+            this[setupInjection]()
         })
+
 
     }
 
@@ -77,19 +89,19 @@ export default class BundleCacheServer {
     /**
      * This method sets up the BundleCache, for intercepting requests, to
      * be subsequently used in building maps, and responding with bundles
-     * @param {HTTPServer} httpServer
-     * to operate on. This is to prevent cross-origin request poisoning
-     * @returns {void}
      */
-    [setup](httpServer) {
+    setup() {
 
+        /** @type {FileCache} */
         this[filecache] = new FileCache(
             {
                 watcher: this[watcher],
             }
         );
 
-        httpServer.addMiddleWare(
+        this[setupInjection]()
+
+        BasePlatform.get().http_manager.platform_http.addMiddleWare(
             {
                 callback: async (req, res) => {
 
@@ -224,7 +236,7 @@ export default class BundleCacheServer {
 
                             // Let's remember, that the given request, 
                             // is associated to it's referrer
-                            this.map.link(refURL.pathname, [url])
+                            this.fileManager.link(refURL.pathname, [url])
                         } catch (e) {
                             console.error(`Could not process request map because: \n`, e)
                         }
@@ -242,14 +254,14 @@ export default class BundleCacheServer {
      * @returns {boolean}
      */
     versionServe(req, res) {
-        const grandRegExp = /\$bundle_cache\/getGrandVersion$/
+        const grandRegExp = /\/$\/system\/frontend-manager\/bundle-cache\/getGrandVersion$/
         if (grandRegExp.test(req.url)) {
             const path = req.headers['x-bundle-cache-path']
             if (!path) {
                 res.statusCode = 400
                 res.end('Bad request')
             } else {
-                res.endJSON({ version: this.map.getGrandVersion(path) })
+                res.endJSON({ version: this.fileManager.getGrandVersion(path) })
             }
             return true
         }
@@ -264,7 +276,7 @@ export default class BundleCacheServer {
      */
     async publicServe(req, res) {
 
-        const publicRegexp = /\$bundle_cache\/public/
+        const publicRegexp = /\$\/system\/frontend-manager\/bundle-cache\/public/
         if (publicRegexp.test(req.url)) {
             const filePath = libPath.normalize(`${publicPath}/${req.url.replace(publicRegexp, '/')}`)
 
@@ -293,7 +305,7 @@ export default class BundleCacheServer {
     async grandServe(req, res) {
 
 
-        const bundleRegexp = /\$bundle_cache\/grand/
+        const bundleRegexp = /\/\$\/system\/frontend-manager\/bundle-cache\/grand/
 
 
         /**
@@ -309,12 +321,12 @@ export default class BundleCacheServer {
                 res.end('Bad request!')
                 return;
             }
-            const related = this.map.getRelated(path)
-            related.push({ url: path, version: this.map.getVersion(path) })
+            const related = this.getRelated(path)
+            related.push({ url: path, version: this.fileManager.getVersion(path) })
 
             const bundlePath = libPath.normalize(`${this[bundlesPath]}/${path}.related.zip`)
             await libFs.promises.mkdir(libPath.dirname(bundlePath), { recursive: true })
-            const grandVersion = this.map.getGrandVersion(path)
+            const grandVersion = this.fileManager.getGrandVersion(path)
 
             const fileExists = libFs.existsSync(bundlePath)
 
@@ -330,10 +342,15 @@ export default class BundleCacheServer {
                     related.map(
                         async entry => {
                             try {
-                                let done
+
+                                if (!libFs.existsSync(entry.path)) {
+                                    this.fileManager.removeURL(entry.url)
+                                    return console.log(`Not caching ${entry.url}\nFile was removed.`)
+                                }
+
                                 const results = await Promise.race(
                                     [
-                                        fetch(`http://0.0.0.0${entry.url}`),
+                                        libFs.promises.readFile(entry.path),
                                         new Promise((resolve, reject) => {
                                             setTimeout(() => {
                                                 reject(new Error(`The url ${entry.url} too too long to fetch`))
@@ -341,19 +358,10 @@ export default class BundleCacheServer {
                                         })
                                     ]
                                 )
-                                done = true
-                                if ((results.status < 200) || (results.status >= 300)) {
-                                    if (results.status == 404) {
-                                        this.map.removeURL(entry.url)
-                                    }
-                                    return console.log(`Not caching ${entry.url}\nResponse ${results.status}`)
-                                }
-                                const data = Buffer.from(
-                                    await results.arrayBuffer()
-                                )
+                            
 
                                 return zipStream.append(
-                                    data,
+                                    results,
                                     { name: toSafeZipPath(entry.url), stats: { mtimeMs: entry.version?.emperical || -1, mode: 775 } }
                                 )
                             } catch (e) {
@@ -407,7 +415,7 @@ export default class BundleCacheServer {
                     }
                 }
 
-                const nwRelated = this.map.getRelated(path).filter(rel => {
+                const nwRelated = this.getRelated(path).filter(rel => {
                     const inZip = results.files.findIndex(x => `/${x.path}` == rel.url)
                     // TODO: Remove this temporary hack (rel.version.grand), and restore it to rel.version.emperical
                     return (inZip == -1) || (Math.max(rel.version.emperical, rel.version.grand) > results.files[inZip].lastModifiedDateTime.getTime())
@@ -449,19 +457,14 @@ export default class BundleCacheServer {
                     await Promise.all(
                         nwRelated.map(async nw => {
                             try {
-                                const results = await fetch(`http://0.0.0.0${nw.url}`)
-                                if ((results.status < 200) || (results.status >= 300)) {
-                                    if (results.status == 404) {
-                                        this.map.removeURL(nw.url)
-                                    }
-                                    return console.log(`Not caching ${nw.url}`)
+                                if (!libFs.existsSync(nw.path)) {
+                                    this.fileManager.removeURL(nw.url)
+                                    return console.log(`Not caching ${nw.url.yellow}\nIt might have been removed.`)
                                 }
+                                const results = await libFs.promises.readFile(nw.path)
 
-                                const contentData = Buffer.from(
-                                    await results.arrayBuffer()
-                                )
                                 tmpZip.append(
-                                    contentData,
+                                    results,
                                     {
                                         name: toSafeZipPath(nw.url),
                                         stats: {
@@ -502,7 +505,7 @@ export default class BundleCacheServer {
                         ).addListener('close', resolve).addListener('error', reject)
                     });
 
-                    await new Promise((resolve, reject) => {
+                    await new Promise((resolve) => {
 
                         modStream.close((e) => {
                             resolve()
@@ -582,10 +585,6 @@ export default class BundleCacheServer {
 
     static get MAX_RESOURCE_SIZE() {
         return 64 * 1024
-    }
-
-    static isUIFile(path) {
-        return /.((mjs)|(js)|(css)|(css3)|(svg)|(.{0,1}html))$/gi.test(path)
     }
 
 }

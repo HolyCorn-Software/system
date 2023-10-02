@@ -51,10 +51,13 @@ export class JSONRPCManager extends CleanEventTarget {
             let lastPart = this.json_rpc.stub;
 
 
+            let isInternal;
+
             for (let i = 0; i < parts.length; i++) {
                 if (i == 0 && parts[i] === '$rpc') {
                     method = this.json_rpc.$rpc
                     lastPart = this.json_rpc
+                    isInternal = true;
                 } else {
                     method = method?.[parts[i]]
                 }
@@ -79,7 +82,8 @@ export class JSONRPCManager extends CleanEventTarget {
             }
             try {
                 let args = []
-                if (this.json_rpc.flags.first_arguments) {
+                // Exclude the first argument of all function calls, from the internal function calls.
+                if (this.json_rpc.flags.first_arguments && !isInternal) {
                     args.push(...this.json_rpc.flags.first_arguments)
                 }
                 args.push(...object.call.params)
@@ -228,8 +232,16 @@ export class JSONRPCManager extends CleanEventTarget {
                             })
                         )
                     } else {
+
+
+                        // Okay, so if the data is something to be cached, let's do as expected
+                        if (object.return.cache) {
+                            this.dispatchEvent(new CustomEvent(`cache-${object.return.message}`, { detail: object.return }))
+                        }
+
                         //Straightforward
                         this.dispatchEvent(new CustomEvent(`resolve-${object.return.message}`, { detail: object.return.data }))
+
                     }
                 }
 

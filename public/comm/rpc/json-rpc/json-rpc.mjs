@@ -90,7 +90,10 @@ export default class JSONRPC extends CleanEventTarget {
              * @param {string} methodName
              * @param {any[]} params
              */
-            error_transform: (error, methodName, params) => error
+            error_transform: (error, methodName, params) => error,
+
+            /** @type {import('./types.js').JSONRPCCache} */
+            cache: undefined
         }
 
 
@@ -195,6 +198,23 @@ export default class JSONRPC extends CleanEventTarget {
 
     static {
 
+        /**
+         * @template T
+         * @extends soul.jsonrpc.ActiveObjectSource<T>
+         */
+        this.CacheObject = class extends Object {
+            /**
+             * 
+             * @param {T} data 
+             * @param {import('./types.js').JSONRPCMessage['return']['cache']} options 
+             */
+            constructor(data, options) {
+                super()
+                this.data = data
+                this.options = options
+            }
+        }
+
         this.ActiveObject =
             /**
              * @template T
@@ -267,7 +287,7 @@ export default class JSONRPC extends CleanEventTarget {
                 /**
                  * This method returns the id of an active object
                  * @param {ActiveObject<T>} activeObject 
-                 * @returns {T}
+                 * @returns {string}
                  */
                 static getId(activeObject) {
                     return activeObject[activeObjectID]

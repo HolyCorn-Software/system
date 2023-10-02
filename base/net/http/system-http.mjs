@@ -4,13 +4,14 @@ This module brings together all the features available to client
 over http, that are directly associated with the base platform
 */
 
-import VersionReporter from "../../../http/bundle-cache/client/version-reporter.mjs";
+
 import { SocketPublicJSONRPC } from "../../../comm/rpc/socket-public-rpc.mjs";
 import utils from "../../../comm/utils/utils.mjs";
 import { SystemPublicMethods } from "../rpc/api.mjs";
 import { BasePlatform } from "../../../base/platform.mjs";
 import libPath from 'node:path'
 import libUrl from 'node:url'
+import VersionReporter from "../../../http/frontend-manager/version-reporter.mjs";
 
 
 
@@ -73,7 +74,7 @@ export default class SystemHTTP extends HTTPServer {
 
         BasePlatform.get().events.addListener('booted', () => {
             new VersionReporter(
-                BasePlatform.get().bundlecache.base
+                BasePlatform.get().frontendManager.fileManager
             ).watch(
                 libPath.normalize(`${this.system_path}/static`) + '/',
                 libUrl.fileURLToPath(new URL(publicDir, import.meta.url).href)

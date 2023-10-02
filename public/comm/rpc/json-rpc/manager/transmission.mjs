@@ -194,7 +194,7 @@ export default class TransmissionManager {
 
     /**
      * This method is called internally when the JSONRPCManager wants to send some data for transmission
-     * @param {JSONRPCMessage} object 
+     * @param {import("../types.js").JSONRPCMessage} object 
      * @param {boolean} watchACK If set to true, the transmission manager will expect an ACK, and if none is sent, it will resent
      */
     async doOutput(object, watchACK) {
@@ -219,7 +219,14 @@ export default class TransmissionManager {
 
 
         //Then, transmit the data, before we continue
-        this[ON_OUTPUT](object);
+        try {
+            this[ON_OUTPUT](object);
+        } catch (e) {
+            const error = new Error(`Please, check your internet connection.`)
+            error.cause = e
+            error.accidental = true
+            throw error
+        }
 
 
         //Now, if what we just sent was a function call, we should be receiving an ACK, a resolve, or a reject in less than 5s
@@ -312,18 +319,46 @@ export default class TransmissionManager {
             }
         );
 
+        /**
+         * In case a request timed out waiting for a previous iteration to complete.
+         * This variable maintains a single instance of the generator, such that any subsequent iteration would be serialized.
+         * Therefore, data won't be lost.
+         */
+        let lastIterationPromise;
+
         // Now, since we have told the client that the data is a loop, let's wait for when he requests data
         // Also, the loop should be destroyed after 24 hours, or when we've reached it's end
         /**
          * This method is called each time the client requests for more loop data
-         * @param {CustomEvent<JSONRPCMessage>} event 
+         * @param {CustomEvent<import("../types.js").JSONRPCMessage>} event 
          */
         const respondLoop = async (event) => {
             try {
+
                 const buffer = []
                 let done;
+
                 while (!done) {
-                    const next = await result.next()
+
+                    // Wait till there's sufficient data for transmission, for a maximum of 500ms
+
+                    const timeoutSymbol = Symbol()
+
+                    const valuePromise = lastIterationPromise || result.next();
+                    let next = await Promise.race([
+                        valuePromise,
+                        new Promise(resolve => {
+                            setTimeout(() => resolve(timeoutSymbol), 500)
+                            lastIterationPromise = valuePromise
+                        })
+                    ])
+
+                    if (next === timeoutSymbol) {
+                        break;
+                    }
+
+                    lastIterationPromise = undefined
+
                     if (!(done = next.done)) {
                         buffer.push(next.value)
                     }
@@ -434,20 +469,48 @@ export default class TransmissionManager {
      * @param {JSONRPCMessage} packet 
      */
     dataReply(result, packet) {
+
+        const isCachedObject = result instanceof JSONRPC.CacheObject;
+        let data = isCachedObject ? result.data : result
+
+
         //Normal data being returned
         this.doOutput(
             {
                 jsonrpc: '3.0',
                 id: uuid(),
                 return: {
-                    data: result,
+                    data: data,
                     method: packet.call.method,
                     type: 'data',
-                    message: packet.id
+                    message: packet.id,
+                    cache: isCachedObject ? result.options : undefined
                 },
             }
         );
     }
+
+    /**
+     * 
+     * @param {soul['jsonrpc']['ActiveObjectSource']} result 
+     * @param {import("../types.js").JSONRPCMessage} object 
+     */
+    activeObjectReply(result, object) {
+        this.doOutput(
+            {
+                jsonrpc: '3.0',
+                id: uuid(),
+                return: {
+                    data: JSONRPC.ActiveObject.getStaticData(result),
+                    type: 'data',
+                    message: object.id,
+                    method: object.call.method
+                },
+                activeObjectID: JSONRPC.ActiveObject.getId(result),
+            }
+        )
+    }
+
     /**
      * This method replies to a client with information about the error from a function call
      * @param {Error} error 

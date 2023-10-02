@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "title": "configuration for providing additional features to frontend files",
+    "properties": {
+        "autorun": {
+            "title": "configuration for making certain scripts automatically run on all pages",
+            "type": "array",
+            "items": [
+                {
+                    "type": "string",
+                    "$comment": "relative path of a script that would automatically run in all pages"
+                }
+            ]
+        },
+        "run": {
+            "title": "This deals with configuration for making some scripts run in certain scopes. For example, a widget in a page may decide that a page contains the 'payment' scope, and scripts targetting the 'payment' scope will be imported",
+            "additionalProperties": {
+                "type": "array",
+                "title": "List of (relative) paths to scripts, that will run in the given scope.",
+                "items": [
+                    {
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        "htmlRegistry": {
+            "title": "This section deals with making some script automatically import, when certain custom HTML tags are used in a page.\nThis object is a tagName-path map of the which custom HTML tag names are to import which files.",
+            "additionalProperties": {
+                "type": "string",
+                "title": "The relative path of the script to be imported to handle this tag."
+            }
+        }
+    }
+}

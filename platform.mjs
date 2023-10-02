@@ -19,8 +19,7 @@ export class Platform {
 
     constructor() {
 
-        /** @type {PlatformEvents} */ this.events
-        this.events = new EventEmitter();
+        /** @type {PlatformEvents} */ this.events = new EventEmitter()
 
         /** @type {{plaintext: string, secure:string}} */ this.server_domains
 

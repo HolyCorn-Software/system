@@ -1,15 +1,15 @@
 /**
  * Copyright 2023 HolyCorn Software
  * The soul system
- * This module (version-reporter), is part of the bundle-cache module, and runs in 
+ * This module (version-reporter), is part of the frontend-manager module, and runs in 
  * faculties, and other, "subordinate", areas, and responsible for updating the
  * server on current versions of urls, according to versions of files
  */
 
 import chokidar from 'chokidar'
 import libPath from 'node:path'
-import BundleCacheServer from '../server/server.mjs'
-import { Platform } from '../../../platform.mjs'
+import { Platform } from '../../platform.mjs'
+import CompatFileServer from '../compat-server/server.mjs'
 
 const watcher = Symbol()
 const paths = Symbol()
@@ -24,7 +24,7 @@ function awaitBoot() {
     return bootPromise ||= (async () => {
         try {
             if (Platform.get().type == 'faculty') {
-                await FacultyPlatform.get().base.channel.remote.bootTasks.zeroWait()
+                CompatFileServer.COMPAT_ACTIVE && await FacultyPlatform.get().base.channel.remote.bootTasks.zeroWait()
             }
         } catch (e) {
             console.error(e)
@@ -38,7 +38,7 @@ export default class VersionReporter {
 
     /**
      * 
-     * @param {soul.http.bundlecache.VersionReporterHooks} _hooks 
+     * @param {soul.http.frontendManager.fileManager.VersionReporterHooks} _hooks 
      * @param {chokidar.FSWatcher} _watcher If set, the system will just directly use it,
      * instead of instantiating a new watcher
      */
@@ -64,11 +64,11 @@ export default class VersionReporter {
      * @returns {void}
      */
     async watch(urlPath, dirPath) {
+
         await awaitBoot()
 
         if (!this[watcher]) {
-            this[watcher] = chokidar.watch(dirPath)
-
+            this[watcher] = chokidar.watch(dirPath, { depth: Infinity })
             this[configureWatcher]()
 
         } else {
@@ -89,16 +89,17 @@ export default class VersionReporter {
          */
         const updateFxn = async (action, path, stat) => {
             // By rule, we only keep information about files 64KB or less
-            if (stat.isFile() && stat.size <= BundleCacheServer.MAX_RESOURCE_SIZE && BundleCacheServer.isUIFile(path)) {
+            if (stat.isFile() && VersionReporter.isUIFile(path)) {
                 // A new file has been placed under our watch
                 // Let's make sure this path exists in the server
+
                 try {
                     for (const urlPath of this[getURLPaths](path)) {
                         await awaitBoot()
                         if (action === 'add') {
-                            this[addURLToServer](urlPath)
+                            this[addURLToServer](urlPath, path, stat.size)
                         } else {
-                            this[hooks].updateVersion(urlPath)
+                            this[hooks].updateVersion(urlPath, path, stat.size)
                         }
                     }
                 } catch (e) {
@@ -106,6 +107,7 @@ export default class VersionReporter {
                 }
 
             }
+
         }
 
         this[watcher].addListener('add', updateFxn.bind(undefined, 'add'))
@@ -157,12 +159,13 @@ export default class VersionReporter {
     /**
      * This method is used to add a URL to a server's watch list
      * @param {string} url 
+     * @param {number} size
      * @returns {void}
      */
-    async [addURLToServer](url) {
+    async [addURLToServer](url, size) {
         await awaitBoot()
         for (const assoc of getAssociatedURLs(url)) {
-            this[hooks].addURL(assoc)
+            this[hooks].addURL(assoc, size)
         }
 
     }
@@ -179,6 +182,11 @@ export default class VersionReporter {
             this[hooks].removeURL(assoc)
         }
 
+    }
+
+
+    static isUIFile(path) {
+        return /.((mjs)|(js)|(css)|(css3)|(svg)|(.{0,1}html)|(json))$/gi.test(path)
     }
 
 }
