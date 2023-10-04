@@ -101,6 +101,7 @@ export class FacultyFacultyInterface {
             value: new FacultyFacultyJSONRPC(),
             enumerable: true
         });
+        this.rpc.flags.expose_stack_traces = true
 
         new SocketCommInterface(socket, undefined, this.rpc)
 

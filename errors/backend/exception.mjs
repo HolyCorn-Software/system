@@ -18,14 +18,14 @@ export class Exception extends Error {
      * 
      * @param {string} message Error message to be read by engineers
      * @param {object} param1 
-     * @param {string} param1.code The unique error code. For faculty based errors, you can avoid the prefix 'error.<faculty_name>'
+     * @param {string} param1.code The unique error code.
      * @param {object} param1.flags
      * @param {boolean} param1.flags.showNodeTraces This is normally turned off. But if you turn it on, it'll include stack traces from internal node.js methods
      * @param {number} param1.flags.stackIndex Use this parameter to cut out some parts of the stack trace. For example, setting it to 3 will exclude all stack traces before line (3+1) 4
      * @param {Error} param1.cause
      */
-    constructor(message, { code, cause, flags: { showNodeTraces = false, stackIndex = 0, prefix = true } = { showNodeTraces: false, stackIndex: 0 } } = {}) {
-        super(message);
+    constructor(message, { code, cause, flags: { showNodeTraces = false, stackIndex = 0 } = { showNodeTraces: false, stackIndex: 0 } } = {}) {
+        super(message, { cause });
 
 
         for (const property of ['id', 'code']) {
@@ -44,18 +44,14 @@ export class Exception extends Error {
         Object.assign(this, arguments[1])
 
 
-
-        let stackParts = this.stack.split('\n')
-
+        this.stack = this.stack.replace(/^Error: /, `${'Exception'.bold.red}\n`)
         if (!showNodeTraces) {
-            stackParts = stackParts.filter(x => !(/ \(node:.+\)$/.test(x)));
-            //The stack index allows only certain parts of the stack to be visible. It offsets the stack lines by a specified number
-            stackParts = stackParts.join('\n').replace(this.message, '').split('\n').slice(stackIndex)
+            this.stack = this.stack.replaceAll(/\n.*\(node:internal.*/g, '')
         }
-
-        this.stack = stackParts.join('\n').replace(/\[Error\]/, '').replace(/Error:/, '') + `\n Exception id: ${this.id.cyan} \n${this.code ? 'code: ' + this.code.blue : ''}`
-        this.stack = this.stack.replace(this.message, '')
-        this.stack = `${'Exception'.red.bold}: ${this.message}\n${this.stack}`
+        if (stackIndex !== 0) {
+            this.stack = this.stack.split('\n').slice(stackIndex).join('\n')
+        }
+        this.cause = cause
     }
 
     /**

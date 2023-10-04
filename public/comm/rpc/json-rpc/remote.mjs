@@ -168,12 +168,16 @@ class JSONRPCRemoteObject {
                                         default:
                                             {
 
-                                                let exception = {}
+                                                let exception = new Error()
                                                 exception.code = error.code
                                                 exception.id = error.id
                                                 exception.message = `${error.message}`
                                                 exception.stack = `${error.stack || ''}\n${stack}`;
-                                                exception.handled = error.handled
+                                                for (const key of ['code', 'id', 'handled']) {
+                                                    if (typeof exception[key] == 'undefined') {
+                                                        delete exception[key]
+                                                    }
+                                                }
                                                 failed(exception);
                                             }
                                     }

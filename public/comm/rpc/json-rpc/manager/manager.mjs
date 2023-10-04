@@ -128,7 +128,7 @@ export class JSONRPCManager extends CleanEventTarget {
                 //Let's inform our internal listeners, that the method failed, so no need to resend responses
                 this.dispatchEvent(new CustomEvent(`reject-${object.id}`))
 
-                e0.stack = !e0.stack ? e0.stack : `${e0.stack}\n\n\t${'Remote Call stack'.magenta}\n${object.call.stack || ''}`
+                e0.stack = !e0.stack ? e0.stack : `${e0.stack}${object.call.stack ? `\n\n\t${'Remote Call stack'.magenta}\n${object.call.stack || ''}` : ''}`
                 let e = e0.handled ? e0 : this.json_rpc.flags.error_transform(e0, object.call.method, object.call.params)
                 e.handled = true
 
