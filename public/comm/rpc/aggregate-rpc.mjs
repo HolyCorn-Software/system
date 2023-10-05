@@ -158,13 +158,6 @@ class RemoteFacultyRPCObject {
                                 } catch (e) {
                                     // A problem with connection, and authentication.
                                     // In that case, let's check the cache
-                                    try {
-                                        const cachedData = await localStorageCache.get(path, argArray)
-                                        if (cachedData) {
-                                            return fxn_done(cachedData.value)
-                                        }
-                                    } catch { }
-                                    fxn_failed(e)
                                     throw e;
                                 }
                             })());
@@ -194,7 +187,19 @@ class RemoteFacultyRPCObject {
 
                     }
 
-                    await establish_new_connection()
+                    establish_new_connection().catch(async (error) => {
+                        try {
+                            const cachedData = await localStorageCache.get(path, argArray)
+                            if (cachedData?.value) {
+                                fxn_done(cachedData.value)
+                            } else {
+                                fxn_failed(error)
+                            }
+                        } catch (e) {
+                            console.warn(`Cache not working for function call ${path}\n`, e)
+                            return fxn_failed(error)
+                        }
+                    })
 
 
                 })

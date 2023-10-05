@@ -173,11 +173,7 @@ class JSONRPCRemoteObject {
                                                 exception.id = error.id
                                                 exception.message = `${error.message}`
                                                 exception.stack = `${error.stack || ''}\n${stack}`;
-                                                for (const key of ['code', 'id', 'handled']) {
-                                                    if (typeof exception[key] == 'undefined') {
-                                                        delete exception[key]
-                                                    }
-                                                }
+                                                exception.handled = error.handled
                                                 failed(exception);
                                             }
                                     }
@@ -217,7 +213,14 @@ class JSONRPCRemoteObject {
                         cachedData = await manager.json_rpc.flags.cache?.get(methodName, args)
 
                         if (!cachedData || cachedData.expiry < Date.now()) {
-                            return freshExec().then(resolve, reject)
+                            try {
+                                return resolve(await freshExec())
+                            } catch (e) {
+                                if (cachedData) {
+                                    return resolve(cachedData.value)
+                                }
+                                return reject(e)
+                            }
                         }
 
                         // Now, if found in the cache, we return it.

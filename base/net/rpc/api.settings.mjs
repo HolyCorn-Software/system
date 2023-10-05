@@ -21,7 +21,7 @@ export default class BaseSettingsPublicMethods {
     /**
      * This method is used to retrieve a setting
      * @param {object} param0 
-     * @param {string} param0.faculty
+     * @param {keyof faculty.faculties} param0.faculty
      * @param {string} param0.namespace
      * @param {string} param0.name
      * @returns {Promise<any>}
@@ -40,16 +40,16 @@ export default class BaseSettingsPublicMethods {
         if (!theFaculty.descriptor.meta.settings[namespace]?.public) {
             throw new Exception(`The setting namespace ${namespace} is not public.`)
         }
-        const desc = theFaculty.descriptor.meta.settings[namespace].items.find(x => x.name == name)
+        const desc = theFaculty.descriptor.meta.settings[namespace].items?.find(x => x.name == name)
 
-        if (!desc?.public) {
+        if (!(desc?.public ?? theFaculty.descriptor.meta.settings[namespace]?.public)) {
             throw new Exception(`The setting ${name} of ${namespace} is not publicly available.`)
         }
 
 
 
 
-        return await theFaculty.comm_interface.serverRemote.management.settings.get({ name, namespace })
+        return new JSONRPC.CacheObject(await theFaculty.comm_interface.serverRemote.management.settings.get({ name, namespace }), { expiry: 4 * 60 * 60 * 1000 })
     }
 
 }

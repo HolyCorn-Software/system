@@ -159,13 +159,14 @@ export default class VersionReporter {
     /**
      * This method is used to add a URL to a server's watch list
      * @param {string} url 
+     * @param {string} path
      * @param {number} size
      * @returns {void}
      */
-    async [addURLToServer](url, size) {
+    async [addURLToServer](url, path, size) {
         await awaitBoot()
         for (const assoc of getAssociatedURLs(url)) {
-            this[hooks].addURL(assoc, size)
+            this[hooks].addURL(assoc, path, size)
         }
 
     }

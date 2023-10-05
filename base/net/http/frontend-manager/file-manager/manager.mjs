@@ -44,45 +44,49 @@ export default class FileManager {
 
     async init() {
 
+        const dbData = (await this[collection].findOne()) || {};
+        delete dbData._id
+        this[map] = dbData
+        const startTime = Date.now()
+
+
         const firstUpdatePromise = new Promise(resolve => this[firstUpdate] = resolve)
 
-        const limit = Date.now()
 
         // Now, our way of detecting deleted links, is by checking on the app after 60s, to remove any paths that haven't been updated since
         BasePlatform.get().events.addListener('booted', async () => {
+
             await firstUpdatePromise;
+
             await new Promise(x => setTimeout(x, 12_000))
 
-            this.events.addEventListener('files-change', () => {
+            await BasePlatform.get().bootTasks.wait().then(
+                () => BasePlatform.get().compat.allDone().then(
+                    async () => {
+                        for (const item in this[map]) {
+                            if (!(this[map][item].version?.emperical > startTime)) {
+                                console.log(`${item.magenta.bold} removed. Perhaps the file is no more. Last time was ${new Date(this[map][item].version?.emperical)}`)
+                                this.removeURL(item)
+                            }
+                        }
+                    }).then(() => {
+                        BasePlatform.get().faculties.events.dispatchEvent(
+                            new CustomEvent(
+                                'frontend-manager-files-ready',
+                            )
+                        )
+                    }
+                    )
+            );
 
+
+            this.events.addEventListener('files-change', () => {
                 BasePlatform.get().faculties.events.dispatchEvent(
                     new CustomEvent(
                         'frontend-manager-files-change',
                     )
                 )
-
-            })
-            BasePlatform.get().bootTasks.wait().then(() => {
-                BasePlatform.get().compat.allDone().then(async () => {
-                    const dbData = (await this[collection].findOne()) || {};
-                    delete dbData._id
-                    this[map] = dbData
-
-                    for (const item in this[map]) {
-                        if (!(this[map][item].version?.emperical > limit)) {
-                            console.log(`${item.magenta.bold} removed. Perhaps the file is no more. Last time was ${new Date(this[map][item].version?.emperical)}`)
-                            this.removeURL(item)
-                        }
-                    }
-                }).then(() => {
-                    BasePlatform.get().faculties.events.dispatchEvent(
-                        new CustomEvent(
-                            'frontend-manager-files-ready',
-                        )
-                    )
-                })
-
-            })
+            });
 
         })
     }
@@ -121,7 +125,7 @@ export default class FileManager {
      */
     link(url, urls) {
         if (!this[map][url]) {
-            return console.trace(`Trying to add ${url} links to a path that doesn't exist`)
+            return //console.trace(`Trying to add ${url} links, when it doesn't exist on the map to a path that doesn't exist\n`)
         }
         for (const aUrl of urls) {
             if ((this[map][aUrl]?.links.findIndex(x => x == url) || -1) !== -1) {
@@ -135,7 +139,6 @@ export default class FileManager {
             )
         ) {
             this[map][url].version.grand = Date.now()
-            console.log(`Linking new at version ${this[map][url].version.grand} ones to ${url}\n`, urls)
         }
 
         this[map][url].links = [...new Set([...this[map][url].links, ...urls])]
@@ -159,7 +162,7 @@ export default class FileManager {
     updateVersion(url, path, size) {
         const now = Date.now()
         if (!this[map][url]) {
-            this.addURL(url)
+            this.addURL(url, path, size)
         } else {
             this[updateConfigInfo](url, path)
         }
@@ -174,7 +177,6 @@ export default class FileManager {
                     this[map][item].version.grand = now
                 }
             } catch (e) {
-                console.log(`links is first of all\n`, this[map][item]?.links, `\nWith entire map being\n`, this[map])
                 throw e
             }
         }
@@ -199,6 +201,8 @@ export default class FileManager {
      */
     removeURL(url) {
         // First remove associations
+
+        console.trace(`Removing ${url.yellow}, when current info is `, this[map][url])
         for (const item in this[map]) {
             this[map][item].links = this[map][item]?.links.filter(x => x !== url) || []
         }
@@ -220,17 +224,30 @@ export default class FileManager {
 
         const grandList = []
 
+        const addLink = (link) => {
+            if (this[map][link]) {
+                grandList.push(
+                    JSON.parse(JSON.stringify(
+                        { url: link, version: this[map][link]?.version || {}, size: this[map][link].size, path: this[map][link].path }
+                    ))
+                );
+            }
+        }
+
         const step = (url) => {
             const links = this[map][url]?.links || []
             // Now, if there are no new links at this step
             // then there's no need to find links related to the links
+            // console.log(`Links of ${url.cyan}\n`, links, `\nwith map as\n`, this[map])
             for (const link of links) {
-                grandList.push({ url: link, version: this[map][url]?.version || {}, size: this[map][url].size, path: this[map][url].path })
+                addLink(link);
                 step(link)
             }
         }
 
         step(url)
+
+        addLink(url)
 
         return [
             ...new Set(
@@ -259,6 +276,7 @@ export default class FileManager {
     /**
      * This method updates the set of configuration information about the frontend.
      * @param {string} url 
+     * @param {string} path
      * 
      */
     async [updateConfigInfo](url, path) {

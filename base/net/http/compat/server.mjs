@@ -166,7 +166,19 @@ export default class BaseCompatServer {
             return;
         }
         this[list].add(path)
+
         this[loop]()
+
+        const promise = new Promise((resolve, reject) => {
+            const check = () => {
+                if (this[current].path = path) {
+                    this[current].promise.then(resolve, reject)
+                    this[worker].removeListener('message', check)
+                }
+            };
+            this[worker].addListener('message', check)
+        })
+        return promise
     }
 
 }

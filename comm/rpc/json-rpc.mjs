@@ -6,17 +6,22 @@
 
 import shortUUID from "short-uuid"
 import _JSONRPC from "../../public/comm/rpc/json-rpc/json-rpc.mjs"
+import nodeUtil from 'node:util'
 
 class JSONRPC extends _JSONRPC {
 
     constructor() {
         super()
-        this.flags.error_transform = (e, methodName, params) => e instanceof Exception ? e : (() => {
+        this.flags.error_transform = (e, methodName, params) => e instanceof Exception ? (() => {
+            e.handled = true
+            return e
+        })() : (() => {
             const id = shortUUID.generate()
-            console.error(`Unexpected error\nid: ${id}\nWhen calling ${methodName}\n`, e, `\n\nwith parameters`, params)
+            console.error(`Unexpected error\nid: ${id}\nWhen calling ${methodName}\n`, e, `\n\nwith parameters `, nodeUtil.inspect(params, { colors: true, depth: null }))
             const exception = new Exception(`System Error\nid: ${id}`)
-            exception.code = 'system'
+            exception.code = e.code || 'system'
             exception.id = id
+            exception.handled = true
 
             return exception
         })()

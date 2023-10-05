@@ -6,11 +6,10 @@
 */
 
 let pageCompleteValue;
-let pageCompleteTimeout;
 function pageComplete() {
     const compute = () => {
         if ([...document.body.children].filter(x => (x.tagName !== 'SCRIPT') && x != loader.html).length > 0) {
-            pageCompleteTimeout ||= setTimeout(() => pageCompleteValue = true, 2000)
+            return pageCompleteValue = true
         }
     }
     return pageCompleteValue || compute()
@@ -282,7 +281,7 @@ class LoadWidget {
         if (document.body.classList.contains('hidden')) {
             document.body.classList.remove('hidden')
             document.body.classList.add('showing')
-            setTimeout(() => document.body.classList.remove('showing'), 15_000)
+            setTimeout(() => document.body.classList.remove('showing'), 5_000)
         }
     }
 
@@ -303,6 +302,8 @@ class LoadWidget {
         if (this.unloading || !this.html.isConnected) {
             return;
         }
+
+        // In case all reasons to keep the page loading are removed, then it's time to remove the loader
         this.unloading = true
         LoadWidget.hideBody()
         new Promise(done => {

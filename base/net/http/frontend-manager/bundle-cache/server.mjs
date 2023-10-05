@@ -18,6 +18,7 @@ import FileCache from "../../../../../http/file-cache/cache.mjs"
 import { SuperRequest } from "../../../../../lib/nodeHC/http/super-request.js"
 import { BasePlatform } from "../../../../platform.mjs"
 import chokidar from 'chokidar'
+import CompatFileServer from '../../../../../http/compat-server/server.mjs'
 
 
 const injectionData = Symbol()
@@ -51,8 +52,8 @@ export default class BundleCacheServer {
     get fileManager() {
         return BasePlatform.get().frontendManager.fileManager
     }
-    getRelated(path) {
-        return this.fileManager.getRelated(path).filter(x => (x.size || 0) <= BundleCacheServer.MAX_RESOURCE_SIZE)
+    getRelated(urlPath) {
+        return this.fileManager.getRelated(urlPath).filter(x => (x.size || 0) <= BundleCacheServer.MAX_RESOURCE_SIZE)
     }
 
     /**
@@ -64,7 +65,6 @@ export default class BundleCacheServer {
 
         const loaderPath = `${publicPath}/loader.mjs`
 
-        BasePlatform.get().compat.transpile(loaderPath)
 
         await libFs.promises.mkdir(
             this[bundlesPath] = `/tmp/${shortUUID.generate()}${shortUUID.generate()}`
@@ -76,14 +76,24 @@ export default class BundleCacheServer {
 
 
         (this[watcher] ||= chokidar.watch(loaderPath)).on('change', () => {
-            this[setupInjection]()
+            delete this[injectionData]
         })
 
 
     }
 
     async getInjectionData() {
-        return this[injectionData] ||= `<!DOCTYPE html>\n<link rel="icon" href="/$/shared/static/logo.png">\n\n<script type='module'>${(await libFs.promises.readFile(`${publicPath}/loader.mjs`)).toString()}\n</script>`
+        if (!this[injectionData]) {
+            let path;
+            if (CompatFileServer.COMPAT_ACTIVE) {
+                await BasePlatform.get().compat.transpile(`${publicPath}/loader.mjs`)
+                path = await BasePlatform.get().compat.getCompatFilePath(`${publicPath}/loader.mjs`)
+            } else {
+                path = `${publicPath}/loader.mjs`
+            }
+            this[injectionData] = `<!DOCTYPE html>\n<link rel="icon" href="/$/shared/static/logo.png">\n\n<script type='module'>${(await libFs.promises.readFile(path)).toString()}\n</script>`
+        }
+        return this[injectionData]
     }
 
     /**
@@ -194,7 +204,7 @@ export default class BundleCacheServer {
                         // Now, let's keep aside cross origin referrers
                         try {
                             const size = res.getHeader('content-length') || 0
-                            const src = req.headers['x-bundle-cache-src']
+                            const src = req.headers['x-bundle-cache-src'] || req.headers['referer']
                             if (
                                 size === 0
                                 || size > BundleCacheServer.MAX_RESOURCE_SIZE
@@ -228,7 +238,6 @@ export default class BundleCacheServer {
                                 )
                             ) {
                                 // Then we have no business with them
-                                console.log(`Not linking ${refURL.pathname} to ${url}`)
                                 return;
                             }
 
@@ -315,18 +324,17 @@ export default class BundleCacheServer {
          * @returns {Promise<void>}
          */
         const grand = async () => {
-            const path = req.headers['x-bundle-cache-path']
-            if (!path) {
+            const urlPath = req.headers['x-bundle-cache-path']
+            if (!urlPath) {
                 res.statusCode = 500
                 res.end('Bad request!')
                 return;
             }
-            const related = this.getRelated(path)
-            related.push({ url: path, version: this.fileManager.getVersion(path) })
+            const related = this.getRelated(urlPath)
 
-            const bundlePath = libPath.normalize(`${this[bundlesPath]}/${path}.related.zip`)
+            const bundlePath = libPath.normalize(`${this[bundlesPath]}/${urlPath}.related.zip`)
             await libFs.promises.mkdir(libPath.dirname(bundlePath), { recursive: true })
-            const grandVersion = this.fileManager.getGrandVersion(path)
+            const grandVersion = this.fileManager.getGrandVersion(urlPath)
 
             const fileExists = libFs.existsSync(bundlePath)
 
@@ -345,7 +353,7 @@ export default class BundleCacheServer {
 
                                 if (!libFs.existsSync(entry.path)) {
                                     this.fileManager.removeURL(entry.url)
-                                    return console.log(`Not caching ${entry.url}\nFile was removed.`)
+                                    return console.log(`Not caching ${entry.url.blue} (${entry.path?.cyan})\nFile was removed.`)
                                 }
 
                                 const results = await Promise.race(
@@ -358,7 +366,7 @@ export default class BundleCacheServer {
                                         })
                                     ]
                                 )
-                            
+
 
                                 return zipStream.append(
                                     results,
@@ -415,7 +423,7 @@ export default class BundleCacheServer {
                     }
                 }
 
-                const nwRelated = this.getRelated(path).filter(rel => {
+                const nwRelated = this.getRelated(urlPath).filter(rel => {
                     const inZip = results.files.findIndex(x => `/${x.path}` == rel.url)
                     // TODO: Remove this temporary hack (rel.version.grand), and restore it to rel.version.emperical
                     return (inZip == -1) || (Math.max(rel.version.emperical, rel.version.grand) > results.files[inZip].lastModifiedDateTime.getTime())
@@ -535,14 +543,14 @@ export default class BundleCacheServer {
              */
             const doTask = async (task) => {
 
-                if (this[bundlingTasks][path]) {
-                    await this[bundlingTasks][path]
+                if (this[bundlingTasks][urlPath]) {
+                    await this[bundlingTasks][urlPath]
                 } else {
                     try {
-                        await (this[bundlingTasks][path] = task())
-                        delete this[bundlingTasks][path]
+                        await (this[bundlingTasks][urlPath] = task())
+                        delete this[bundlingTasks][urlPath]
                     } catch (e) {
-                        delete this[bundlingTasks][path]
+                        delete this[bundlingTasks][urlPath]
                         console.log(`Task \n`, task, `\nFailed\n`, e)
                         throw e
                     }

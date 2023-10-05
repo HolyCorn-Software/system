@@ -1,11 +1,18 @@
 .
 
-Improved error management at inter-faculty communication.
 
-Improved the error-management component, by decluttering the code, and removing deprecated features.
+Updated to the latest version of html-hc, with bug fixes, and performance improvements.
 
-Improved logging.
 
-Improved json-rpc by
-   Improving error reporting.
-   Reducing network usage, by increasing expectations for remote function execution times.
+### Improved the frontend-manager, by:
+    Correcting minor bugs.
+    Improved startup algorithm.
+
+
+Improved algorithm for protecting faculty settings.
+
+Improved stability of plugin-manager.
+
+Fixed minor bug with json-rpc caching.
+
+
