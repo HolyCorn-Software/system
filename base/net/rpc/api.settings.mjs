@@ -20,11 +20,9 @@ export default class BaseSettingsPublicMethods {
 
     /**
      * This method is used to retrieve a setting
-     * @param {object} param0 
-     * @param {keyof faculty.faculties} param0.faculty
-     * @param {string} param0.namespace
-     * @param {string} param0.name
-     * @returns {Promise<any>}
+     * @template {keyof faculty.faculties} FacultyName
+     * @param {{faculty: FacultyName}& Omit<faculty.managedsettings.SettingsUpdateType<FacultyName>, "value">} param0 
+     * @returns {Promise<faculty.managedsettings.all[param0['name']]['data']>}
      */
     async get({ faculty, namespace, name }) {
         faculty = arguments[1]?.faculty
@@ -49,7 +47,7 @@ export default class BaseSettingsPublicMethods {
 
 
 
-        return new JSONRPC.CacheObject(await theFaculty.comm_interface.serverRemote.management.settings.get({ name, namespace }), { expiry: 4 * 60 * 60 * 1000 })
+        return new JSONRPC.CacheObject(await theFaculty.comm_interface.serverRemote.management.settings.get({ name, namespace }), { expiry: 10 * 60 * 1000 })
     }
 
 }

@@ -268,6 +268,9 @@ export default class FileManager {
         try {
             await this[collection].deleteMany({})
             await this[collection].insertOne(data)
+            this.events.dispatchEvent(
+                new CustomEvent('files-change')
+            )
         } catch (e) {
             console.log(`Could not update database with map\n`, data)
         }

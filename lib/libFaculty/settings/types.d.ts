@@ -63,5 +63,32 @@ global {
         type SettingDescriptorsCollection = Collection<SettingDescriptor>
 
         type SettingValuesCollection = Collection<SettingValue>
+
+        interface all {
+            exampleSetting: {
+                faculty: 'web'
+                namespace: 'widgets'
+                data: { name: string, id: string }[]
+            }
+            example2Setting: {
+                faculty: 'engTerminal'
+                namespace: 'default'
+                data: {
+                    currency: string
+                    value: number
+                }
+            }
+
+        }
+
+        type SettingsUpdateType<FacultyNameEnum = string, T = all> = GetKeys<{
+            [K in keyof T]: T[K]['faculty'] extends FacultyNameEnum ? {
+                name: K
+                namespace: T[K]['namespace']
+                value: T[K]['data']
+            } : never
+        }>
+
+        type GetKeys<T> = T[keyof T]
     }
 }

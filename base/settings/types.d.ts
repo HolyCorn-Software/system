@@ -11,9 +11,11 @@ global {
 
     namespace faculty.managedsettings {
 
-        type MapFacultyToBase<T = FacultySettings> = T extends (arg0: infer Arg0Type) => infer ReturnType ? (faculty: keyof faculty.faculties, arg0: Arg0Type) => Promise<Awaited<ReturnType>>
+        type GetArgs<T> = T extends (...args: infer Args) => any ? Args : T
+
+        type MapFacultyToBase<T = FacultySettings, Fac = keyof faculty.faculties> = T extends (arg0: infer Arg0Type) => infer ReturnType ? (faculty: Fac, ...arg0: GetArgs<T>) => Promise<Awaited<ReturnType>>
             : T extends object ? {
-                [K in keyof T]: MapFacultyToBase<T[K]>
+                [K in keyof T]: MapFacultyToBase<T[K], Fac>
             } : T
 
         declare var BaseRemote: {

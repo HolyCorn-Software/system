@@ -1,18 +1,10 @@
 .
 
 
-Updated to the latest version of html-hc, with bug fixes, and performance improvements.
+Reduced caching time for frontend settings, to correct likely bugs.
 
+Corrected minor bug at frontend-manager, that prevented the files-change event from being properly dispatched.
 
-### Improved the frontend-manager, by:
-    Correcting minor bugs.
-    Improved startup algorithm.
+Improved typing.
 
-
-Improved algorithm for protecting faculty settings.
-
-Improved stability of plugin-manager.
-
-Fixed minor bug with json-rpc caching.
-
-
+Updated to the latest version of html-hc with better UX.
