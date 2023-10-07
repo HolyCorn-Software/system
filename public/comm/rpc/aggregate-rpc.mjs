@@ -187,7 +187,7 @@ class RemoteFacultyRPCObject {
                     let cacheEntry;
                     try {
                         cacheEntry = await localStorageCache.get(path, argArray);
-                        if (cacheEntry?.expiry < Date.now()) {
+                        if (cacheEntry?.expiry <= Date.now()) {
                             return fxn_done(cacheEntry.value)
                         }
                     } catch (e) {
@@ -196,8 +196,8 @@ class RemoteFacultyRPCObject {
 
                     // The runtime reaches this part of code, either if there was nothing in the cache, or the entry expired.
                     establish_new_connection().catch(async (error) => {
-                        if (cachedEntry) {
-                            fxn_done(cachedEntry.value)
+                        if (cacheEntry) {
+                            fxn_done(cacheEntry.value)
                         } else {
                             fxn_failed(error)
                         }
