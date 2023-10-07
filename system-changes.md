@@ -1,3 +1,3 @@
 .
 
-Fixed minor bug with aggregate-rpc cache, and slightly improved the caching algorithm.
+Updated to the latest version of html-hc with minor bug fixes.
