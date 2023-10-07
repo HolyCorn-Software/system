@@ -176,10 +176,7 @@ class RemoteFacultyRPCObject {
                                 //And if successful, then we're done
                                 store_connection(connection);
                                 return call_method()
-                            } catch {
-                                //But if the previous attempt failed, we'll try connecting anew
-                                return await fresh_connect();
-                            }
+                            } catch { }
                         }
 
                         //So if this is the first attempt to call a remote method (no previous connections)
@@ -187,19 +184,24 @@ class RemoteFacultyRPCObject {
 
                     }
 
-                    establish_new_connection().catch(async (error) => {
-                        try {
-                            const cachedData = await localStorageCache.get(path, argArray)
-                            if (cachedData?.value) {
-                                fxn_done(cachedData.value)
-                            } else {
-                                fxn_failed(error)
-                            }
-                        } catch (e) {
-                            console.warn(`Cache not working for function call ${path}\n`, e)
-                            return fxn_failed(error)
+                    let cacheEntry;
+                    try {
+                        cacheEntry = await localStorageCache.get(path, argArray);
+                        if (cacheEntry?.expiry < Date.now()) {
+                            return fxn_done(cacheEntry.value)
                         }
-                    })
+                    } catch (e) {
+                        console.warn(`Problem with the cache!\n`, e)
+                    }
+
+                    // The runtime reaches this part of code, either if there was nothing in the cache, or the entry expired.
+                    establish_new_connection().catch(async (error) => {
+                        if (cachedEntry) {
+                            fxn_done(cachedEntry.value)
+                        } else {
+                            fxn_failed(error)
+                        }
+                    });
 
 
                 })
