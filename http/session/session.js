@@ -80,9 +80,8 @@ export class Session {
         try {
             return await this.getFromCookie(cookie);
         } catch (e) {
-            console.log(`Dealing with this error\n`, e)
             //The only exception allowed at this point is session not found
-            if (/not.*found/gi.test(e.code)) {
+            if (/not.*found/gi.test(e.code) || /session.*expired/.test(e.code)) {
                 //So if that's the case, we create a new session
                 return await this.startNew();
             } else {

@@ -103,6 +103,7 @@ class JSONRPCRemoteObject {
                     new Error().stack.split('\n').slice(6,).join('\n')
 
                 const timeoutError = new Error(`Timeout reaching server`);
+                timeoutError.accidental = true
 
                 return new Promise(async (resolve, reject) => {
 
@@ -213,14 +214,14 @@ class JSONRPCRemoteObject {
                         cachedData = await manager.json_rpc.flags.cache?.get(methodName, args)
 
                         if (!cachedData || cachedData.expiry < Date.now()) {
-                            try {
-                                return resolve(await freshExec())
-                            } catch (e) {
-                                if (cachedData) {
+                            return freshExec().then(value => {
+                                resolve(value)
+                            }).catch(e => {
+                                if (e.accidental && cachedData) {
                                     return resolve(cachedData.value)
                                 }
-                                return reject(e)
-                            }
+                                reject(e)
+                            })
                         }
 
                         // Now, if found in the cache, we return it.

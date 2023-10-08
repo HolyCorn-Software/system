@@ -52,6 +52,7 @@ export class Exception extends Error {
             this.stack = this.stack.split('\n').slice(stackIndex).join('\n')
         }
         this.cause = cause
+        this.code = code
     }
 
     /**

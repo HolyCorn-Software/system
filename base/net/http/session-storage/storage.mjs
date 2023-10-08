@@ -181,7 +181,7 @@ export class SessionStorage {
             return (await this.#checkSessions([single]))[0]
         })()
         if (!client) {
-            throw new Exception(`The client with cookie '${cookie}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${cookie}")` })
+            throw new Exception(`The client with cookie '${cookie}' was not found`, { code: `session_not_found` })
         }
         return client.id
     }
@@ -204,7 +204,7 @@ export class SessionStorage {
         }
         //Now if the client's session has expired
         if (session.expires < Date.now()) {
-            throw new Exception(`The session '${id}' has expired`, { code: `${SessionStorage.#errorNamespace}.session_expired` })
+            throw new Exception(`The session '${id}' has expired`, { code: `session_expired` })
         }
 
         this.#sessions.add(session)
@@ -212,33 +212,6 @@ export class SessionStorage {
         return session;
     }
     static #errorNamespace = 'net.sessionStorage'
-    /**
-     * Custom errors that are contributed by the SessionStorage module
-     */
-    static get customErrors() {
-
-        let errors = {
-            'session_not_found': `The session with id '$0' was not found`,
-            'session_expired': `The session with id '$0' has expired.`
-
-        }
-        /** @type {import("../../../../errors/handler.mjs").ErrorMapV2} */
-        let final = {}
-
-        for (let error in errors) {
-            final[`${this.#errorNamespace}.${error}`] = {
-                backend: errors[error].backend || {
-                    message: errors[error],
-                    httpCode: 500
-                },
-                frontend: errors[error].frontend || {
-                    message: errors[error]
-                }
-            }
-        }
-
-        return final;
-    }
 
     /**
     * How long it takes for a session to expire
