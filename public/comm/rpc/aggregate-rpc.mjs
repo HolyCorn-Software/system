@@ -149,11 +149,7 @@ class RemoteFacultyRPCObject {
                                     connection = await connect_and_auth(url_point)
                                     //And when we're done connecting, we store the connection
                                     store_connection(connection)
-                                    //And then we call the method
-                                    if (!connection) {
-                                        console.log(`How could this be ?`)
-                                    }
-                                    call_method()
+
                                     return connection
                                 } catch (e) {
                                     // A problem with connection, and authentication.
@@ -175,7 +171,7 @@ class RemoteFacultyRPCObject {
                                 connection = await aggregate[pending_connections_symbol][name]
                                 //And if successful, then we're done
                                 store_connection(connection);
-                                return call_method()
+                                return
                             } catch { }
                         }
 
@@ -187,7 +183,7 @@ class RemoteFacultyRPCObject {
                     let cacheEntry;
                     try {
                         cacheEntry = await localStorageCache.get(path, argArray);
-                        if (cacheEntry?.expiry <= Date.now()) {
+                        if (cacheEntry?.expiry >= Date.now()) {
                             return fxn_done(cacheEntry.value)
                         }
                     } catch (e) {
@@ -195,7 +191,7 @@ class RemoteFacultyRPCObject {
                     }
 
                     // The runtime reaches this part of code, either if there was nothing in the cache, or the entry expired.
-                    establish_new_connection().catch(async (error) => {
+                    establish_new_connection().then(() => call_method()).catch(async (error) => {
                         if (cacheEntry) {
                             fxn_done(cacheEntry.value)
                         } else {
@@ -234,7 +230,7 @@ const connect_and_auth = async (url) => {
         }).catch(e => {
             //If during reconnection, we could not authenticate, we destroy the connection and let a new one form organically
             client.socket?.close()
-            setTimeout(() => client.reconnect(), 8000);
+            setTimeout(() => client.reconnect(), 2000);
         })
 
     });
