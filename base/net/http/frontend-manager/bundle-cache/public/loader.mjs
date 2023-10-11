@@ -50,7 +50,7 @@ async function init() {
             }
             // The service-worker will ask this page to continue loading normally
             //But, if it fails, we have a plan B
-            setTimeout(() => loadNormally(), 1000)
+            setTimeout(() => loadNormally(), 500)
 
         } catch (e) {
             console.error(`Could not install service worker\n`, e)

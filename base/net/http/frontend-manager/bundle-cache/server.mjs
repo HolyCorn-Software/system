@@ -263,7 +263,7 @@ export default class BundleCacheServer {
      * @returns {boolean}
      */
     versionServe(req, res) {
-        const grandRegExp = /\/$\/system\/frontend-manager\/bundle-cache\/getGrandVersion$/
+        const grandRegExp = /^\/\$\/system\/frontend-manager\/bundle-cache\/getGrandVersion$/
         if (grandRegExp.test(req.url)) {
             const path = req.headers['x-bundle-cache-path']
             if (!path) {

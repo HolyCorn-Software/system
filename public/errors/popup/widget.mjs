@@ -5,7 +5,6 @@ This widget is responsible for giving concise well-presented error messages to t
 */
 
 import { hc } from "/$/system/static/html-hc/lib/widget/index.mjs";
-import { CalculatedError } from "../error.mjs";
 import ActionButton from "../../html-hc/widgets/action-button/button.mjs";
 import HCTSBrandedPopup from "../../html-hc/widgets/branded-popup/popup.mjs";
 import hcRpc from "../../comm/rpc/aggregate-rpc.mjs";
@@ -15,7 +14,7 @@ export class ErrorUI extends HCTSBrandedPopup {
 
     /**
      * 
-     * @param {CalculatedError|string|Error} error 
+     * @param {Error} error 
      */
     constructor(error) {
 

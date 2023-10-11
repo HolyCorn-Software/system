@@ -4,53 +4,15 @@ This module ensures that errors from the Server get displayed to client in a use
 */
 
 import hcRpc from '../comm/rpc/aggregate-rpc.mjs'
-import { ErrorEngine } from './engine.mjs'
+
 import { ErrorUI } from './popup/widget.mjs'
 
-
-let errorMap;
-fetch('/$/system/maps/errors').then(async map => {
-    errorMap = await map.json() //This is a map of which errors mean what, gotten from the faculties
-}).catch(e => console.error(e))
-
-
-/**
-* @type {import ("/$/system/static/errors/engine.mjs").ErrorEngine}
-*/
-let engine = new ErrorEngine(errorMap)
-
-export class CalculatedError extends Error {
-    // One that can be shown to the user
-    /**
-     * 
-     * @param {{code:string, httpCode:number, id:string, message:string} | string} v2Error 
-     */
-    constructor(v2Error) {
-        super();
-
-        if (v2Error instanceof Error) {
-            return v2Error;
-        }
-
-        if (typeof v2Error === 'string') {
-            Object.assign(this, engine.resolve(v2Error))
-        }
-
-        if (typeof v2Error === 'object') {
-            Object.assign(this, v2Error)
-        }
-    }
-}
 
 
 /**
  * @param {string|Error} error
- * @returns {CalculatedError|undefined}
  */
 export function handle(error) {
-    error = new CalculatedError(error);
-
-
 
     new ErrorUI(error).show();
 
@@ -64,7 +26,7 @@ const on_error = (ev) => {
 
         const error = ev.error || ev.reason //Since we're handling both errors and rejections
 
-        let real_lines = (error.stack || error.message || error)?.split('\n')?.filter(x => !/<anonymous>/.test(x))
+        let real_lines = `${(error.stack || error.message || error)}`.split('\n')?.filter(x => !/<anonymous>/.test(x))
 
         if (real_lines?.length < 2) {
             if (/EvalError.*side-effect.*debug-evaluate/) {

@@ -6,7 +6,7 @@
  */
 
 
-console.log(`Okay, service worker working (v1) `);
+console.log(`Okay, service worker working (v2) `);
 
 const CACHE_NAME = 'bundle_cache0'
 
@@ -30,6 +30,41 @@ function isUISecFile(url) {
     return /.((jpeg)|(png)|(jpg)|(otf)|(ttf))$/.test(url)
 }
 
+/**
+ * This method tells us if a file is a UI file, based on the mime type of the file.
+ * @param {string} mime 
+ * @returns {boolean}
+ */
+function isUIFileFromMime(mime) {
+    return /(html)|(image)|(document)|(json)|(application)/.test(mime)
+}
+
+
+/**
+ * This method tells us if a request deserves to be cached.
+ * @param {Request} request 
+ * @param {Response} response Optional
+ * @returns {boolean}
+ */
+function isCachable(request, response) {
+    return (
+        (
+
+            (
+                isUIFile(request.url)
+                || isUISecFile(request.url)
+            )
+            && /^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url)
+            && request.method.toLowerCase() == 'get'
+            && new URL(request.url).origin != self.origin
+
+        ) || (
+            isUIFileFromMime(response?.headers.get('Content-Type'))
+        )
+    )
+}
+
+
 
 self.addEventListener('fetch', (event) => {
 
@@ -39,19 +74,18 @@ self.addEventListener('fetch', (event) => {
         (async () => {
 
             const theClient = await self.clients.get(event.clientId)
-            const origin = theClient?.url || request.url
+            const source = theClient?.url || request.url
 
             const promise = (async () => {
 
-                if ((!isUIFile(request.url) || /^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url) || (request.method.toLowerCase() !== 'get')) && !isUISecFile(request.url)) {
-                    return await fetch(request)
+                if (isCachable(request) && (isHTML(source) || isUIFile(request.url))) {
+                    try {
+                        await makeGrandChecks(source)
+                    } catch { }
                 }
 
                 try {
-                    if (isHTML(origin) || isUIFile(request.url)) {
-                        makeGrandChecks(origin)
-                    }
-                    const result = await findorFetchResource(request, origin)
+                    const result = await findorFetchResource(request, source)
                     return result
                 } catch (e) {
                     console.error(`Failed to perform service worker duties for url ${request.url}\n`, e)
@@ -61,8 +95,8 @@ self.addEventListener('fetch', (event) => {
 
             })();
 
-            if (isUIFile(request.url) && isHTML(origin)) {
-                loader.load(origin, promise)
+            if (isUIFile(request.url) && isHTML(source)) {
+                loader.load(source, promise)
             }
             return await promise
         })()
@@ -477,7 +511,7 @@ async function grandUpdate(origin, shouldLoad) {
     if (grandUpdates[path]) {
         await Promise.race([
             grandUpdates[path],
-            new Promise((resolve, reject) => setTimeout(reject, 60_000))
+            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeout performing grand updates')), 5 * 60_000))
         ]).catch(e => freshUpdate())
     } else {
         await freshUpdate();
@@ -494,25 +528,32 @@ const fetchTasks = {}
 /**
  * This method loads a single resource, whether from the cache, or not
  * @param {Request} request 
+ * @param {string} source
  * @returns {Promise<Response>}
  */
-async function findorFetchResource(request, origin) {
+async function findorFetchResource(request, source) {
     // First things, first, ... wait for any grand update that's currently ongoing
 
 
     // Now that the grand updates are done, we check the cache for what we're looking for
 
     if (fetchTasks[request.url]) {
-        loader.load(origin, fetchTasks[request.url])
+        loader.load(source, fetchTasks[request.url])
         await fetchTasks[request.url]
+
     }
 
     const cache = await caches.open(CACHE_NAME)
 
-    async function fetchNew() {
+    /**
+     * This method fetches a request freshly.
+     * @param {boolean} returnOffline If the fetch fails, do we return an offline page?
+     * @returns {Promise<Response>}
+     */
+    async function fetchNew(returnOffline = true) {
         try {
             const preHeaders = new Headers(request.headers)
-            preHeaders.set('x-bundle-cache-src', origin)
+            preHeaders.set('x-bundle-cache-src', source)
             const response = await fetch(request.url, {
                 ...request,
                 headers: preHeaders
@@ -530,10 +571,12 @@ async function findorFetchResource(request, origin) {
                 }
             )
 
-            cache.put(request.url, nwResponse)
+            if (isCachable(request, nwResponse)) {
+                cache.put(request.url, nwResponse)
+            }
             return response
         } catch (e) {
-            if (isHTML(request.url)) {
+            if (isHTML(request.url) && returnOffline) {
                 console.log(`Offline because:\n`, e)
                 return offlineResponse()
             }
@@ -544,28 +587,64 @@ async function findorFetchResource(request, origin) {
     const inCache = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
 
     if (inCache) {
+        // Sometimes, those secondary files, get added to the cache; not because the file itself was a UI file, but because it's Mime returned UI
+        // If that's the case, let's only cache this for a given period
+        const NON_UI_CACHE_TIME =
+            new URL(request.url).origin == self.origin ?
+                4 * 60 * 60 * 1000 // 4 hours for our stuff
+                : 20 * 60 * 1000 // 20 mins for other's stuff
+
+        if (!isUIFile(request.url) && !isUISecFile(request.url) && (Date.now() - new Number(inCache.headers.get("x-bundle-cache-version") || '0').valueOf()) > NON_UI_CACHE_TIME) {
+            // Try a new fetch. If it fails, or times out return the cached copy.
+            try {
+                return await Promise.race(
+                    [
+                        (fetchTasks[request.url] ||= (async () => {
+                            try {
+                                return await fetchNew(false)
+                            } finally {
+                                delete fetchTasks[request.url]
+                            }
+                        })()),
+                        new Promise((resolve) => {
+                            setTimeout(() => {
+                                resolve(inCache)
+                            }, 15_000)
+                        })
+                    ]
+                )
+            } catch { } // If the request fails, then no problem, program will just continue to return what's in the cache.
+        }
         return inCache
     }
 
 
     const gTsks = waitForAllGrandTasks()
     if (isUIFile(request.url)) {
-        loader.load(origin, gTsks)
+        loader.load(source, gTsks)
     }
     await gTsks
 
-    if (!await grandVersionOkay(origin, true)) {
-        const gup = grandUpdate(origin, true)
-        const isTestReq = request.headers.get('x-bundle-cache-test-request');
-        if (isHTML(request.url) && !isTestReq) {
-            return temporalPageResponse(300)
+    const isTestReq = request.headers.get('x-bundle-cache-test-request');
+
+
+    if (!await grandVersionOkay(source, true)) {
+        try {
+            // If the grand update is not set, just send a temporal page, if and only if the request resource was an HTML doc.
+            // And now, if we don't get to send a temporal page, we at least wait till the grand update is finished
+            // The temporal page would try to refresh itself severally, till it gets the original page.
+            const gup = grandUpdate(source, true)
+            if (isHTML(request.url) && !isTestReq) {
+                return temporalPageResponse(300)
+            }
+            await gup
+        } finally {
+            return await findorFetchResource(request, source)
         }
-        await gup
-        return await findorFetchResource(request, origin)
     }
 
     const nwPromise = fetchNew();
-    loader.load(origin, nwPromise)
+    loader.load(source, nwPromise)
 
     if (isHTML(request.url) && !isTestReq) {
         fetchTasks[request.url] = nwPromise
