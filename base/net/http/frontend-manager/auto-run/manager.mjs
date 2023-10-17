@@ -31,7 +31,7 @@ export default class AutoRunManager {
         }
 
         // Using 'srd', instead of 'src', because, bundle-cache is going to automatically change it into 'src', in its own timing.
-        this[injectionData] = autorun.map(x => `<script type='module' srd='${x}'></script>`).join('\n')
+        this[injectionData] = `<!DOCTYPE html>\n${autorun.map(x => `<script type='module' srd='${x}'></script>`).join('\n')}`
 
     }, 500, 2000);
 

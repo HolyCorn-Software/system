@@ -202,7 +202,6 @@ export default class FileManager {
     removeURL(url) {
         // First remove associations
 
-        console.trace(`Removing ${url.yellow}, when current info is `, this[map][url])
         for (const item in this[map]) {
             this[map][item].links = this[map][item]?.links.filter(x => x !== url) || []
         }
