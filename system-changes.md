@@ -1,3 +1,5 @@
 .
 
-Updated to the latest version of html-hc with a more responsive UI.
+Improved error reporting of the provider-driver utility.
+
+Corrected minor bug related to error reporting.
