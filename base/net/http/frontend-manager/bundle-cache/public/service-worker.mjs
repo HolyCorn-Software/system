@@ -52,14 +52,16 @@ function isCachable(request, response) {
 
             (
                 isUIFile(request.url)
-                || isUISecFile(request.url)
+                ||
+                isUISecFile(request.url)
             )
             && /^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url)
             && request.method.toLowerCase() == 'get'
-            && new URL(request.url).origin != self.origin
+            && new URL(request.url).origin == self.origin
 
         ) || (
             isUIFileFromMime(response?.headers.get('Content-Type'))
+            && !request.body
         )
     )
 }
@@ -554,9 +556,8 @@ async function findorFetchResource(request, source) {
         try {
             const preHeaders = new Headers(request.headers)
             preHeaders.set('x-bundle-cache-src', source)
-            const response = await fetch(request.url, {
-                ...request,
-                headers: preHeaders
+            const response = await fetch(request, {
+                headers: preHeaders,
             })
 
             const headers = new Headers(response.headers)
