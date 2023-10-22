@@ -1,3 +1,3 @@
 .
 
-Fixed minor bug, related to caching in the frontend.
+Updated to the latest version of html-hc, with more responsiveness.
