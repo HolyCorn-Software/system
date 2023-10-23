@@ -129,6 +129,20 @@ class SWControllerServer {
                     }
                     break;
                 }
+
+                case 'setServerVersion': {
+                    const version = event.data?.data;
+                    const lastVersion = new Number(localStorage.getItem('serverVersion')).valueOf() || 0
+                    
+                    if (version > lastVersion) {
+                        localStorage.getItem('serverVersion', version)
+                        window.dispatchEvent(
+                            new CustomEvent('server-version-change', { detail: version })
+                        )
+                        localStorage.setItem('serverVersion', version)
+                    }
+                    break;
+                }
             }
         })
     }

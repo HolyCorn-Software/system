@@ -145,7 +145,7 @@ class JSONRPCRemoteObject {
                              * @param {CustomEvent<import("./types.js").JSONRPCMessage['return']>} param0 
                              */
                             const onCache = ({ detail: data }) => {
-                                manager.json_rpc.flags.cache?.set(methodName, args, data.data, Date.now() + data.cache.expiry)
+                                manager.json_rpc.flags.cache?.set(methodName, args, data.data, Date.now() + data.cache.expiry, data.cache.tag)
                             }
 
                             manager.addEventListener(`cache-${id}`, onCache, { once: true })

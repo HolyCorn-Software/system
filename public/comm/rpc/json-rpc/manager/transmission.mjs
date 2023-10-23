@@ -470,8 +470,16 @@ export default class TransmissionManager {
      */
     dataReply(result, packet) {
 
-        const isCachedObject = result instanceof JSONRPC.CacheObject;
-        let data = isCachedObject ? result.data : result
+        let data = result
+        let additional
+
+        if (JSONRPC.MetaObject.isMetaObject(result)) {
+            const options = JSONRPC.MetaObject.getOptions(result)
+            additional = {
+                cache: options.cache,
+                rmCache: options.rmCache
+            }
+        }
 
 
         //Normal data being returned
@@ -484,7 +492,7 @@ export default class TransmissionManager {
                     method: packet.call.method,
                     type: 'data',
                     message: packet.id,
-                    cache: isCachedObject ? result.options : undefined
+                    ...additional
                 },
             }
         );

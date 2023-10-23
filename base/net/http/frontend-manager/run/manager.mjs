@@ -26,7 +26,7 @@ export default class RunManager {
             scripts.push(...(config[url].run?.[scope]?.map(script => libPath.resolve(url, '../', script)) || []))
         }
 
-        return new JSONRPC.CacheObject(scripts, { expiry: 1 * 60 * 60 * 1000 })
+        return new JSONRPC.MetaObject(scripts, { cache: { expiry: 1 * 60 * 60 * 1000 } })
     }
 
 }

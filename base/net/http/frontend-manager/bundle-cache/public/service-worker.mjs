@@ -317,6 +317,8 @@ const storageObject = {}
 
 const channel = Symbol()
 
+let serverVersionTimeout;
+
 
 class SWControllerClient {
     constructor() {
@@ -341,6 +343,17 @@ class SWControllerClient {
     }
     async updateStorage() {
         this[channel].postMessage({ type: 'getStorage' })
+    }
+
+    /**
+     * 
+     * @param {number} version 
+     */
+    async setServerVersion(version) {
+        clearTimeout(serverVersionTimeout)
+        serverVersionTimeout = setTimeout(() => {
+            this[channel].postMessage({ type: 'setServerVersion', data: version })
+        }, 2000)
     }
 }
 
@@ -574,6 +587,11 @@ async function findorFetchResource(request, source) {
 
             if (isCachable(request, nwResponse)) {
                 cache.put(request.url, nwResponse)
+            }
+
+            const version = new Number(response.headers.get('X-Server-Version')).valueOf()
+            if (!Number.isNaN(version)) {
+                controller.setServerVersion(version)
             }
             return response
         } catch (e) {

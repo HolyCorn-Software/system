@@ -31,7 +31,7 @@ export class BasePlatformHTTPManager {
 
         //The default HTTP server that everthing goes through
         this.platform_http = new (await import('./platform-http.mjs')).default(this.base, port);
-        this.platform_http.isHalted = true;
+        
 
         //The TLS server that forwards all requests back to the default HTTP server
         await this.createTLSServer(this.https_port);

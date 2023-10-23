@@ -106,7 +106,6 @@ export class JSONRPCManager extends CleanEventTarget {
                 if ((ResultPrototypeConstructor === Generator) || (ResultPrototypeConstructor === AsyncGenerator)) {
                     this.transmission.startLoopReply(result, object)
                 } else if (result instanceof JSONRPC.ActiveObject) {
-                    this.transmission.activeObjectReply(result, object)
                     const id = JSONRPC.ActiveObject.getId(result);
                     this.json_rpc.$rpc.activeObject[id] = JSONRPC.ActiveObject.getData(result)
                     const abort = new AbortController()
@@ -116,6 +115,7 @@ export class JSONRPCManager extends CleanEventTarget {
                     }
                     result.addEventListener('destroy', ondestroy, { once: true, signal: abort.signal })
                     this.json_rpc.addEventListener('destroy', ondestroy, { once: true, signal: abort.signal })
+                    this.transmission.activeObjectReply(result, object)
                 } else {
                     this.transmission.dataReply(result, object)
                 }
@@ -233,13 +233,38 @@ export class JSONRPCManager extends CleanEventTarget {
                         )
                     } else {
 
-
                         // Okay, so if the data is something to be cached, let's do as expected
                         if (object.return.cache) {
                             this.dispatchEvent(new CustomEvent(`cache-${object.return.message}`, { detail: object.return }))
                         }
+                        // And, if there's some information, about things to be removed from cache...
+                        if (object.return.rmCache) {
 
-                        //Straightforward
+                            (async () => {
+
+                                // Remove all items in cache, that match a pattern, or equal a string
+                                await this.json_rpc.flags?.cache?.rm(
+                                    object.return.rmCache.forEach(
+                                        x => {
+                                            try {
+                                                // In case the directive qualifies to be a pattern
+                                                if (/^\/\/$/.test(x)) { // If the string starts with /
+                                                    return new RegExp(x.substring(1, x.length - 1), 'gi')
+                                                }
+                                                return x
+                                            } catch (e) {
+                                                // If not, consider it a string
+                                                return x
+                                            }
+                                        }
+                                    )
+                                )
+                            })().catch(error => {
+                                console.warn(`Failed to remove items in cache, with tags: `, object.return.rmCache, `\nError: `, error)
+                            })
+                        }
+
+                        // Straightforward, tell the other components, that the method has returned successfully.
                         this.dispatchEvent(new CustomEvent(`resolve-${object.return.message}`, { detail: object.return.data }))
 
                     }
