@@ -220,7 +220,8 @@ export default class JSONRPC extends CleanEventTarget {
 
                 let theOptions = (options?.cache || options.rmCache) ? options : { cache: options }
 
-                return new Proxy(data || {}, {
+
+                return new Proxy((typeof data == 'string' ? new String(data) : (typeof data == 'number') ? new Number(data) : (typeof data == 'boolean') ? new Boolean(data) : data) || {}, {
                     get: (target, property, receiver) => {
                         if (property == JSONRPC.MetaObject.optionsSymbol) {
                             return theOptions
@@ -228,6 +229,11 @@ export default class JSONRPC extends CleanEventTarget {
                         if (property === JSONRPC.MetaObject.detectionSymbol) {
                             return true
                         }
+
+                        if (property === 'toJSON') {
+                            return data?.toJSON || (() => data)
+                        }
+
                         return Reflect.get(target, property, receiver)
                     }
                 })
