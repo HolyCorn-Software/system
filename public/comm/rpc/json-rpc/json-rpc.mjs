@@ -198,8 +198,6 @@ export default class JSONRPC extends CleanEventTarget {
 
     static {
 
-        /** @deprecated Use {@link MetaObject JSONRPC.MetaObject} */
-        this.CacheObject = this.MetaObject
         /**
          * @template T
          * @extends soul.jsonrpc.ActiveObjectSource<T>
@@ -366,7 +364,11 @@ export default class JSONRPC extends CleanEventTarget {
                         return safe
                     }
                 }
-            }
+            };
+
+
+        /** @deprecated Use {@link MetaObject JSONRPC.MetaObject} */
+        this.CacheObject = this.MetaObject
     }
 
 
