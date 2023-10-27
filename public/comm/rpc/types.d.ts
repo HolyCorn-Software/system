@@ -106,5 +106,5 @@ global {
 
 
 type LocalStorageJSONRPCCacheStorage = {
-    [method: string]: { params: any[], value: any, expiry: number }[]
+    [method: string]: { params: any[], value: any, expiry: number, tag?: string }[]
 }

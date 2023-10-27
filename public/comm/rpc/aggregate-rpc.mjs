@@ -324,13 +324,19 @@ class LocalStorageCache {
         try {
             this[data] = JSON.parse(localStorage.getItem('jsonrpc-cache')) || {}
         } catch {
+            // In case the cache data is corrupt
             localStorage.removeItem('jsonrpc-cache')
         }
+
+        // And now, whenever we're dealing with a modern version of the server...
+        window.addEventListener('server-version-change', ({ detail }) => {
+            this.erase()
+        })
 
     }
 
     /** @type {import("./json-rpc/types.js").JSONRPCCache['set']} */
-    set(method, params, value, expiry) {
+    set(method, params, value, expiry, tag) {
 
         this[data][method] ||= [];
 
@@ -341,7 +347,8 @@ class LocalStorageCache {
                     {
                         expiry,
                         params,
-                        value
+                        value,
+                        tag
                     }
                 )
             )
@@ -358,6 +365,30 @@ class LocalStorageCache {
     get(method, params) {
         const item = this[data][method]?.find(x => eq(x.params, params))
         return item ? JSON.parse(JSON.stringify(item)) : item
+    }
+
+    /** @type {import('./json-rpc/types.js').JSONRPCCache['rm']} */
+    rm(tags) {
+        for (const item in this[data]) {
+            const nwItems = []
+            mainLoop:
+            for (const entry of this[data][item]) {
+                for (const tag of tags) {
+                    // Keep a piece of data, if it doesn't match a tag in the list of tags being removed
+                    if (!entry.tag || !(((tag instanceof RegExp) && tag.test(entry.tag)) || tag == entry.tag)) {
+                        nwItems.push(entry)
+                        continue mainLoop
+                    }
+                }
+            }
+            this[data][item] = nwItems
+        }
+        this[update]()
+    }
+
+    erase() {
+        this[data] = {}
+        this[update]()
     }
 
 }

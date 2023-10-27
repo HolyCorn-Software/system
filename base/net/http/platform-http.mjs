@@ -19,7 +19,18 @@ export default class PlatformHTTPServer extends HTTPServer {
         super(port);
         this.base = base;
 
+        const versionTag = Date.now()
+
         this.sessionStorage = new SessionStorage(this.base);
+        // Always start halted
+        this.isHalted = true
+        this.addMiddleWare(
+            {
+                callback: (req, res) => {
+                    res.setHeader('X-Server-Version', versionTag)
+                }
+            }
+        )
     }
 
 }

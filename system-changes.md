@@ -1,7 +1,3 @@
 .
 
-Removed unnecessary logging.
-
-Updated schema of backend_dashboard, to comply with the component's modern standards.
-
-Corrected minor caching bug with json-rpc.
+Updated to the latest version of html-hc with better UI, and a new widget.

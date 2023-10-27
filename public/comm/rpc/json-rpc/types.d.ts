@@ -46,10 +46,9 @@ interface JSONRPCMessage {
         /**
          * If this field is set, the client would cache the data, to reduce subsequent calls.
          */
-        cache?: {
-            /** The time the object is expected to be considered false in the cache.  */
-            expiry: number
-        }
+        cache: JSONRPCMetaOptions['cache']
+        /** If this field is set, items would be removed from cache. It contains patterns of tags of items to be removed from cache. */
+        rmCache: JSONRPCMetaOptions['rmCache']
 
     }
 
@@ -88,6 +87,18 @@ interface JSONRPCMessage {
 
 }
 
+interface JSONRPCMetaOptions {
+    /** Directives to store the data in cache */
+    cache?: {
+        /** The time the object is expected to be considered unusable in the cache.  */
+        expiry: number
+        /** An optional string that uniquely identifies the item in cache, for easier deletion */
+        tag?: string
+    }
+    /** An array of cache tag patterns, representing items, that should be deleted from the cache as result of this action. */
+    rmCache?: string[]
+}
+
 interface ActiveObjectConfig {
     /** 
      * This specify the number of milliseconds since last access,
@@ -98,9 +109,10 @@ interface ActiveObjectConfig {
 }
 
 interface JSONRPCCache {
-    set: (method: string, params: any[], value: any, expiry: number) => Promise<void>
+    set: (method: string, params: any[], value: any, expiry: number, tag?: string) => Promise<void>
     get: (method: string, params: any[]) => Promise<{ value: any, expiry: number }>
     erase: () => Promise<void>
+    rm: (tags: (string | RegExp)[]) => Promise<void>
 }
 
 

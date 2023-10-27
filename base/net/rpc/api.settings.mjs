@@ -35,10 +35,10 @@ export default class BaseSettingsPublicMethods {
         }
 
 
-        if (!theFaculty.descriptor.meta.settings[namespace]?.public) {
+        if (!theFaculty.descriptor.meta.settings?.[namespace]?.public) {
             throw new Exception(`The setting namespace ${namespace} is not public.`)
         }
-        const desc = theFaculty.descriptor.meta.settings[namespace].items?.find(x => x.name == name)
+        const desc = theFaculty.descriptor.meta.settings?.[namespace].items?.find(x => x.name == name)
 
         if (!(desc?.public ?? theFaculty.descriptor.meta.settings[namespace]?.public)) {
             throw new Exception(`The setting ${name} of ${namespace} is not publicly available.`)
@@ -47,7 +47,12 @@ export default class BaseSettingsPublicMethods {
 
 
 
-        return new JSONRPC.CacheObject(await theFaculty.comm_interface.serverRemote.management.settings.get({ name, namespace }), { expiry: 10 * 60 * 1000 })
+        return new JSONRPC.MetaObject(await theFaculty.comm_interface.serverRemote.management.settings.get({ name, namespace }), {
+            cache: {
+                expiry: 10 * 60 * 1000,
+                tag: `faculty.managedsettings.${namespace}.${name}`
+            }
+        })
     }
 
 }

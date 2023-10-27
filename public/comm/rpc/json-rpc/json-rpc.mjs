@@ -202,16 +202,54 @@ export default class JSONRPC extends CleanEventTarget {
          * @template T
          * @extends soul.jsonrpc.ActiveObjectSource<T>
          */
-        this.CacheObject = class extends Object {
+        this.MetaObject = class extends Object {
             /**
              * 
              * @param {T} data 
-             * @param {import('./types.js').JSONRPCMessage['return']['cache']} options 
+             * @param {import('./types.js').JSONRPCMetaOptions} options 
              */
             constructor(data, options) {
                 super()
-                this.data = data
-                this.options = options
+
+                // For backwards compatibility with components that pass in cache options, instead of MetaOptions
+                if (options.expiry || options.tag) {
+                    console.warn(`Use ${'JSONRPC.MetaObject'.blue.bold}, not ${'JSONRPC.CacheObject'.yellow}\n${new Error().stack.split('\n').slice(2).join('\n')}`)
+                }
+
+                let theOptions = (options?.cache || options.rmCache) ? options : { cache: options }
+
+
+                return new Proxy((typeof data == 'string' ? new String(data) : (typeof data == 'number') ? new Number(data) : (typeof data == 'boolean') ? new Boolean(data) : data) || {}, {
+                    get: (target, property, receiver) => {
+                        if (property == JSONRPC.MetaObject.optionsSymbol) {
+                            return theOptions
+                        }
+                        if (property === JSONRPC.MetaObject.detectionSymbol) {
+                            return true
+                        }
+
+                        if (property === 'toJSON') {
+                            return data?.toJSON || (() => data)
+                        }
+
+                        return Reflect.get(target, property, receiver)
+                    }
+                })
+            }
+            static {
+                /** @readonly */
+                this.optionsSymbol = Symbol()
+                this.detectionSymbol = Symbol()
+                /**
+                 * This method gets the meta options of a MetaObject
+                 * @returns {import('./types.js').JSONRPCMetaOptions}
+                 */
+                this.getOptions = (metaObject) => {
+                    return metaObject[this.optionsSymbol]
+                }
+                this.isMetaObject = (object) => {
+                    return (object) && (object[this.detectionSymbol] == true)
+                }
             }
         }
 
@@ -326,7 +364,11 @@ export default class JSONRPC extends CleanEventTarget {
                         return safe
                     }
                 }
-            }
+            };
+
+
+        /** @deprecated Use {@link MetaObject JSONRPC.MetaObject} */
+        this.CacheObject = this.MetaObject
     }
 
 

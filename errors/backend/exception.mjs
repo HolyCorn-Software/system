@@ -49,7 +49,7 @@ export class Exception extends Error {
             this.stack = this.stack.replaceAll(/\n.*\(node:internal.*/g, '')
         }
         if (stackIndex !== 0) {
-            this.stack = this.stack.split('\n').slice(stackIndex).join('\n')
+            this.stack = `${this.message}\n${this.stack.split('\n').slice(stackIndex).join('\n')}`
         }
         this.cause = cause
         this.code = code
