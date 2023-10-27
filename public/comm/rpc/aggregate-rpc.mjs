@@ -336,11 +336,15 @@ class LocalStorageCache {
 
         this[data][method] = this[data][method].filter(x => !eq(x.params, params))
         this[data][method].push(
-            {
-                expiry,
-                params,
-                value
-            }
+            JSON.parse(
+                JSON.stringify(
+                    {
+                        expiry,
+                        params,
+                        value
+                    }
+                )
+            )
         );
 
         this[update]();
@@ -352,7 +356,8 @@ class LocalStorageCache {
 
     /** @type {import("./json-rpc/types.js").JSONRPCCache['get']} */
     get(method, params) {
-        return this[data][method]?.find(x => eq(x.params, params))
+        const item = this[data][method]?.find(x => eq(x.params, params))
+        return item ? JSON.parse(JSON.stringify(item)) : item
     }
 
 }

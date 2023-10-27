@@ -1,17 +1,7 @@
 .
 
-<<<<<<< HEAD
-Improved the frontend caching algorithm.
+Removed unnecessary logging.
 
-Fixed minor bug with file versioning for the caching system, on the backend.
+Updated schema of backend_dashboard, to comply with the component's modern standards.
 
-Deprecated error management features.
-=======
-Updated to the latest version of html-hc with better responsiveness.
-
-Improved json-rpc caching algorithm.
-
-Improved aggregate-rpc connection, and caching algorithms.
-
-Improved error management.
->>>>>>> 0e14282c33f25f3a9daa03ff38752c50044cb76f
+Corrected minor caching bug with json-rpc.

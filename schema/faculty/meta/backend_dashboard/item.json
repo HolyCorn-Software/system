@@ -10,7 +10,7 @@
             "type": "string",
             "title": "URL path to icon"
         },
-        "meta":{
+        "meta": {
             "type": "object",
             "title": "Additional properties to be added to the item"
         },
@@ -18,13 +18,17 @@
             "type": "string",
             "title": "Unique name of the action, or group"
         },
-        "permissions":{
-            "type":"array",
+        "permissions": {
+            "type": "array",
             "title": "This array contains a list of permissions, such that any of them owned by the user will allow him use the option",
-            "items":{
+            "items": {
                 "type": "string",
                 "pattern": "^([a-zA-Z0-9]|@|.|_)+$"
             }
+        },
+        "priority": {
+            "type": "number",
+            "title": "In case another component declared this same component, which component do we consider. The higher value wins."
         }
     }
 }
