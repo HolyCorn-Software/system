@@ -46,9 +46,8 @@ const on_error = (ev) => {
 export async function report_error_direct(error, tag = '') {
 
 
-    hcRpc.system.system.error.report(
-        `${tag ? `${tag}:\n` : ''}
-        Error:\t${error?.stack || error?.message || error}
+    hcRpc.system.error.report(
+        `${tag ? `${tag}:\n` : ''}Error:\t${error?.stack || error?.message || error}
 
         location: ${window.location.href}
         origin: ${window.location.origin}

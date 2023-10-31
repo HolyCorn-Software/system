@@ -20,6 +20,8 @@ export class BasePublicErrorAPI {
         let [, ...errordata] = arguments;
         /** @type {SocketPublicJSONRPC} */
         let client = arguments[0]
+        // TODO: Remove special characters like \x1Bc from the client's input, at a deep level, to prevent log poisoining.
+        // Image a client clears the log, and then adds a misleading input, like a false report, that causes the engineer to do something rather harmful to the platform.
         console.error(`${'Client Error'.bold.red}\n\n`, ...errordata, `\n${'.'.repeat(process.stdout.columns * 0.75)}\n\t\tAddress: ${client.socketClient.socket.address().address?.blue?.bold}\n\tTime: ${new Date()}`)
     }
 
