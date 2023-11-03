@@ -12,4 +12,5 @@ export interface SessionPublicData {
     id: string
     cookie: string
     expires: number
+    lastUpdate: number
 }

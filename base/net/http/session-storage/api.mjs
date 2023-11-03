@@ -89,6 +89,10 @@ export class BaseSessionStorageAPI {
         return await BaseSessionStorageAPI.#getAPI().generateSession();
     }
 
+    async regenerate() {
+        return await BaseSessionStorageAPI.#getAPI().regenerate(...[...arguments].slice(1))
+    }
+
     /**
      * This method checks whether we are running from the BasePlatform, then returns the SessionStorage instance
      * @returns {import('./storage.mjs').SessionStorage}

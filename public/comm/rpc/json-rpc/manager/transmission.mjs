@@ -8,6 +8,8 @@
 
 import { JSONRPCManager } from "./manager.mjs";
 import uuid from '../../../uuid/uuid.mjs'
+import DelayedAction from "../../../../html-hc/lib/util/delayed-action/action.mjs";
+import JSONRPC from '../json-rpc.mjs'
 
 const ACK_QUEUE = Symbol(`ACK_QUEUE`)
 const PENDING_CALLS = Symbol(`PENDING_CALLS`)
@@ -94,9 +96,9 @@ export default class TransmissionManager {
         if (shouldCancel()) {
             clearTimeout(this[ACK_TIMEOUT])
             this[ACK_TASK].time.updated = Date.now()
-            this[ACK_TIMEOUT] = setTimeout(() => {
+            this[ACK_TIMEOUT] = new DelayedAction(() => {
                 //Now, if we are finally here, it is time to send acknowledgements for real
-                const ids = [...this[ACK_QUEUE]]
+                const ids = new Set(this[ACK_QUEUE])
                 this.doOutput(
                     {
                         id: uuid(),
@@ -107,8 +109,8 @@ export default class TransmissionManager {
                     }
                 );
                 // Remove the processed ACKs
-                this[ACK_QUEUE] = this[ACK_QUEUE].filter(x => ids.indexOf(x) !== -1)
-            }, 250)
+                this[ACK_QUEUE] = this[ACK_QUEUE].filter(x => !ids.has(x))
+            }, 50, 1000)
         }
     }
     /**
@@ -134,11 +136,6 @@ export default class TransmissionManager {
 
         if ((typeof object.call !== 'undefined') || object.loop?.request) {
             if (this[PENDING_CALLS].some(x => x === object.id)) {
-                if (object.call) {
-                    console.log(`Double calling the ${object.call.method} method has been prevented`)
-                } else {
-                    console.log(`The loop return of request id ${object.id} is being processed already.`)
-                }
                 this.sendACK(object.id)
                 return
             } else {

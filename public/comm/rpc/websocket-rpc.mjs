@@ -35,7 +35,11 @@ export default class ClientJSONRPC extends JSONRPC {
 
 
         let buffer = []
-        let socket_on_message = ({ data }) => {
+        let socket_on_message = (input) => {
+            if (!input || !input.data) {
+                return console.trace(`Invalid socket data\n`, input)
+            }
+            let { data } = input
             let string = data.toString()
             buffer.push(string);
 
@@ -50,6 +54,9 @@ export default class ClientJSONRPC extends JSONRPC {
 
         socket.addEventListener('message', (event) => {
             if (socket !== this.socket) {
+                if (!this.socket) {
+                    return
+                }
                 this.socket.dispatchEvent(new CustomEvent(event.type, { detail: event.detail, bubbles: event.bubbles, cancelable: event.cancelable, composed: event.composed }));
                 console.trace(`data came from  the wrong source !!`)
                 return socket.removeEventListener('message', socket_on_message)

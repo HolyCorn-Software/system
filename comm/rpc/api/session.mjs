@@ -20,12 +20,37 @@ export class PublicRPCSessionAPI {
     */
     async sessionAuth(param0) {
 
+        /** @type {FacultyPublicJSONRPC} */
         let client = arguments[0]
 
         let { cookie } = arguments[1]
 
         let session = await Session.getSessionFromCookieOrStartNew(cookie);
         client.meta.hcSessionId = session.id;
+
+
+        if (!(FacultyPlatform.get() instanceof FacultyPlatform)) {
+
+            session.activateAutoRenew()
+
+            session.events.addListener('renew', () => {
+                if (!client.socketClient.socket || client.socketClient.socket.closed) {
+                    return client.destroy()
+                }
+                client.remote.sessionRenew(session.cookie, Date.now() + Session.defaultDuration - 1000).catch(e => {
+                    console.warn(`Failed to renew session ${session.id.yellow}, with cookie ${session.cookie.yellow} on the client-side\n`, e)
+
+                });
+            })
+
+            client.addEventListener('destroy', () => {
+                session.stopAutoRenew()
+                session.events.removeAllListeners()
+                session = null
+            })
+
+        }
+
 
         return { cookieName: Session.cookieName, cookieValue: session.cookie, expires: await session.getExpiryTime() }
     }

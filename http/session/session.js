@@ -10,6 +10,9 @@ This session module allows the system to keep track of important variables belon
 import { Platform } from "../../platform.mjs"
 import { BasePlatform } from "../../base/platform.mjs";
 import { SessionStorage } from "../../base/net/http/session-storage/storage.mjs";
+import EventEmitter from "node:events";
+
+const renewTimeout = Symbol()
 
 export class Session {
 
@@ -24,7 +27,38 @@ export class Session {
 
         this.id = id;
         this.cookie = cookie;
+
+        /** @type {import("./types.js").SessionObjectEvents} */
+        this.events = new EventEmitter()
+
     }
+
+    activateAutoRenew() {
+
+        const schedule = async () => {
+            clearTimeout(this[renewTimeout])
+            const existing = await Session.sessionAPI.getSessionById(this.id)
+            if (existing) {
+                this[renewTimeout] = setTimeout(async () => {
+                    try {
+                        this.cookie = await Session.sessionAPI.regenerate(this.id)
+                        this.events.emit('renew')
+                    } catch (e) {
+                        console.warn(`Failed to renew session ${this.id}\n`, e)
+                    } finally {
+                        schedule()
+                    }
+                }, (Session.defaultDuration / 100) - (Date.now() - (existing.lastUpdate || Date.now())))
+            }
+        }
+
+    }
+
+    stopAutoRenew() {
+        clearInterval(this[renewTimeout])
+    }
+
+
     async getVar(varname) {
         return await Session.sessionAPI.getVar({ sessionID: this.id, varname })
     }
@@ -43,18 +77,6 @@ export class Session {
      */
     async getExpiryTime() {
         return await Session.sessionAPI.getExpiry(this.id);
-    }
-
-    /**
-     * This method is used to check the validity of the session.
-     * It returns true if valid, and throws an exception otherwise
-     * @returns {Promise<boolean>}
-     */
-    async checkValidity() {
-        // const platform = Platform.get();
-        //console.log(`calling checkValidity from `, platform instanceof FacultyPlatform ? platform.descriptor.name : 'system')
-        await Session.sessionAPI.getExpiry(this.id);
-        return true;
     }
 
     /**

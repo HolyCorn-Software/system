@@ -43,6 +43,9 @@ export class SocketPublicJSONRPC extends JSONRPC {
         this.flags.stripColors = true;
 
         /** @type {FacultyPublicJSONRPCMeta} */ this.meta
+
+        /** @type {rpc.ClientPublicMethods} */
+        this.remote
     }
 
     /**
@@ -53,7 +56,6 @@ export class SocketPublicJSONRPC extends JSONRPC {
     async resumeSessionFromMeta() {
         try {
             let session = new Session({ id: this.meta.hcSessionId })
-            await session.checkValidity()
             return session;
         } catch (e) {
             console.log(`because of \n`, e, '\nWe\'re creating a new session')

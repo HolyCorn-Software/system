@@ -8,6 +8,7 @@ This module sits in the front end providing an easy-to-use rpc interface with al
 import CookieManager from '../../html-hc/lib/cookies/manager.mjs';
 import GrowRetry from '../../html-hc/lib/retry/retry.mjs';
 import DelayedAction from '../../html-hc/lib/util/delayed-action/action.mjs';
+import ClientPublicMethods, { SESSION_COOKIE_NAME } from './stub.mjs';
 import ClientJSONRPC from './websocket-rpc.mjs';
 
 
@@ -237,6 +238,9 @@ const connect_and_auth = async (url) => {
 
     //Now start a session
     try {
+        // We provide the server with methods that can be called anytime
+        client.flags.first_arguments = []
+        client.stub = new ClientPublicMethods()
         await new GrowRetry(() => session_auth(connection), { maxTries: 5, startTime: 15, factor: 2 }).execute();
     } catch (e) {
         console.log(`Session error `, e)
@@ -249,7 +253,7 @@ const connect_and_auth = async (url) => {
 /** @type {Promise<void>} */
 let pending_session_auth_promise;
 
-let SESSION_COOKIE_NAME = 'hcSession' // For now let's not even ask for the name
+// let SESSION_COOKIE_NAME = 'hcSession' // For now let's not even ask for the name
 
 
 /**

@@ -15,11 +15,20 @@ export interface FacultyPublicJSONRPCMeta {
 
 global {
 
-    namespace rpc{
+    namespace rpc {
         type Public<T extends faculty.faculties = faculty.faculties> = {
             [K in keyof T]: T[K]['remote']['public']
         } & {
             system: SystemPublicMethods
         }
+
+
+        class ClientPublicMethods {
+            /** This method is implemented on the client-side, intended to be called by the server, to communicate the new cookie value
+             * 
+             */
+            sessionRenew: (cookie: string, expires: number) => Promise<void>
+        }
+
     }
 }

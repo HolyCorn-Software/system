@@ -9,8 +9,6 @@ import shortuuid from 'short-uuid'
 
 import collections from './collections.mjs'
 
-const lastAccess = Symbol()
-
 
 
 
@@ -29,7 +27,7 @@ export class SessionStorage {
      * @param {import('../../../platform.mjs').BasePlatform} basePlatform 
      */
     constructor(basePlatform) {
-        this.#sessions = new Set()
+
 
         basePlatform.events.on('booted', async () => {
 
@@ -54,7 +52,9 @@ export class SessionStorage {
                         expires: 1
                     },
                     {
-                        expireAfterSeconds: 10
+                        // TODO: Find a way to do calculations in seconds
+                        expireAfterSeconds: 10,
+
                     }
                 );
 
@@ -68,8 +68,6 @@ export class SessionStorage {
 
         });
     }
-    /** @type {Set<import("./types.js").SessionData>} */
-    #sessions
 
     /**
      * This method runs after sessions have been pulled from the database, in order
@@ -98,8 +96,6 @@ export class SessionStorage {
                 id: { $in: expired }
             })
         }
-
-        this.#sessions.add(...valid);
 
         return valid
     }
@@ -154,15 +150,14 @@ export class SessionStorage {
     async generateSession() {
         let cookie = `${shortuuid.generate()}${shortuuid.generate()}`
         let id = `${shortuuid.generate()}`
-        let client = {
+        let session = {
             id,
             cookie,
             store: {},
             expires: Date.now() + SessionStorage.defaultDuration
         }
-        this.#sessions.add(client);
-        await collections.sessionStorage.insertOne({ id, cookie, store: {}, expires: client.expires })
-        return { sessionID: id, cookie, expires: client.expires }
+        await collections.sessionStorage.insertOne({ id, cookie, store: {}, expires: session.expires })
+        return { sessionID: id, cookie, expires: session.expires }
     }
 
     /**
@@ -173,11 +168,15 @@ export class SessionStorage {
      */
     async getSessionID(cookie) {
 
-        let client = [...this.#sessions].filter(x => x?.cookie === cookie)[0] || await (async () => {
+        let client = await (async () => {
             const single = await collections.sessionStorage.findOne({ cookie })
             if (!single) {
                 return
             }
+            if (single.expires < Date.now() + SessionStorage.defaultDuration) {
+                single.expires = Date.now() + SessionStorage.defaultDuration
+            }
+            collections.sessionStorage.updateOne({ id: single.id }, { $set: { expires: Date.now() + SessionStorage.defaultDuration } })
             return (await this.#checkSessions([single]))[0]
         })()
         if (!client) {
@@ -192,25 +191,42 @@ export class SessionStorage {
      * @returns {import("./types.js").SessionData}
      */
     async getSessionById(id) {
-        let session = [...this.#sessions].filter(x => x?.id === id)?.[0]
-        if (!session || (Date.now() - (session[lastAccess] ||= Date.now())) > 30_000) {
-            session = await collections.sessionStorage.findOne({ id })
-            if (session) {
-                session[lastAccess] = Date.now()
-            }
-        }
+        let session = await collections.sessionStorage.findOne({ id })
+
         if (!session) {
             throw new Exception(`The session with id '${id}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${id}")` })
         }
         //Now if the client's session has expired
         if (session.expires < Date.now()) {
+            collections.sessionStorage.deleteOne({ id }).catch(e => console.warn(e))
             throw new Exception(`The session '${id}' has expired`, { code: `session_expired` })
         }
 
-        this.#sessions.add(session)
-
         return session;
     }
+
+    /**
+     * This method regenerates the session by generating a new cookie value for it.
+     * 
+     * This method returns the new cookie
+     * @param {string} id 
+     * @returns {Promise<string>}
+     */
+    async regenerate(id) {
+        const cookie = `${shortuuid.generate()}${shortuuid.generate()}`
+        const session = await collections.sessionStorage.findOne({ id })
+        if (!session) {
+            throw new Exception(`Session ${id} not found`)
+        }
+        // Prevent duplicate simultaneous updates, that could cause instability, when a client opens multiple windows.
+        if (Date.now() - (session?.lastUpdate || 0) < 30_000) {
+            return session.cookie
+        }
+        await collections.sessionStorage.updateOne({ id }, { $set: { cookie, expires: Date.now() + SessionStorage.defaultDuration, lastUpdate: Date.now() } })
+        return cookie
+    }
+
+
     static #errorNamespace = 'net.sessionStorage'
 
     /**
