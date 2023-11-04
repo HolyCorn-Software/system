@@ -1,3 +1,3 @@
 .
 
-Updated to the latest version of html-hc with better responsiveness.
+Updated to a more efficient version of the html-hc library.
