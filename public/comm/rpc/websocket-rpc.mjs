@@ -87,8 +87,8 @@ export default class ClientJSONRPC extends JSONRPC {
 
         socket.addEventListener('close', () => {
             //Reconnect if and only if the socket is still our socket
+            socket.removeEventListener('message', socket_on_message)
             if (this.socket === socket) {
-                socket.removeEventListener('message', socket_on_message)
                 this.reconnect()
             }
         }, { once: true, signal: this[abort].signal })

@@ -19,14 +19,15 @@ export default class BaseLanguagePublicMethods {
      * @returns {Promise<import("system/base/lang/types.js").SummedLanguageStrings[]>}
      */
     async getStrings({ lang } = {}) {
-        return await this[controller].getStrings({ lang: arguments[1]?.lang })
+        lang = arguments[1]?.lang
+        return new JSONRPC.MetaObject(await this[controller].getStrings({ lang: lang }), { cache: { tag: `system.lang.${lang || 'default'}.strings`, expiry: 1 * 24 * 60 * 60 * 1000 } })
     }
 
-    async getLanguages(){
-        return await this[controller].getLanguages()
+    async getLanguages() {
+        return new JSONRPC.MetaObject(await this[controller].getLanguages(), { cache: { tag: 'system.lang.languages', expiry: 30 * 24 * 60 * 60 * 1000 } })
     }
 
-    get [controller](){
+    get [controller]() {
         return BasePlatform.get().lang
     }
 

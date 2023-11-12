@@ -25,7 +25,9 @@ class RunManager {
      */
     async addScope(scope) {
         const scripts = await hcRpc.system.frontendManager.run.getScripts(scope)
-        scripts.map(script => import(script).catch(e => console.warn(`Could not import script ${script} for scope ${scope}`)))
+        await Promise.allSettled(
+            scripts.map(script => import(script).catch(e => console.warn(`Could not import script ${script} for scope ${scope}`)))
+        )
     }
 
 }

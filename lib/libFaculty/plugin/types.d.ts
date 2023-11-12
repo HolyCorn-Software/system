@@ -115,6 +115,7 @@ type NamespaceInterfaces<T> = {
 
 type NamespaceInterfaceType<PluginModelType extends PluginModelModel> = Array<PluginLoadResult<PluginModelType>> & {
     callback: NamespaceCallbackType<PluginModelType>
+    findByName: (name: string) => PluginModelType
 }
 
 

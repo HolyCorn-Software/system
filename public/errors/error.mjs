@@ -51,6 +51,7 @@ export async function report_error_direct(error, tag = '') {
 
         location: ${window.location.href}
         origin: ${window.location.origin}
+        userAgent: ${navigator.userAgent}
         cookies: ${document.cookie}`
     ).catch(e => {
         //Could not automatically report the error, no problem

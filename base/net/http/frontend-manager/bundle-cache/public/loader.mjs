@@ -59,12 +59,28 @@ async function init() {
     } else {
         loader.load('page-content')
         loadNormally()
-        new MutationObserver(() => {
+        const checker = () => {
             const children = [...document.body.children].filter(x => (x.tagName !== 'SCRIPT') && x != loader.html)
             if (children.length > 0) {
-                loader.unload('page-content')
+                const abort = new AbortController()
+                Promise.race(
+                    [
+                        new Promise(resolve => {
+                            window.addEventListener('transitionend', resolve, { signal: abort.signal, once: true })
+                            window.addEventListener('animationend', resolve, { signal: abort.signal, once: true })
+                        }),
+                        new Promise(resolve => setTimeout(resolve, 3000))
+                    ]
+                ).then(() => {
+                    loader.unload('page-content')
+                    abort.abort()
+                })
+                return true;
             }
-        }).observe(document.body, { childList: true })
+        }
+        if (!checker()) {
+            new MutationObserver(checker).observe(document.body, { childList: true })
+        }
 
     }
 }
@@ -133,7 +149,7 @@ class SWControllerServer {
                 case 'setServerVersion': {
                     const version = event.data?.data;
                     const lastVersion = new Number(localStorage.getItem('serverVersion')).valueOf() || 0
-                    
+
                     if (version > lastVersion) {
                         localStorage.getItem('serverVersion', version)
                         window.dispatchEvent(
