@@ -244,11 +244,11 @@ export class JSONRPCManager extends CleanEventTarget {
 
                                 // Remove all items in cache, that match a pattern, or equal a string
                                 await this.json_rpc.flags?.cache?.rm(
-                                    object.return.rmCache.forEach(
+                                    object.return.rmCache.map(
                                         x => {
                                             try {
                                                 // In case the directive qualifies to be a pattern
-                                                if (/^\/\/$/.test(x)) { // If the string starts with /
+                                                if (/^\/.*\/$/.test(x)) { // If the string starts with /
                                                     return new RegExp(x.substring(1, x.length - 1), 'gi')
                                                 }
                                                 return x

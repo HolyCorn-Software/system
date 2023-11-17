@@ -60,8 +60,8 @@ export default class FileManager {
 
             await new Promise(x => setTimeout(x, 12_000))
 
-            await BasePlatform.get().bootTasks.wait().then(
-                () => BasePlatform.get().compat.allDone().then(
+            await BasePlatform.get().bootTasks.wait().then(() => {
+                BasePlatform.get().compat.allDone().then(
                     async () => {
                         for (const item in this[map]) {
                             if (!(this[map][item].version?.emperical > startTime)) {
@@ -75,9 +75,8 @@ export default class FileManager {
                                 'frontend-manager-files-ready',
                             )
                         )
-                    }
-                    )
-            );
+                    })
+            });
 
 
             this.events.addEventListener('files-change', () => {

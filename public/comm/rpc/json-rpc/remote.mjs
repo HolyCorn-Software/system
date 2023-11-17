@@ -102,7 +102,7 @@ class JSONRPCRemoteObject {
                     //Then the stack trace from calling this method
                     new Error().stack.split('\n').slice(6,).join('\n')
 
-                const timeoutError = new Error(`Timeout reaching server`);
+                const timeoutError = new Error(`Timeout reaching server. Could not call ${methodName}`);
                 timeoutError.accidental = true
 
                 return new Promise(async (resolve, reject) => {
@@ -199,6 +199,8 @@ class JSONRPCRemoteObject {
                                 manager.removeEventListener(`cache-${id}`, onCache)
                             }
 
+                            // TODO: Implement extra tolerance, for situations where the transmission is disconnected
+                            // TODO: Implement transmission cache, in order to better handle disconnections, and reconnections, without loss of information.
                             let timeout = setTimeout(() => failed(timeoutError), 30_000)
 
 

@@ -31,4 +31,10 @@ global {
         }
 
     }
+
+    namespace base.rpc {
+        interface BaseToFacultyEvents {
+            'platform-ready': undefined
+        }
+    }
 }

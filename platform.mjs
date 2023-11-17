@@ -10,7 +10,7 @@ import { EventEmitter } from 'node:events'
 const preInitPromise = Symbol()
 
 /**
- * @typedef {function(('booted'|'exit'), function)} PlatformEventListenerFunction
+ * @typedef {function(('booted'|'exit'|'ready'), function)} PlatformEventListenerFunction
  * 
  * @typedef {{on: PlatformEventListenerFunction, emit:PlatformEventListenerFunction} & EventEmitter} PlatformEvents
  */

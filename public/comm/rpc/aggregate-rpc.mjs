@@ -231,7 +231,7 @@ const connect_and_auth = async (url) => {
         }).catch(e => {
             //If during reconnection, we could not authenticate, we destroy the connection and let a new one form organically
             client.socket?.close()
-            setTimeout(() => client.reconnect(), 2000);
+            setTimeout(() => client.reconnect().catch(() => console.log(`Reconnection Error!!`)), 2000);
         })
 
     });
@@ -241,7 +241,7 @@ const connect_and_auth = async (url) => {
         // We provide the server with methods that can be called anytime
         client.flags.first_arguments = []
         client.stub = new ClientPublicMethods()
-        await new GrowRetry(() => session_auth(connection), { maxTries: 5, startTime: 15, factor: 2 }).execute();
+        await new GrowRetry(() => session_auth(connection), { maxTries: 50, startTime: 15, factor: 5, maxTime: 3000 }).execute();
     } catch (e) {
         console.log(`Session error `, e)
         throw new Error(`Failed to start a new session with server at ${url}`, { cause: e })
@@ -252,8 +252,6 @@ const connect_and_auth = async (url) => {
 
 /** @type {Promise<void>} */
 let pending_session_auth_promise;
-
-// let SESSION_COOKIE_NAME = 'hcSession' // For now let's not even ask for the name
 
 
 /**
@@ -285,9 +283,6 @@ const session_auth = async (connection) => {
             new Promise(async (done) => {
 
                 let cookieManager = new CookieManager();
-                // For now, let's not ask for the cookie name. Let's hard-code the default value
-                // SESSION_COOKIE_NAME ||= await connection.$session.getSessionCookieName();
-
 
                 let auth = await connection.$session.sessionAuth({
                     cookie: cookieManager.getCookie(SESSION_COOKIE_NAME)
@@ -315,6 +310,7 @@ const session_auth = async (connection) => {
 
 const data = Symbol()
 const update = Symbol()
+const directUpdate = Symbol()
 
 const eq = (a, b) => JSON.stringify(a) == JSON.stringify(b)
 
@@ -336,6 +332,9 @@ class LocalStorageCache {
         window.addEventListener('server-version-change', ({ detail }) => {
             this.erase()
         })
+
+
+        window.addEventListener('beforeunload', () => this[directUpdate]())
 
     }
 
@@ -361,9 +360,11 @@ class LocalStorageCache {
         this[update]();
     }
 
-    [update] = new DelayedAction(() => {
+    [directUpdate] = () => {
         localStorage.setItem('jsonrpc-cache', JSON.stringify(this[data]))
-    }, 250, 3000);
+    }
+
+    [update] = new DelayedAction(this[directUpdate], 250, 3000); // If the delay is too much, then the user could navigate from one page to another with unsaved data, 
 
     /** @type {import("./json-rpc/types.js").JSONRPCCache['get']} */
     get(method, params) {

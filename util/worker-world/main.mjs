@@ -5,6 +5,8 @@
  * stage by stage, with the possibility of throwing mild, and severe errors.
  */
 
+import shortUUID from 'short-uuid'
+
 
 
 const getCursor = Symbol()
@@ -17,23 +19,50 @@ const workers = Symbol()
 const groups = Symbol()
 const watcher = Symbol()
 const killed = Symbol()
+const internal = Symbol()
 
 /**
- * @template TaskType
+ * @template T
+ * @template Ns
  */
 export default class WorkerWorld {
 
     /**
-     * @param {soul.util.workerworld.Params<TaskType>} params
+     * @param {soul.util.workerworld.Params<T, Ns>} params
      */
     constructor(params) {
         params.width ||= 1;
-        this[args] = params
+
+        this[args] = params;
+
+        /** @type {TaskGroup<T, Ns>} */
+        this[groups] = [];
+
 
         if (!Array.isArray(params?.stages)) {
             throw new Error(`The 'stages' parameter must be an array of stages.`)
         }
 
+    }
+
+    /**
+     * This method adds a new task to the database
+     * @param {T} data 
+     * @returns {Promise<void>}
+     */
+    async insertOne(data) {
+        /** @type {soul.util.workerworld.Params<T, Ns>} */
+        const params = this[args]
+        await params.stages[0].collection.insertOne(
+            {
+                ...data,
+                '@worker-world-task': {
+                    created: Date.now(),
+                    id: shortUUID.generate(),
+                    stage: params.stages[0].name,
+                }
+            }
+        )
     }
 
     async stop() {
@@ -46,15 +75,242 @@ export default class WorkerWorld {
 
         this.stop();
 
-        this[groups] = [...(' '.repeat(this[args].width - 2))].map((x, i) => new TaskGroup(
-            {
-                ...this[args],
-                stageIndex: i
+        (function () {
+
+            this[groups] = [...(' '.repeat(this[args].width - 2))].map((x, i) => new TaskGroup(
+                {
+                    ...this[args],
+                    stageIndex: i
+                }
+            ));
+
+        }).bind(this)();
+    }
+
+
+
+
+    static {
+        /**
+         * This method 'purifies' data extracted from a database, by removing other now unncessary data, that was used to manage its task-execution process
+         * @template Input
+         * @param {Input} record 
+         * @returns {Omit<Input, "@worker-world-task">}
+         */
+        this.trim = (record) => {
+            if (record) {
+                delete record["@worker-world-task"]
             }
-        ));
+            return record
+        }
 
     }
 
+
+    [internal] = {
+        /** 
+         * This method returns the collections that would be potentially affected by, or needed by, a database operation involving a given filter.
+         * This is based on the fact that, certain filters specify the $stages parameter, which tells us which collections we're dealing with.
+         * This method prioritizes 'newer' collections.
+         * @param {soul.util.workerworld.Filter<T, Ns>} filter
+         * @returns {soul.util.workerworld.TaskCollection<T>[]}
+         */
+        getCollectionsFromFilter: (filter) => (filter?.$stages ? filter.$stages.map(x => this[args].stages.find(y => y.name == x)) : this[args].stages).map(x => x.collection),
+
+        /**
+         * @template Ret
+         * This method forms the base of efficient asynchronous simultaneous operations needed by this module.
+         * It allows an operation to be performed on multiple collections, with the intention of stopping once we find the first successful operation. 
+         * @param {(collection:soul.util.workerworld.TaskCollection<T>)=>Ret} operation A function that would be called for each of the collections. If the function returns a non-falsish value, it is 
+         * understood that the operation is complete, and other similar operations would be canceled. 
+         * If the function returns a falshish value (e.g undefined), then function would be called for other collections, untill we find something that succeeds,
+         * or all return falshish
+         * @param {soul.util.workerworld.TaskCollection<T>[]} collections
+         * @returns {Promise<Awaited<Ret>>}
+         */
+        raceOperation: async (operation, collections) => {
+            // Split the collections into batches, of about 60%
+
+            // Then query batch by batch
+
+            const sixty = Math.ceil(collections.length * 0.6)
+            let results;
+
+            for (let i = 0; i < collections.length;) {
+                const chunk = collections.slice(i, i += sixty)
+                let completeCount = 0;
+
+                // Here, we're running multiple operations on the database.
+                // The first to succeed operation wins
+
+                // This promise is how the other operations would know it, when the first operation has already succeeded
+                // Once this promise resolves, other operations promises resolve
+                let grandResolve;
+
+                const allDone = new Promise((resolve, reject) => (grandResolve = resolve))
+
+                results = await Promise.race(
+                    chunk.map(collection => new Promise(async (resolve, reject) => {
+                        // In case some other operation finds the data before this one, then stop.
+                        allDone.then(resolve, () => resolve())
+
+                        let data;
+
+                        try {
+                            data = await operation(collection)
+                            // If this is the operation that actually finds the data, then all is done.
+                            if (data) {
+                                resolve(data) // Tell the Promise.race() to continue.
+                                grandResolve(data) // Tell the other operations to stop.
+                            }
+                        } catch (e) {
+                            reject(e)
+                        } finally {
+                            completeCount += 1
+                            if (completeCount >= chunk.length) {
+                                grandResolve(data)
+                            }
+                        }
+
+                    }))
+                );
+
+                // If during this iteration, we found the data we were looking for, then  hurray, we stop.
+                if (results) {
+                    break;
+                }
+
+            }
+
+            return results;
+        },
+        /**
+         * @template MethodName
+         * This method is more specific, than the raceOperation() method, by the fact that it performs one of the commonly known operations, such
+         * as deleteOne(), updateOne(), etc., and then checking properties such as deletedCount, to determine if the operation was complete.
+         * @param {soul.util.workerworld.Filter<T,Ns>} filter 
+         * @param {soul.util.workerworld.LastItems<Parameters<soul.util.workerworld.TaskCollection<T>[MethodName]>>} params 
+         * @param {keyof soul.util.workerworld.TaskCollection<T>|MethodName} methodName 
+         * @param {keyof Awaited<ReturnType<soul.util.workerworld.TaskCollection<T>[MethodName]>>} checkProperty 
+         */
+        singularCollectionRaceOperation: async (filter, params, methodName, checkProperty) => {
+
+
+            const nwFilter = { ...filter }
+            delete nwFilter.$stages;
+
+            return await this[internal].raceOperation(
+                async collection => {
+                    const results = await collection[methodName](nwFilter, ...params)
+                    return results[checkProperty] > 0
+                },
+                this[internal].getCollectionsFromFilter(filter)
+            )
+
+        }
+    }
+
+
+    /**
+     * This method queries various databases, to find a single element.
+     * The first one to find the element wins.
+     * @param {soul.util.workerworld.Filter<T,Ns>} filter 
+     */
+    async findOne(filter) {
+        const collections = this[internal].getCollectionsFromFilter(filter)
+
+        const nwFilter = { ...filter }
+        delete nwFilter.$stages;
+
+        return await this[internal].raceOperation(
+            collection => collection.findOne(nwFilter).then(x => WorkerWorld.trim(x)),
+            collections
+        )
+    }
+
+    /**
+     * This method finds records that match a given filter, from multiple collections.
+     * @param {soul.util.workerworld.Filter<T,Ns>} filter
+     */
+    async* find(filter) {
+        for (const collection of await this[internal].getCollectionsFromFilter(filter)) {
+            const nwFilter = { ...filter }
+            delete nwFilter.$stages;
+
+            const cursor = collection.find(nwFilter)
+            while ((await cursor.hasNext())) {
+                yield WorkerWorld.trim(await cursor.next())
+            }
+        }
+    }
+
+    /**
+     * This method deletes a piece of data from the collection that has it.
+     * @param {soul.util.workerworld.Filter<T, Ns>} filter 
+     * @returns {Promise<void>}
+     */
+    async deleteOne(filter) {
+
+        return void (
+            await this[internal].singularCollectionRaceOperation(
+                filter,
+                undefined,
+                'deleteOne',
+                'deletedCount'
+            )
+        )
+    }
+
+
+    /**
+     * This method updates deletes all records that match a given filter
+     * @param {soul.util.workerworld.Filter<T,Ns>} filter 
+     * @param {import('mongodb').UpdateFilter<T>} updateData 
+     * @param {import('mongodb').UpdateOptions} options 
+     * @returns {Promise<import('mongodb').UpdateResult>}
+     */
+    async deleteMany(filter, updateData, options) {
+
+        return await Promise.all(
+            this[internal].getCollectionsFromFilter(filter).map(col => col.deleteMany(filter, updateData, options))
+        )
+    }
+
+
+    /**
+     * This method updates a single record in the first collection that contains it.
+     * @param {soul.util.workerworld.Filter<T,Ns>} filter 
+     * @param {import('mongodb').UpdateFilter<T>} updateData 
+     * @param {import('mongodb').UpdateOptions} options 
+     * @returns {Promise<import('mongodb').UpdateResult>}
+     */
+    async updateOne(filter, updateData, options) {
+        return await this[internal].singularCollectionRaceOperation(
+            filter,
+            [
+                updateData,
+                options
+            ],
+            'updateOne',
+            'matchedCount'
+        )
+    }
+
+
+
+    /**
+     * This method updates all records that match a given filter
+     * @param {soul.util.workerworld.Filter<T,Ns>} filter 
+     * @param {import('mongodb').UpdateFilter<T>} updateData 
+     * @param {import('mongodb').UpdateOptions} options 
+     * @returns {Promise<import('mongodb').UpdateResult>}
+     */
+    async updateMany(filter, updateData, options) {
+        // Usually, when updating many records, matches would be found in multiple collections.
+        return await Promise.all(
+            this[internal].getCollectionsFromFilter(filter).map(col => col.updateMany(filter, updateData, options))
+        )
+    }
 
 
 }
@@ -62,18 +318,19 @@ export default class WorkerWorld {
 
 
 /**
- * @template DataType
+ * @template T
+ * @template Ns
  */
 class TaskGroup {
 
     /**
      * 
-     * @param {soul.util.workerworld.TaskGroupParams<DataType>} params
+     * @param {soul.util.workerworld.TaskGroupParams<T>} params
      */
     constructor(params) {
         this[args] = params
 
-        /** @type {Worker<DataType>[]} */
+        /** @type {Worker<T, Ns>[]} */
         this[workers] = []
 
         this[watcher] = this.collection.watch().addListener('change', (change) => {
@@ -150,13 +407,14 @@ class TaskGroup {
 /**
  * The usefulness of this class, is in launching tasks.
  * It decides
- * @template DataType
+ * @template T
+ * @template Ns
  */
 class Worker {
 
     /**
      * 
-     * @param {soul.util.workerworld.TaskGroupParams<DataType>} params 
+     * @param {soul.util.workerworld.TaskGroupParams<T, Ns>} params 
      */
     constructor(params) {
         this[args] = params
@@ -165,7 +423,7 @@ class Worker {
 
     /**
      * 
-     * @param {import('mongodb').FindCursor<soul.util.workerworld.Task<DataType>>} cursor 
+     * @param {import('mongodb').FindCursor<soul.util.workerworld.Task<T, Ns>>} cursor 
      * @returns {Promise<boolean>}
      */
     async tick(cursor) {
@@ -193,28 +451,30 @@ class Worker {
             if (!task) {
                 return true
             }
-            if ((task.hibernation || 0) > Date.now()) {
+            if ((task['@worker-world-task'].hibernation || 0) > Date.now()) {
                 return true;
             }
 
             const update = async () => {
-                await this[args].stages[this[args].stageIndex].collection.updateOne({ id: task.id }, { $set: { ...task } })
+                await this[args].stages[this[args].stageIndex].collection.updateOne({ '@worker-world-task.id': task['@worker-world-task'].id }, { $set: { ...task } })
                 return true;
             }
 
-            task.stage = this[args].stages[this[args].stageIndex].name
+            task['@worker-world-task'].stage = this[args].stages[this[args].stageIndex].name
+
+            const initial = JSON.stringify(task)
 
             const results = await this[args].execute(task)
 
             if (results?.error) {
-                (task.retries ||= []).push({
+                (task['@worker-world-task'].retries ||= []).push({
                     error: `${results.error}`,
                     time: Date.now()
                 })
 
                 if (results.error.fatal) {
-                    task.expires = Date.now() + (24 * 60 * 60 * 1000)
-                    task.dead = true
+                    task['@worker-world-task'].expires = Math.min(Date.now() + (24 * 60 * 60 * 1000), task['@worker-world-task'].expires || Infinity)
+                    task['@worker-world-task'].dead = true
                 }
 
                 return await update()
@@ -225,18 +485,28 @@ class Worker {
                 if (results?.newStage) {
                     stage = this[args].stages.find(x => x.name == results.newStage)
                     if (!stage) {
-                        console.warn(`After execution of task ${task.id.magenta}, the asked for movement to a non-existent stage: ${results.newStage.red}`)
+                        console.warn(`After execution of task ${task['@worker-world-task'].id.magenta}, the asked for movement to a non-existent stage: ${results.newStage.red}`)
                         stage = this[args].stages[this[args].stageIndex + 1]
                     }
                 }
 
+                const changed = JSON.stringify(task) != initial
+
                 if (results?.ignored) {
-                    task.hibernation = results.ignored
-                    return await update()
+                    task['@worker-world-task'].hibernation = results.ignored
+                    return changed && (await update())
                 }
 
-                await stage?.collection.insertOne(task)
-                await this[args].stages[this[args].stageIndex].collection.deleteOne({ id: task.id })
+                if (results.delete) {
+                    await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
+                    await stage.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
+                } else {
+                    if (changed) {
+                        await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
+                        await stage?.collection.insertOne(task)
+                    }
+                }
+
 
                 return true;
             }

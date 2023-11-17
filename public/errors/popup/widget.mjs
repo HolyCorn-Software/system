@@ -7,7 +7,7 @@ This widget is responsible for giving concise well-presented error messages to t
 import { hc } from "/$/system/static/html-hc/lib/widget/index.mjs";
 import ActionButton from "../../html-hc/widgets/action-button/button.mjs";
 import HCTSBrandedPopup from "../../html-hc/widgets/branded-popup/popup.mjs";
-import hcRpc from "../../comm/rpc/aggregate-rpc.mjs";
+import { report_error_direct } from "../error.mjs";
 hc.importModuleCSS(import.meta.url)
 
 export class ErrorUI extends HCTSBrandedPopup {
@@ -102,7 +102,7 @@ export class ErrorUI extends HCTSBrandedPopup {
 
         try {
             let waiter = wait(3000); //This operation should take atleast 3s
-            await hcRpc.system.error.report(`${this.error.stack} \ncode: ${this.error.code} \nlocation: ${window.location.href} \norigin: ${window.location.origin}\ncookies: ${document.cookie} `)
+            await report_error_direct(this.error)
             await waiter;
             reportButton.state = 'success'
         } catch (e) {

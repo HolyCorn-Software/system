@@ -31,10 +31,10 @@ export class BasePlatformHTTPManager {
 
         //The default HTTP server that everthing goes through
         this.platform_http = new (await import('./platform-http.mjs')).default(this.base, port);
-        
+
 
         //The TLS server that forwards all requests back to the default HTTP server
-        await this.createTLSServer(this.https_port);
+        this.createTLSServer(this.https_port).catch(e => console.error(e));
 
 
         //Now enforce SSL according to system policies
@@ -44,6 +44,12 @@ export class BasePlatformHTTPManager {
         //An HTTP server responsible for things like errorMap
         this.system_http = await (await import('./system-http.mjs')).default.new(this)
 
+        const httpShutdown = () => {
+            this.platform_http.destroy().catch(e => console.error(e))
+        }
+
+        global.process.addListener('SIGINT', httpShutdown)
+        global.process.addListener('SIGTERM', httpShutdown)
 
         //Now Log
         console.log(`
@@ -83,6 +89,10 @@ export class BasePlatformHTTPManager {
             ca: platform_credentials.tls_ca,
             key: platform_credentials.tls_key,
         })
+
+        while (this.platform_http.isHalted) {
+            await new Promise(x => setTimeout(x, 500))
+        }
 
         tls_server.listen(port);
 

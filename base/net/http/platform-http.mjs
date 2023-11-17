@@ -16,14 +16,14 @@ export default class PlatformHTTPServer extends HTTPServer {
      * @param {number} port 
      */
     constructor(base, port) {
-        super(port);
+        // Always start halted
+        super(port, true);
+        
         this.base = base;
 
         const versionTag = Date.now()
 
         this.sessionStorage = new SessionStorage(this.base);
-        // Always start halted
-        this.isHalted = true
         this.addMiddleWare(
             {
                 callback: (req, res) => {

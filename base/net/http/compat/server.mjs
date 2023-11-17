@@ -159,9 +159,10 @@ export default class BaseCompatServer {
      * This method adds a path to the list of transpiler tasks, and returns a promise,
      * that resolves, or rejects, depending on the success of the task
      * @param {string} path 
-     * @returns {Promise<void>}
+     * @param {boolean} wait This tells us, if we should wait for the transpiling to complete before returning
+     * @returns {Promise<void>|undefined}
      */
-    async transpile(path) {
+    transpile(path, wait) {
         if (!CompatFileServer.COMPAT_ACTIVE) {
             return;
         }
@@ -169,16 +170,18 @@ export default class BaseCompatServer {
 
         this[loop]()
 
-        const promise = new Promise((resolve, reject) => {
-            const check = () => {
-                if (this[current].path = path) {
-                    this[current].promise.then(resolve, reject)
-                    this[worker].removeListener('message', check)
-                }
-            };
-            this[worker].addListener('message', check)
-        })
-        return promise
+        if (wait) {
+            const promise = new Promise((resolve, reject) => {
+                const check = () => {
+                    if (this[current].path = path) {
+                        this[current].promise.then(resolve, reject)
+                        this[worker].removeListener('message', check)
+                    }
+                };
+                this[worker].addListener('message', check)
+            })
+            return promise
+        }
     }
 
 }

@@ -86,8 +86,8 @@ export default class BundleCacheServer {
         if (!this[injectionData]) {
             let path;
             if (CompatFileServer.COMPAT_ACTIVE) {
-                await BasePlatform.get().compat.transpile(`${publicPath}/loader.mjs`)
-                path = await BasePlatform.get().compat.getCompatFilePath(`${publicPath}/loader.mjs`)
+                await BasePlatform.get().compat.transpile(`${publicPath}/loader.mjs`, true)
+                path = await BasePlatform.get().compat.getCompatFilePath(`${publicPath}/loader.mjs`, true)
             } else {
                 path = `${publicPath}/loader.mjs`
             }

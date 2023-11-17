@@ -195,7 +195,9 @@ export class BasePlatform extends Platform {
                 this.compat.allDone().then(() => {
                     console.log(`Done transpiling all frontend files`)
                     this.http_manager.platform_http.isHalted = false
-                    console.log(`The server has started accepting HTTP requests`.cyan)
+                    this.faculties.events.dispatchEvent(new CustomEvent('platform-ready'))
+                    this.events.emit('platform-ready')
+                    this.ready = true;
                 })
             })
         })

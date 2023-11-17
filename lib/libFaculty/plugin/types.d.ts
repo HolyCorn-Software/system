@@ -89,6 +89,8 @@ interface PluginLoadResult<PluginModelType extends PluginModelModel = PluginMode
     instance: PluginModelType
 }
 
+type PluginLoadResultMap<PluginNamespaceMap> = { [plugin: string]: PluginLoadResult<PluginNamespaceMap[keyof PluginNamespaceMap]> }
+
 
 declare global {
     const PluginModelModel = _PluginModelModel

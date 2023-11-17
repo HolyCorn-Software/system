@@ -3,12 +3,13 @@
  * This module (faculty.global) contains type definitions for objects that are globally available in any faculty code
  */
 
-import { FacultyFacultyRemoteMethods as _FacultyFacultyRemoteMethods } from "system/comm/rpc/faculty-faculty-rpc.mjs";
+import { FacultyFacultyInterface, FacultyFacultyRemoteMethods as _FacultyFacultyRemoteMethods } from "system/comm/rpc/faculty-faculty-rpc.mjs";
 import { FacultyPublicMethods as _FacultyPublicMethods } from "system/comm/rpc/faculty-public-methods.mjs";
 import { FacultyPublicJSONRPC as _FacultyPublicJSONRPC, FacultyPublicRPCServer as _FacultyPublicRPCServer } from "system/comm/rpc/faculty-public-rpc.mjs";
 import { Exception as _Exception } from "system/errors/backend/exception.mjs";
 import { FacultyPlatform as _FacultyPlatform } from "./platform.mjs";
 import { FacultyDescriptor } from "./types";
+import { EventEmitter } from 'node:events'
 
 
 
@@ -41,6 +42,27 @@ declare global {
 
     type FacultyConnectionOverload<T extends faculty.faculties = faculty.faculties> = {
         [K in keyof T]: () => Promise<T[K]['remote']['internal']>
+    }
+
+    namespace faculty {
+        interface FacultyEvents {
+            'example-event': [
+                {
+                    example: boolean
+                },
+                {
+                    exampleUserid: string
+                }
+            ]
+        }
+
+        declare var FacultyConnectionManagerEventEmitter: {
+
+            new(): {
+                [K in keyof (faculty.FacultyEvents & base.rpc.BaseToFacultyEvents) as 'addListener' | 'on' | 'once']: (event: K, cb: (faculty: FacultyFacultyInterface<{}>, ...args: faculty.FacultyEvents[K]) => void) => void
+
+            }
+        }
     }
 }
 

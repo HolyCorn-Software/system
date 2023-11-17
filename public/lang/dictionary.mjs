@@ -5,6 +5,7 @@
  */
 
 import hcRpc from "../comm/rpc/aggregate-rpc.mjs";
+import { report_error_direct } from "../errors/error.mjs";
 
 
 const timeouts = {}
@@ -78,7 +79,7 @@ class StringDictionary {
             this[lang] = chosenLanguage ?? superDefaultLanguage
             //TODO: Ask the user to select his language, if the chosen language is undefined
         } catch (e) {
-            hcRpc.system.error.report(e)
+            report_error_direct(e)
             console.log(e)
             this[lang] = superDefaultLanguage
         }
@@ -96,7 +97,7 @@ class StringDictionary {
         nullValue ??= `${code} missing`
         const realValue = this[strings]?.[this[lang]]?.[code]
         if (!realValue) {
-            hcRpc.system.error.report(`Unfortunately, there's no value for string ${code} in language ${this[lang]}`, `\nInvoked from\n`, new Error().stack.split('\n').slice(1).join('\n'))
+            report_error_direct(new Error(`Unfortunately, there's no value for string ${code} in language ${this[lang]}`, `\nInvoked from\n`, new Error().stack.split('\n').slice(1).join('\n')))
         }
         return realValue || nullValue
     }

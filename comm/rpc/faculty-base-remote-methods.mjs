@@ -130,6 +130,15 @@ export class BaseToFacultyRemoteMethods {
     }
 
     /**
+     * This method is used to check if the base platform is fully ready.
+     * This is especially the case, when a faculty starts after the base platform has dispatched the 'platform-ready' event
+     * @returns {boolean}
+     */
+    isReady() {
+        return this[basePlatform].ready
+    }
+
+    /**
      * 
      * @returns 
      */

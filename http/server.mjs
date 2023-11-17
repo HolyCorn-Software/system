@@ -19,10 +19,11 @@ export class HTTPServer extends Server {
 
 
     /**
+     * @param {boolean} isHalted This optional argument tells us if the server should be started halted.
      * @returns {Promise<HTTPServer>}
      */
-    static async new() {
-        let server = new this(await utils.findOpenPort())
+    static async new(isHalted) {
+        let server = new this(await utils.findOpenPort(), isHalted)
         return server;
     }
 
