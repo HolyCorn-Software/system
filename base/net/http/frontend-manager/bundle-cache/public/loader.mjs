@@ -133,6 +133,19 @@ class SWControllerServer {
                     break;
                 }
 
+                case 'reload': {
+                    console.log(`About to reload origin `, event.data.origin)
+                    if (window.location.href !== event.data.origin) {
+                        return
+                    }
+                    try {
+                        reloadConfirm.show()
+                    } catch (e) {
+                        console.log(`Error reloading...\n`, e)
+                    }
+                    break;
+                }
+
                 case 'getStorage': {
                     this.sendUpdates()
                     break;
@@ -165,15 +178,19 @@ class SWControllerServer {
 
     async sendUpdates() {
 
-        const object = {}
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i)
-            object[key] = localStorage.getItem(key)
-        }
-        this[channel].postMessage({ type: 'setStorage', data: object })
+        clearTimeout(this[sendUpdatesTimeout])
+        this[sendUpdatesTimeout] = setTimeout(() => {
+            const object = {}
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i)
+                object[key] = localStorage.getItem(key)
+            }
+            this[channel].postMessage({ type: 'setStorage', data: object })
+        }, 250)
     }
 }
 
+const sendUpdatesTimeout = Symbol()
 const items = Symbol()
 
 
@@ -381,4 +398,100 @@ async function loadNormally() {
         }
     })
 }
+
+
+
+class ReloadConfirmWidget {
+
+    constructor() {
+        this.html = document.createElement('div')
+        this.html.classList.add('hc-sw-reload-confirm')
+        this.html.innerHTML = `
+            <div class='container'>
+                <div class='top'>
+                    <div class='message'>Some things have changed. Please reload to enjoy the update.</div>
+                </div>
+                <div class='actions'>
+                    <div class='reload'>Reload</div>
+                    <div class='ignore'>Ignore</div>
+                </div>
+            </div>
+
+            <style>
+                .hc-sw-reload-confirm{
+                    position: fixed;
+                    z-index: 5;
+                    top: calc(100vh - var(--height));
+                    left: 2.5em;
+                    --height: 8em;
+                }
+
+                .hc-sw-reload-confirm >.container{
+                    display: inline-flex;
+                    flex-direction: column;
+                    max-width: 200px;
+                    background-color: #e9881d;
+                    color: black;
+                    box-shadow: 0px 0px 12px lightblue;
+                    gap: 1em;
+                    font-family: k2dThin;
+                    padding: 1em;
+                }
+
+                .hc-sw-reload-confirm >.container >.actions{
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 1em;
+                    color: white;
+                    font-family: comfortaa;
+                    font-weight: bolder;
+                }
+
+                /** Now, for the logic of showing, and hiding */
+                .hc-sw-reload-confirm >.container{
+                    transform: translateY(10em);
+                    transition: 0.5s 0.125s !important;
+                }
+                .hc-sw-reload-confirm.showing >.container{
+                    transform: translateY(0em);
+                }
+            </style>
+        `
+
+        this.html.querySelector('.container >.actions >.ignore').addEventListener('click', () => {
+            this.hide()
+        })
+
+        this.html.querySelector('.container >.actions >.reload').addEventListener('click', () => {
+            window.location.reload()
+        })
+    }
+
+    show() {
+        if (Date.now() - (this.lastDismiss || 0) < 20_000) {
+            // If the user refused to reload less than 20s ago, no need to bother him again.
+            return;
+        }
+        document.body.appendChild(this.html)
+        setTimeout(() => this.html.classList.add('showing'), 250)
+    }
+    async hide() {
+        this.lastDismiss = Date.now()
+        this.html.classList.remove('showing')
+        await new Promise(x => setTimeout(x, 100))
+        await Promise.race(
+            [
+                new Promise((x) => this.html.addEventListener('transitionend', x)),
+                new Promise(x => setTimeout(x, 2000))
+            ]
+        );
+        this.html.remove()
+    }
+}
+
+const reloadConfirm = new ReloadConfirmWidget()
+
+
+
+
 init()

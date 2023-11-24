@@ -13,6 +13,9 @@ const init_fxn = Symbol()
 const force = Symbol()
 const init_done = Symbol()
 
+/**
+ * @template T
+ */
 export default class EventChannelClient {
 
 
@@ -27,9 +30,12 @@ export default class EventChannelClient {
         this[init_fxn] = init
 
 
-        this[jsonrpc].addEventListener('reinit', () => this.init(force).catch(e => console.error(e)))
+        this[jsonrpc].addEventListener('reinit', () => this.forceInit().catch(e => console.error(e)))
 
     }
+    /** 
+     * @returns {soul.comm.rpc.event_channel.EventClientEventTarget<T>}
+     */
     get events() {
         return this[jsonrpc].$rpc.events
     }
@@ -39,8 +45,15 @@ export default class EventChannelClient {
         }
         await this[init_fxn]()
         this[init_done] = true
-        this.events.dispatchEvent(new CustomEvent('init'))
+        EventTarget.prototype.dispatchEvent.apply(this.events, [new CustomEvent('init')])
         return true
+    }
+
+    /**
+     * Call this method forcefully re-initialize the event-channel client.
+     */
+    forceInit() {
+        return this.init(force)
     }
 
 

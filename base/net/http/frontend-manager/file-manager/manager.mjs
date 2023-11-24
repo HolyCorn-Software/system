@@ -39,6 +39,7 @@ export default class FileManager {
         this.init();
 
 
+        /** @type {soul.http.frontendManager.fileManager.FileManagerEvents} */
         this.events = new EventTarget()
     }
 

@@ -75,16 +75,21 @@ export default class WorkerWorld {
 
         this.stop();
 
-        (function () {
+        (
+            /**
+             * @this WorkerWorld
+             */
+            function () {
 
-            this[groups] = [...(' '.repeat(this[args].width - 2))].map((x, i) => new TaskGroup(
-                {
-                    ...this[args],
-                    stageIndex: i
-                }
-            ));
+                this[groups] = [...(' '.repeat(Math.max(this[args].width - 2, Math.min(this[args].width, 1))))].map((x, i) => new TaskGroup(
+                    {
+                        ...this[args],
+                        stageIndex: i
+                    }
+                ));
 
-        }).bind(this)();
+            }
+        ).bind(this)();
     }
 
 
@@ -365,10 +370,9 @@ class TaskGroup {
             }
         })())
         if (available) {
-            available.tick(this[getCursor]()).then(val => {
-                if (val) {
-                    setImmediate(() => this[assign]())
-                }
+            const cursor = this[getCursor]();
+            available.tick(cursor).then(async val => {
+                setTimeout(() => this[assign](), val ? 200 : 1000)
             }).catch(e => {
                 console.error(`Very fatal error\n`, e)
                 this[workers] = this[workers].filter(x => x == available)
@@ -392,11 +396,18 @@ class TaskGroup {
             this[cursor] = this.collection.find()
         }
 
-        this[cursor].once('close', () => {
-            delete this[cursor]
+        const theCursor = this[cursor]
+
+        theCursor.removeAllListeners('close')
+
+        theCursor.once('close', () => {
+            if (this[cursor] == theCursor) {
+                delete this[cursor]
+            }
+            theCursor?.removeAllListeners()
         })
 
-        return this[cursor]
+        return theCursor
 
     }
 
@@ -428,7 +439,7 @@ class Worker {
      */
     async tick(cursor) {
         if (this[isTicking]) {
-            return
+            return false
         }
         if (this[waitTime]) {
             await new Promise(x => setTimeout(x, this[waitTime]))
@@ -442,12 +453,29 @@ class Worker {
          * @returns {Promise<boolean>}
          */
         const main = async () => {
-            // Let's get the  
-            if (!await cursor.hasNext()) {
-                cursor.close().catch(() => undefined)
+            // If there's nothing more to process, let's skip the entire process.
+            if (cursor.closed || cursor.closing) {
+                await cursor.closing
+                return true;
+            }
+
+            try {
+
+                if (!await cursor.hasNext()) {
+                    true
+                    await (cursor.closing = cursor.close())
+                    return false
+                }
+            } catch {
                 return false
             }
-            const task = await cursor.next()
+
+            let task;
+            try {
+                task = await cursor.next()
+            } catch (e) {
+                return false;
+            }
             if (!task) {
                 return true
             }
@@ -456,7 +484,7 @@ class Worker {
             }
 
             const update = async () => {
-                await this[args].stages[this[args].stageIndex].collection.updateOne({ '@worker-world-task.id': task['@worker-world-task'].id }, { $set: { ...task } })
+                await this[args].stages[this[args].stageIndex].collection.replaceOne({ '@worker-world-task.id': task['@worker-world-task'].id }, task)
                 return true;
             }
 
@@ -485,24 +513,29 @@ class Worker {
                 if (results?.newStage) {
                     stage = this[args].stages.find(x => x.name == results.newStage)
                     if (!stage) {
-                        console.warn(`After execution of task ${task['@worker-world-task'].id.magenta}, the asked for movement to a non-existent stage: ${results.newStage.red}`)
+                        console.warn(`After execution of task ${task['@worker-world-task'].id.magenta}, the executor asked for movement to a non-existent stage: ${(results.newStage || 'undefined').red}`)
                         stage = this[args].stages[this[args].stageIndex + 1]
                     }
                 }
 
-                const changed = JSON.stringify(task) != initial
+                const hasChanged = () => JSON.stringify(task) != initial
 
                 if (results?.ignored) {
                     task['@worker-world-task'].hibernation = results.ignored
-                    return changed && (await update())
+                    if (hasChanged()) {
+                        (await update())
+                    }
+                    return true;
                 }
 
-                if (results.delete) {
+                if (results?.delete) {
                     await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
                     await stage.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
                 } else {
-                    if (changed) {
-                        await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
+                    const currentStage = this[args].stages[this[args].stageIndex]
+
+                    if (hasChanged() || (currentStage.name !== (results?.newStage || currentStage.name))) {
+                        await currentStage.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
                         await stage?.collection.insertOne(task)
                     }
                 }
@@ -528,6 +561,5 @@ class Worker {
     get isFree() {
         return !this[isTicking]
     }
-
 
 }

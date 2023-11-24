@@ -160,6 +160,7 @@ export class HTTPServer extends Server {
             res.statusCode = 200
             res.setHeader(`Content-Type`, node_static.mime.lookup(originalPath || (typeof path === 'string' ? path : '.mjs')))
             res.setHeader(`Content-Length`, stat?.size || stream.readableLength)
+            res.setHeader(`Access-Control-Allow-Origin`, '*')
             stream.pipe(res)
             stream.addListener('end', () => {
                 res.end()

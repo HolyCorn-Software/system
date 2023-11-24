@@ -52,6 +52,9 @@ export default class BundleCacheServer {
     get fileManager() {
         return BasePlatform.get().frontendManager.fileManager
     }
+    get autorunManager() {
+        return BasePlatform.get().frontendManager.autorun
+    }
     getRelated(urlPath) {
         return this.fileManager.getRelated(urlPath).filter(x => (x.size || 0) <= BundleCacheServer.MAX_RESOURCE_SIZE)
     }
@@ -306,6 +309,15 @@ export default class BundleCacheServer {
     }
 
     /**
+     * This method determines if a particular resource is an HTML page
+     * @param {string} url 
+     * @returns {boolean}
+     */
+    static isHTML(url) {
+        return url.endsWith('/') || url.endsWith('html')
+    }
+
+    /**
      * This method handles situations where the client is requesting for a bundle
      * @param {SuperRequest} req 
      * @param {import('node:http').ServerResponse} res 
@@ -340,6 +352,29 @@ export default class BundleCacheServer {
 
             const toSafeZipPath = path => `/${path.endsWith('/') ? `${path}.index` : path}`
 
+            /**
+             * This method file data, about a frontend resource entry
+             * @param {ReturnType<this['getRelated']>[0]} entry 
+             * @returns 
+             */
+            const getData = async (entry) => Buffer.concat(
+                [
+                    Buffer.from(BundleCacheServer.isHTML(entry.path) ? `${this.autorunManager.injection}\n${await this.getInjectionData()}` : ''),
+
+                    await Promise.race(
+                        [
+                            libFs.promises.readFile(entry.path),
+                            new Promise((resolve, reject) => {
+                                setTimeout(() => {
+                                    reject(new Error(`The url ${entry.url} too too long to fetch`))
+                                }, 5000)
+                            })
+                        ]
+                    )
+                ]
+            )
+
+
             const makeNew = () => {
 
                 const zipStream = archiver.create('zip', { store: true })
@@ -356,16 +391,7 @@ export default class BundleCacheServer {
                                     return console.log(`Not caching ${entry.url.blue} (${entry.path?.cyan})\nFile was removed.`)
                                 }
 
-                                const results = await Promise.race(
-                                    [
-                                        libFs.promises.readFile(entry.path),
-                                        new Promise((resolve, reject) => {
-                                            setTimeout(() => {
-                                                reject(new Error(`The url ${entry.url} too too long to fetch`))
-                                            }, 5000)
-                                        })
-                                    ]
-                                )
+                                const results = await getData(entry)
 
 
                                 return zipStream.append(
@@ -469,7 +495,7 @@ export default class BundleCacheServer {
                                     this.fileManager.removeURL(nw.url)
                                     return console.log(`Not caching ${nw.url.yellow}\nIt might have been removed.`)
                                 }
-                                const results = await libFs.promises.readFile(nw.path)
+                                const results = await getData(nw)
 
                                 tmpZip.append(
                                     results,

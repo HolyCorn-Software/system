@@ -22,6 +22,11 @@ export default class AutoRunManager {
         return BasePlatform.get().frontendManager.fileManager
     }
 
+    /** @readonly */
+    get injection() {
+        return `${this[injectionData]}`
+    }
+
     updateInjection = new DelayedAction(() => {
 
         /** @type {string[]} */
@@ -76,9 +81,9 @@ export default class AutoRunManager {
                         if (intercept) {
                             res.setHeader(
                                 'Content-Length',
-                                `${new Number(res.getHeader('content-length')) + this[injectionData].length}`
+                                `${new Number(res.getHeader('content-length')) + this.injection.length}`
                             )
-                            res.write(this[injectionData])
+                            res.write(this.injection)
 
                             res.write(...args)
 

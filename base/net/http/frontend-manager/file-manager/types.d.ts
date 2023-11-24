@@ -15,4 +15,10 @@ global {
             'frontend-manager-files-change': undefined
         }
     }
+
+    namespace soul.http.frontendManager.fileManager {
+        type FileManagerEvents = {
+            addEventListener: (event: 'config-change' | 'files-change', cb: (event: Event) => void, opts?: AddEventListenerOptions) => void
+        } & EventTarget
+    }
 }

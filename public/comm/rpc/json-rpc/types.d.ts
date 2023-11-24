@@ -50,6 +50,8 @@ interface JSONRPCMessage {
         /** If this field is set, items would be removed from cache. It contains patterns of tags of items to be removed from cache. */
         rmCache: JSONRPCMetaOptions['rmCache']
 
+        events: JSONRPCMetaOptions['events']
+
     }
 
     /** This field is set when the data returned, or parameter passed, is an ActiveObject */
@@ -97,6 +99,16 @@ interface JSONRPCMetaOptions {
     }
     /** An array of cache tag patterns, representing items, that should be deleted from the cache as result of this action. */
     rmCache?: string[]
+
+    /**
+     * This field allows us trigger certain events after a method is done executing.
+     */
+    events?: {
+        type: string
+        data: any
+    }[]
+
+
 }
 
 interface ActiveObjectConfig {

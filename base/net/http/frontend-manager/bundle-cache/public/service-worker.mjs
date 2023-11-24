@@ -55,7 +55,7 @@ function isCachable(request, response) {
                 ||
                 isUISecFile(request.url)
             )
-            && /^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url)
+            && (!/^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url))
             && request.method.toLowerCase() == 'get'
             && new URL(request.url).origin == self.origin
 
@@ -76,19 +76,28 @@ self.addEventListener('fetch', (event) => {
         (async () => {
 
             const theClient = await self.clients.get(event.clientId)
-            const source = theClient?.url || request.url
+            const source = theClient?.url || request.referrer || request.url
 
             const promise = (async () => {
-
-                if (isCachable(request) && (isHTML(source) || isUIFile(request.url))) {
-                    try {
-                        await makeGrandChecks(source)
-                    } catch { }
+                async function checkGrandVersion() {
+                    if (await grandVersionOkay(source, false)) {
+                        return true
+                    }
+                    await grandUpdate(source, false)
                 }
-
+                const grandCheckPromise = checkGrandVersion()
                 try {
-                    const result = await findorFetchResource(request, source)
-                    return result
+                    const response = await findorFetchResource(request, source);
+
+                    // After the grand checks were done, and the response is ready.
+                    // We check if the response was from cache, and the grand version was not okay.
+                    // And ask the user to reload
+                    grandCheckPromise.then(result => {
+                        if (!result && response.inCache) {
+                            controller.reload(source)
+                        }
+                    })
+                    return response
                 } catch (e) {
                     console.error(`Failed to perform service worker duties for url ${request.url}\n`, e)
 
@@ -105,45 +114,6 @@ self.addEventListener('fetch', (event) => {
     )
 
 })
-
-/** @type {{[path: string]: Promise<void>}} */
-const grandChecks = {}
-
-/**
- * This method checks if the grand version isn't okay, and does a grand update
- * It does so, in a way that prevents duplicate requests
- * @param {string} origin 
- * @returns {Promise<void>}
- */
-async function makeGrandChecks(origin) {
-    if (grandChecks[origin]) {
-        return grandChecks[origin]
-    }
-    return grandChecks[origin] = (async () => {
-        function okay() {
-            setTimeout(() => delete grandChecks[origin], 15000)
-        }
-        if (grandUpdates[new URL(origin).pathname]) {
-            return okay()
-        }
-        await grandVersionOkay(origin).then(async result => {
-
-            if (result) {
-                return okay();
-            }
-
-            try {
-                await grandUpdate(origin)
-                console.log(`Grand update of ${origin} finished!`)
-            } catch (e) {
-                console.log(`Grand update to ${origin} failed\n`, e)
-            }
-
-            okay()
-
-        })
-    })()
-}
 
 /**
  * This method safely fetches a request.
@@ -293,16 +263,19 @@ self.addEventListener('install', async (event) => {
 
 
 self.addEventListener('activate', async (event) => {
-    console.log(`Activate called.`)
     await event.waitUntil(self.clients.claim().then(async () => {
-        controller.updateStorage()
+        await controller.updateStorage()
         controller.continueLoad();
         console.log(`Activated!!!`)
     }))
 
     await event.waitUntil(
         caches.open(CACHE_NAME).then(async cache => {
-            await cache.add('/$/shared/static/logo.png')
+            const logoPath = '/$/shared/static/logo.png'
+            const promise = cache.add(logoPath);
+            if (!cache.match(logoPath)) {
+                await promise
+            }
         })
     )
 
@@ -326,23 +299,38 @@ class SWControllerClient {
         this[channel].addEventListener('message', (event) => {
             switch (event.data?.type) {
                 case 'setStorage': {
+                    for (const item in storageObject) {
+                        delete storageObject[item]
+                    }
                     Object.assign(storageObject, event.data.data)
+                    this.events.dispatchEvent(new Event('storage-set'))
                     break;
                 }
             }
 
         })
+        this.events = new EventTarget()
     }
 
     async continueLoad() {
         this[channel].postMessage({ type: 'continue' })
     }
 
+    async reload(origin) {
+        this[channel].postMessage({ type: 'reload', origin })
+    }
+
     async setStorage() {
+        console.trace(`Sending entire storage from sw, as `, storageObject)
         this[channel].postMessage({ type: 'setStorage', data: storageObject })
     }
     async updateStorage() {
         this[channel].postMessage({ type: 'getStorage' })
+        await new Promise(resolve => {
+            this.events.addEventListener('storage-set', resolve, { once: true })
+            console.log(`What we requested for, has been given.`)
+        })
+        // await new Promise(x => setTimeout(x, 5000))
     }
 
     /**
@@ -435,26 +423,25 @@ const grandUpdates = {}
  * This method directly requests for the grand bundle of a given url.
  * 
  * It doesn't check if the update is deserved
- * @param {string} origin 
+ * @param {string} source 
  * @param {boolean} shouldLoad
  * @returns {Promise<void>}
  */
-async function grandUpdate(origin, shouldLoad) {
-    const path = new URL(origin).pathname
+async function grandUpdate(source, shouldLoad) {
+    const path = new URL(source).pathname
 
     await waitForAllGrandTasks()
 
     async function freshUpdate() {
         try {
             grandUpdates[path] = main();
-            if (isHTML(origin) && shouldLoad) {
-                loader.load(origin, grandUpdates[path]);
+            if (isHTML(source) && shouldLoad) {
+                loader.load(source, grandUpdates[path]);
             }
             await grandUpdates[path];
+        } finally {
             setTimeout(() => delete grandUpdates[path], 15000);
-        } catch (e) {
-            setTimeout(() => delete grandUpdates[path], 15000);
-            throw e;
+
         }
     }
 
@@ -508,10 +495,8 @@ async function grandUpdate(origin, shouldLoad) {
                     }
                     await cache.put(file, response)
                 }
+                await storage.setKey(`${path}-version`, nwVersion)
             }
-            await storage.setKey(`${path}-version`, nwVersion)
-            await storage.setKey(`${path}-remote-version`, nwVersion)
-
 
         } catch (e) {
 
@@ -519,7 +504,7 @@ async function grandUpdate(origin, shouldLoad) {
         }
     }
 
-    if (await grandVersionOkay(origin, shouldLoad)) {
+    if (await grandVersionOkay(source, shouldLoad)) {
         return;
     }
 
@@ -547,15 +532,10 @@ const fetchTasks = {}
  * @returns {Promise<Response>}
  */
 async function findorFetchResource(request, source) {
-    // First things, first, ... wait for any grand update that's currently ongoing
 
-
-    // Now that the grand updates are done, we check the cache for what we're looking for
 
     if (fetchTasks[request.url]) {
-        loader.load(source, fetchTasks[request.url])
         await fetchTasks[request.url]
-
     }
 
     const cache = await caches.open(CACHE_NAME)
@@ -567,19 +547,37 @@ async function findorFetchResource(request, source) {
      */
     async function fetchNew(returnOffline = true) {
         try {
-            const preHeaders = new Headers(request.headers)
-            preHeaders.set('x-bundle-cache-src', source)
-            const response = await fetch(request, {
-                headers: preHeaders,
+            const preHeaders = new Headers()
+            request.headers.forEach((value, key) => {
+                preHeaders.set(key, value)
             })
+            preHeaders.set('x-bundle-cache-src', source)
+
+            const response = await fetch(request.url, {
+                headers: preHeaders,
+                body: request.body,
+                cache: request.cache,
+                credentials: request.credentials,
+                signal: request.signal,
+                integrity: request.integrity,
+                method: request.method,
+                keepalive: request.keepalive,
+                redirect: request.redirect,
+                referrer: request.referrer,
+                referrerPolicy: request.referrerPolicy,
+            })
+
 
             const headers = new Headers(response.headers)
             headers.append('x-bundle-cache-version', Date.now())
 
+            if (response.status == 0) {
+                console.warn(`Fetching ${request.url}, yeiled status 0, and now we're assuming status 200`)
+            }
 
             const nwResponse = new Response(new Blob([await response.clone().arrayBuffer()]),
                 {
-                    status: response.status,
+                    status: response.status || 200,
                     statusText: response.statusText,
                     headers: headers
                 }
@@ -606,6 +604,7 @@ async function findorFetchResource(request, source) {
     const inCache = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
 
     if (inCache) {
+        inCache.inCache = true
         // Sometimes, those secondary files, get added to the cache; not because the file itself was a UI file, but because it's Mime returned UI
         // If that's the case, let's only cache this for a given period
         const NON_UI_CACHE_TIME =
@@ -646,6 +645,8 @@ async function findorFetchResource(request, source) {
 
     const isTestReq = request.headers.get('x-bundle-cache-test-request');
 
+    let shouldReload = false
+
 
     if (!await grandVersionOkay(source, true)) {
         try {
@@ -653,23 +654,43 @@ async function findorFetchResource(request, source) {
             // And now, if we don't get to send a temporal page, we at least wait till the grand update is finished
             // The temporal page would try to refresh itself severally, till it gets the original page.
             const gup = grandUpdate(source, true)
+            console.log(`Doing a technical grand update, triggered by request ${request.url}`)
             if (isHTML(request.url) && !isTestReq) {
                 return temporalPageResponse(300)
             }
+            // At this point, an update is lacking, but the request that made us know of this lack, is not an HTML request, and therefore, the user
+            // could be using an old page.
             await gup
-        } finally {
-            return await findorFetchResource(request, source)
+            // And that's why after the update, let's ask him to reload
+            shouldReload = true
+        } catch {
+            // If grand update fails, well, let's not stress it.
         }
     }
 
+    // Over here, the grand version is okay, but the browser has requested for something that's not found in the grand update bundle
+
     const nwPromise = fetchNew();
-    loader.load(source, nwPromise)
+    fetchTasks[request.url] = nwPromise
+
+    if (shouldReload) {
+        nwPromise.then(() => {
+            setTimeout(() => controller.reload(new URL(request.url).origin), 1000)
+        })
+    }
+
+
+    if (isUIFile(request.url)) {
+        loader.load(source, nwPromise)
+    }
 
     if (isHTML(request.url) && !isTestReq) {
-        fetchTasks[request.url] = nwPromise
+        // In addition to the grand version being okay, the request is also for an HTML page, for which we can return a loader (temporal page)
         nwPromise.finally(() => delete fetchTasks[request.url])
         return temporalPageResponse()
     } else {
+        // Here, the grand version is okay, but what's being requested is not an HTML file.
+        // Therefore, no need for a temporary request
         return await nwPromise
     }
 
@@ -840,6 +861,11 @@ async function grandVersionOkay(origin, shouldLoad) {
     const path = new URL(origin).pathname
 
 
+    if (((Date.now() - (lastGrandVersionCheck[path]?.time || 0)) < 20_000) && lastGrandVersionCheck[path].results == true) {
+        return lastGrandVersionCheck[path].results
+    }
+
+
     if (grandVersionCheckTasks[path]) {
         if (await grandVersionCheckTasks[path]) {
             return true
@@ -854,9 +880,6 @@ async function grandVersionOkay(origin, shouldLoad) {
         return true;
     }
 
-    if ((Date.now() - (lastGrandVersionCheck[path]?.time || 0) < 20_000) && lastGrandVersionCheck[path].results === true) {
-        return true
-    }
 
 
     grandVersionCheckTasks[path] = (async () => {
@@ -867,9 +890,7 @@ async function grandVersionOkay(origin, shouldLoad) {
             const MAX_TIME = 1_000
 
             const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
-            const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
             const remoteVersion =
-                //If we already know what the remote version is
                 await Promise.race(
                     [
                         new Promise(done => setTimeout(() => done(knownRemoteVersion), MAX_TIME)),
@@ -877,7 +898,7 @@ async function grandVersionOkay(origin, shouldLoad) {
                             try {
                                 return await fetchGrandVersion(origin, shouldLoad)
                             } catch (e) {
-                                console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} `)
+                                console.warn(`Could not fetch grand version of ${path}, so we'll use the older ${knownRemoteVersion} \n`, e)
                             }
 
                             // In case it fails, we use our older information
@@ -888,7 +909,13 @@ async function grandVersionOkay(origin, shouldLoad) {
 
             (lastGrandVersionCheck[path] ||= {}).time = Date.now()
 
-            const res = lastGrandVersionCheck[path].results = localVersion >= remoteVersion
+            const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
+
+            // We're up-to-date, when we know, that the local version is above the remote version, and remote version has really not changed
+            const res = lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion)
+            if (!res) {
+                console.log(`remote version: ${remoteVersion}, known remote version: ${knownRemoteVersion}; localVersion: ${localVersion}`)
+            }
             return res
 
         })()
@@ -901,13 +928,13 @@ async function grandVersionOkay(origin, shouldLoad) {
     })()
 
     try {
-        const result = await grandVersionCheckTasks[path]
+        const results = await grandVersionCheckTasks[path]
+        setTimeout(() => delete grandVersionCheckTasks[path], 5000)
+        return results
+    } catch {
         delete grandVersionCheckTasks[path]
-        return result
-    } catch (e) {
-        delete grandVersionCheckTasks[path]
-        throw e
     }
+
 
 
 
@@ -936,11 +963,12 @@ async function fetchGrandVersion(origin, shouldLoad) {
     // The following section ensures that the grand version of each path can be 
     // fetched, no more than once in 5s, and fetched one at a time
     const newFetch = async () => {
-        await (grandVersionTasks[path] = check())
+        const promise = (grandVersionTasks[path] = check())
         if (isHTML(origin) && shouldLoad) {
             loader.load(origin, grandVersionTasks[path])
         }
         setTimeout(() => delete grandVersionTasks[path], 15000)
+        return await promise
     }
     if (grandVersionTasks[path]) {
         try {

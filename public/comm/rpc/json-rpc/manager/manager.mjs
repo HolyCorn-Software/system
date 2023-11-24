@@ -270,6 +270,13 @@ export class JSONRPCManager extends CleanEventTarget {
                     }
                 }
 
+                // And now, whatever the return, if there are events accompanying it, let's dispatch them
+                if (Array.isArray(object.return.events)) {
+                    for (const entry of object.return.events) {
+                        EventTarget.prototype.dispatchEvent.call(this.json_rpc.$rpc.events, new CustomEvent(entry.type, { detail: entry.data }))
+                    }
+                }
+
             }
         }
 

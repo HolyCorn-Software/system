@@ -1,27 +1,19 @@
 .
 
-Improved efficiency of the http compat module, by making the transpile wait optional.
+Fixed minor bugs with the service-worker.
 
-Improved algorithms that determine how the platform is accessed via HTTP, particularly to prevent errors that occur, when a user tries to access the server before its ready.
+Greatly improved the frontend caching algorithm.
 
-Added the platform-ready event, which can listened to by faculties, to know when to start performing heavy tasks, or processing user data.
+Added reload prompt feature to frontend caching components.
 
-Added a possibility for types to be declared in the following areas to facilitate autocomplete:
-    1. internal events
-    2. public methods
+Improved typing of the frontend-manager.
 
-Corrected minor bug with json-rpc's caching.
+Improved interoperability by ensuring the CORS policy allows access to static files from the platform, even if requested by another site.
 
-Improved effectiveness of the json-rpc caching on the frontend, by prioritizing writes when the user is navigating out of the page.
+Added forceInit() method to event-channel client, which is useful to other component.
 
-Improved json-rpc's error reporting.
+Added ability for events to be dispatched immediately after remote method calls with json-rpc.
 
-Improved error-reporting from frontend components.
+Improved efficiency, and stability of worker-world.
 
-Improved translation module, by guaranteeing that strings load before the page is loaded.
-
-Changed data format of the worker-world module, to a more direct, and developer-and-query-friendly format.
-
-Improved typing of the worker-world module.
-
-Updated to the latest version of html-hc, with better typing, and better UI.
+Updated to the latest version of html-hc, wit better stability.

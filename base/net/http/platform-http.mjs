@@ -18,7 +18,7 @@ export default class PlatformHTTPServer extends HTTPServer {
     constructor(base, port) {
         // Always start halted
         super(port, true);
-        
+
         this.base = base;
 
         const versionTag = Date.now()
