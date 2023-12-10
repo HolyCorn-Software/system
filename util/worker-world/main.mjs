@@ -81,12 +81,17 @@ export default class WorkerWorld {
              */
             function () {
 
-                this[groups] = [...(' '.repeat(Math.max(this[args].width - 2, Math.min(this[args].width, 1))))].map((x, i) => new TaskGroup(
-                    {
-                        ...this[args],
-                        stageIndex: i
-                    }
-                ));
+                try {
+
+                    this[groups] = this[args].stages.map(
+                        (x, i) => new TaskGroup({
+                            ...this[args],
+                            stageIndex: i
+                        })
+                    )
+                } catch (e) {
+                    throw e
+                }
 
             }
         ).bind(this)();
@@ -236,13 +241,14 @@ export default class WorkerWorld {
     /**
      * This method finds records that match a given filter, from multiple collections.
      * @param {soul.util.workerworld.Filter<T,Ns>} filter
+     * @param {import('mongodb').FindOptions<T>} options
      */
-    async* find(filter) {
+    async* find(filter, options) {
         for (const collection of await this[internal].getCollectionsFromFilter(filter)) {
             const nwFilter = { ...filter }
             delete nwFilter.$stages;
 
-            const cursor = collection.find(nwFilter)
+            const cursor = collection.find(nwFilter, options)
             while ((await cursor.hasNext())) {
                 yield WorkerWorld.trim(await cursor.next())
             }
@@ -530,7 +536,7 @@ class Worker {
 
                 if (results?.delete) {
                     await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
-                    await stage.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
+                    await stage?.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
                 } else {
                     const currentStage = this[args].stages[this[args].stageIndex]
 

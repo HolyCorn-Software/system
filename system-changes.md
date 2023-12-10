@@ -1,19 +1,12 @@
 .
 
-Fixed minor bugs with the service-worker.
+Updated to the latest version of html-hc, with new features, and bug fixes.
 
-Greatly improved the frontend caching algorithm.
+Fixed minor bug with json-rpc cache, that caused data to persist for too long, if reloads happen before expiry.
 
-Added reload prompt feature to frontend caching components.
+Created event-based-extender utility, for components, that need functionalities that are provided by other components (the providers). In this way, components can be extended easily, in a very flexible way.
 
-Improved typing of the frontend-manager.
+Fixed minor with with the worker-world utility.
 
-Improved interoperability by ensuring the CORS policy allows access to static files from the platform, even if requested by another site.
+Improved typing.
 
-Added forceInit() method to event-channel client, which is useful to other component.
-
-Added ability for events to be dispatched immediately after remote method calls with json-rpc.
-
-Improved efficiency, and stability of worker-world.
-
-Updated to the latest version of html-hc, wit better stability.

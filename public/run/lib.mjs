@@ -7,13 +7,13 @@
 import hcRpc from "../comm/rpc/aggregate-rpc.mjs"
 
 
-const scopes = Symbol()
+const scripts = Symbol()
 
 class RunManager {
 
     constructor() {
         /** @type {Set<string>} */
-        this[scopes] = new Set()
+        this[scripts] = new Set()
     }
 
     /**
@@ -24,9 +24,18 @@ class RunManager {
      * @returns {Promise<void>}
      */
     async addScope(scope) {
-        const scripts = await hcRpc.system.frontendManager.run.getScripts(scope)
+        const nwScripts = (await hcRpc.system.frontendManager.run.getScripts(scope)).filter(x => !this[scripts].has(x))
         await Promise.allSettled(
-            scripts.map(script => import(script).catch(e => console.warn(`Could not import script ${script} for scope ${scope}`)))
+            nwScripts.map(
+                async script => {
+                    try {
+                        await import(script)
+                        this[scripts].add(script)
+                    } catch (e) {
+                        console.warn(`Could not import script ${script} for scope ${scope}`, e)
+                    }
+                }
+            )
         )
     }
 

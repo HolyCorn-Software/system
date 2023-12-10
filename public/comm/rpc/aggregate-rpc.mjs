@@ -311,6 +311,8 @@ const session_auth = async (connection) => {
 const data = Symbol()
 const update = Symbol()
 const directUpdate = Symbol()
+const update0 = Symbol()
+const dirty = Symbol()
 
 const eq = (a, b) => JSON.stringify(a) == JSON.stringify(b)
 
@@ -334,7 +336,11 @@ class LocalStorageCache {
         })
 
 
-        window.addEventListener('beforeunload', () => this[directUpdate]())
+        window.addEventListener('beforeunload', () => {
+            if (this[dirty]) {
+                this[directUpdate]()
+            }
+        })
 
     }
 
@@ -362,9 +368,14 @@ class LocalStorageCache {
 
     [directUpdate] = () => {
         localStorage.setItem('jsonrpc-cache', JSON.stringify(this[data]))
+        this[dirty] = false;
     }
 
-    [update] = new DelayedAction(this[directUpdate], 250, 3000); // If the delay is too much, then the user could navigate from one page to another with unsaved data, 
+    [update0] = new DelayedAction(this[directUpdate], 250, 3000); // If the delay is too much, then the user could navigate from one page to another with unsaved data, 
+    [update] = () => {
+        this[dirty] = true;
+        this[update0]()
+    }
 
     /** @type {import("./json-rpc/types.js").JSONRPCCache['get']} */
     get(method, params) {
