@@ -133,22 +133,8 @@ export default class FileManager {
                 urls = urls.filter(x => x !== aUrl)
             }
         }
-        if (
-            urls.some(
-                u => this[map][url].links.findIndex(x => x == u) == -1
-            )
-        ) {
-            this[map][url].version.grand = Date.now()
-        }
 
         this[map][url].links = [...new Set([...this[map][url].links, ...urls])]
-
-        // Now, find URLs that are linked to this one, and update their grand version
-        for (const item in this[map]) {
-            if (this[map][item].links.findIndex(x => x == url) !== -1) {
-                this[map][item].version.grand = Date.now()
-            }
-        }
 
         this[scheduleUpdate]()
     }
