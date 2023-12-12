@@ -1,5 +1,4 @@
 .
 
-Improved the file versioning algorithm.
+Increased json-rpc's delay tolerance, to accomodate slow network conditions.
 
-Updated to the latest version of html-hc, with better UX, and code quality.

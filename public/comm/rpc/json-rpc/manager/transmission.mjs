@@ -537,7 +537,7 @@ export default class TransmissionManager {
     }
 
     static get expectedMethodTimeLocal() {
-        return 500;
+        return 1500;
     }
 
     static get expectedMethodTimeRemote() {
