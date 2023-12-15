@@ -86,7 +86,7 @@ export class JSONRPCManager extends CleanEventTarget {
                 if (this.json_rpc.flags.first_arguments && !isInternal) {
                     args.push(...this.json_rpc.flags.first_arguments)
                 }
-                args.push(...object.call.params)
+                args.push(...(object.call.params || []))
                 if (typeof method !== 'function') {
                     throw { stack: `${object.call.method} is not a function.` }
                 }
@@ -159,7 +159,7 @@ export class JSONRPCManager extends CleanEventTarget {
                             // Send a packet requesting for loop data
                             manager.transmission.doOutput(
                                 {
-                                    jsonrpc: '3.0',
+                                    // jsonrpc: '3.0',
                                     id,
                                     loop: {
                                         request: {

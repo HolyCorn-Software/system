@@ -96,21 +96,21 @@ export default class TransmissionManager {
         if (shouldCancel()) {
             clearTimeout(this[ACK_TIMEOUT])
             this[ACK_TASK].time.updated = Date.now()
-            this[ACK_TIMEOUT] = new DelayedAction(() => {
+            this[ACK_TIMEOUT] = setTimeout(() => {
                 //Now, if we are finally here, it is time to send acknowledgements for real
                 const ids = new Set(this[ACK_QUEUE])
                 this.doOutput(
                     {
                         id: uuid(),
-                        jsonrpc: '3.0',
+                        // jsonrpc: '3.0',
                         ack: {
-                            ids,
+                            ids: [...ids],
                         }
                     }
                 );
                 // Remove the processed ACKs
-                this[ACK_QUEUE] = this[ACK_QUEUE].filter(x => !ids.has(x))
-            }, 50, 1000)
+                this[ACK_QUEUE] = [... new Set(this[ACK_QUEUE].filter(x => !ids.has(x)))]
+            }, 150)
         }
     }
     /**
@@ -306,11 +306,11 @@ export default class TransmissionManager {
         // Loop being returned
         this.doOutput(
             {
-                jsonrpc: '3.0',
+                // jsonrpc: '3.0',
                 id: id,
                 return: {
                     type: 'loop',
-                    method: packet.call.method,
+                    // method: packet.call.method,
                     message: packet.id
                 }
             }
@@ -369,7 +369,7 @@ export default class TransmissionManager {
                 this.doOutput(
                     {
                         id: uuid(),
-                        jsonrpc: '3.0',
+                        // jsonrpc: '3.0',
                         loop: {
                             output: {
                                 data: buffer,
@@ -390,7 +390,7 @@ export default class TransmissionManager {
                 this.doOutput(
                     {
                         id: uuid(),
-                        jsonrpc: '3.0',
+                        // jsonrpc: '3.0',
                         loop: {
                             output: {
                                 error: { ...err, stack: err.stack, message: err.message, name: err.name },
@@ -425,7 +425,7 @@ export default class TransmissionManager {
                 //Let's simply reply, saying that the loop is over
                 this.doOutput(
                     {
-                        jsonrpc: '3.0',
+                        // jsonrpc: '3.0',
                         id: uuid(),
                         loop: {
                             output: {
@@ -482,11 +482,11 @@ export default class TransmissionManager {
         //Normal data being returned
         this.doOutput(
             {
-                jsonrpc: '3.0',
+                // jsonrpc: '3.0',
                 id: uuid(),
                 return: {
                     data: data,
-                    method: packet.call.method,
+                    // method: packet.call.method,
                     type: 'data',
                     message: packet.id,
                     ...additional
@@ -503,7 +503,7 @@ export default class TransmissionManager {
     activeObjectReply(result, object) {
         this.doOutput(
             {
-                jsonrpc: '3.0',
+                // jsonrpc: '3.0',
                 id: uuid(),
                 return: {
                     data: JSONRPC.ActiveObject.getStaticData(result),
@@ -523,7 +523,7 @@ export default class TransmissionManager {
      */
     sendError(error, packet) {
         this.doOutput({
-            jsonrpc: '3.0',
+            // jsonrpc: '3.0',
             id: uuid(),
             return: {
                 message: packet.id,

@@ -447,6 +447,10 @@ class ReloadConfirmWidget {
                     font-weight: bolder;
                 }
 
+                .hc-sw-reload-confirm >.container >.actions >.action{
+                    cursor: pointer;
+                }
+
                 /** Now, for the logic of showing, and hiding */
                 .hc-sw-reload-confirm >.container{
                     transform: translateY(10em);

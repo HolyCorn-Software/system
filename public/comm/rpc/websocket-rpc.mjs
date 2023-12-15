@@ -125,7 +125,9 @@ export default class ClientJSONRPC extends JSONRPC {
                     old_socket_buffer.push(ev.data)
                 } else {
                     //Else, the reconnection has already happened, so we can forward the data
-                    // this.socket.send(ev.data)
+                    if (this.socket) {
+                        this.socket.send(ev.data)
+                    }
                     console.warn(`This message `, ev.data, ` might be lost forever`)
                 }
             }, {

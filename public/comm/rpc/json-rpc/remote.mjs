@@ -120,12 +120,12 @@ class JSONRPCRemoteObject {
 
                             manager.transmission.doOutput(
                                 {
-                                    jsonrpc: '3.0',
+                                    // jsonrpc: '3.0',
                                     id,
                                     call: {
                                         method: methodName,
-                                        params: args,
-                                        stack: manager.json_rpc.flags.expose_stack_traces ? stack : undefined
+                                        params: args.length == 0 ? undefined : args,
+                                        // stack: manager.json_rpc.flags.expose_stack_traces ? stack : undefined
                                     },
                                 }
                             );
