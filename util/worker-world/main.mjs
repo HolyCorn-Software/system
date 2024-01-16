@@ -359,6 +359,7 @@ class TaskGroup {
 
     destroy() {
         this[killed] = true
+        this[watcher].removeAllListeners()
         this[watcher].close().catch(e => console.warn(`Error closing watcher\n`, e))
         this[workers] = []
     }

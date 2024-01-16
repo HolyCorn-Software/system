@@ -117,7 +117,14 @@ export class BaseToFacultyRemoteMethods {
 
 
 
-    serverHello() {
+
+    /**
+     * 
+     * @param {import('../../lib/libFaculty/faculty.mjs').Faculty} calling_faculty 
+     * @returns 
+     */
+    serverHello(calling_faculty) {
+        calling_faculty.initPromise.resolve()
         return 'Hi !';
     }
 

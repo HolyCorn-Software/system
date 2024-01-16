@@ -231,7 +231,7 @@ const connect_and_auth = async (url) => {
         }).catch(e => {
             //If during reconnection, we could not authenticate, we destroy the connection and let a new one form organically
             client.socket?.close()
-            setTimeout(() => client.reconnect().catch(() => console.log(`Reconnection Error!!`)), 2000);
+            setTimeout(() => client.reconnect().catch((e) => console.log(`Reconnection Error!!`, e)), 2000);
         })
 
     });
@@ -252,6 +252,10 @@ const connect_and_auth = async (url) => {
 
 /** @type {Promise<void>} */
 let pending_session_auth_promise;
+AggregateRPCProxy.session_auth_done = false;
+
+const getLastSessionAuth = () => new Number(localStorage.getItem('hc-last-session-auth') ?? '0').valueOf()
+const updateLastSessionAuth = () => localStorage.setItem('hc-last-session-auth', Date.now())
 
 
 /**
@@ -260,14 +264,30 @@ let pending_session_auth_promise;
  */
 const session_auth = async (connection) => {
 
+    if (AggregateRPCProxy.session_auth_done) {
+        return true;
+    }
+
+    let cookieManager = new CookieManager();
+    const cookie = cookieManager.getCookie(SESSION_COOKIE_NAME);
+
+    try {
+        if (((Date.now() - getLastSessionAuth()) < 30 * 60_000) && (typeof cookie) !== 'undefined') {
+            // If the last time session authentication was done, is less than 30mins ago, then we skip it.
+            return AggregateRPCProxy.session_auth_done = true
+        }
+    } catch (e) {
+        console.warn(e)
+    }
+
 
     if (pending_session_auth_promise) {
-        //If another caller called the session_auth() method, wait for it to finish, or for 3 ms, which ever comes first. This is to reduce collisions
+        //If another caller called the session_auth() method, wait for it to finish, or for 500ms, which ever comes first. This is to reduce collisions
         try {
 
             await Promise.race(
                 [
-                    await new Promise(x => setTimeout(x, 3)),
+                    await new Promise(x => setTimeout(x, 500)),
                     await pending_session_auth_promise
                 ]
             );
@@ -282,23 +302,26 @@ const session_auth = async (connection) => {
             //The actual act of connecting
             new Promise(async (done) => {
 
-                let cookieManager = new CookieManager();
 
                 let auth = await connection.$session.sessionAuth({
-                    cookie: cookieManager.getCookie(SESSION_COOKIE_NAME)
+                    cookie
                 });
 
-                cookieManager.setCookie(auth.cookieName, auth.cookieValue, { expires: auth.expires });
+                cookieManager.setCookie(SESSION_COOKIE_NAME, auth.cookieValue || cookie, { expires: auth.expires });
 
                 pending_session_auth_promise = undefined;
 
                 clearTimeout(auth_timeout_key)
                 done(auth.cookieValue)
+                AggregateRPCProxy.session_auth_done = true
+                updateLastSessionAuth()
             }),
 
             //A timeout for the connection (9s)
             new Promise((ok, reject) => {
-                auth_timeout_key = setTimeout(() => reject(new Error('Timeout connecting to server')), 9000)
+                const error = new Error('Timeout connecting to server');
+                error.accidental = true
+                auth_timeout_key = setTimeout(() => reject(error), 9000)
             })
         ]
     )

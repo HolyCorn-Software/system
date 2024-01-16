@@ -3,6 +3,7 @@
  * This module allows both faculties and the Base Platform to serve clients via rpc over websockets
  */
 
+import { Cookies } from '../../lib/nodeHC/http/cookies.js';
 import { Session } from '../../http/session/session.js';
 import JSONRPC from './json-rpc.mjs';
 
@@ -55,6 +56,14 @@ export class SocketPublicJSONRPC extends JSONRPC {
      */
     async resumeSessionFromMeta() {
         try {
+            if (!this.meta.hcSessionId) {
+                // If this client did not explicitly session-authenticate, let's get it from his cookie headers
+                const session = await Session.getFromCookie(
+                    (Cookies.parseCookieString(this.socketClient.request.headers.cookie))[Session.cookieName]
+                );
+                this.meta.hcSessionId = session.id
+                return session
+            }
             let session = new Session({ id: this.meta.hcSessionId })
             return session;
         } catch (e) {

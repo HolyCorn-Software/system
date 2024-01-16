@@ -413,16 +413,16 @@ export default class BundleCacheServer {
                         const done = () => {
                             if (zipOK && fileOK) {
                                 resolve()
+                                zipStream.removeAllListeners()
+                                fileStream.removeAllListeners()
                             }
                         }
                         zipStream.once('end', () => {
                             zipOK = true
-                            zipStream.removeAllListeners()
                             done()
                         })
                         fileStream.once('finish', () => {
                             fileOK = true
-                            fileStream.removeAllListeners()
                             done()
                         })
                     })

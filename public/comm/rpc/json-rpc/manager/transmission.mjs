@@ -7,16 +7,15 @@
  */
 
 import { JSONRPCManager } from "./manager.mjs";
-import uuid from '../../../uuid/uuid.mjs'
-import DelayedAction from "../../../../html-hc/lib/util/delayed-action/action.mjs";
+import uuid from '../uuid.mjs'
 import JSONRPC from '../json-rpc.mjs'
+import DelayedAction from "../../../../html-hc/lib/util/delayed-action/action.mjs";
 
 const ACK_QUEUE = Symbol(`ACK_QUEUE`)
-const PENDING_CALLS = Symbol(`PENDING_CALLS`)
-const ACK_TASK = Symbol(`ACK_TASK`)
-const ACK_TIMEOUT = Symbol(`ACK_TIMEOUT`)
+const REAL_SEND_ACK = Symbol(`ACK_TIMEOUT`)
 const ON_OUTPUT = Symbol()
 const OUTBOUND_CALLS = Symbol()
+const PENDING_CALLS = Symbol()
 
 
 export default class TransmissionManager {
@@ -28,14 +27,14 @@ export default class TransmissionManager {
     constructor(manager) {
 
 
-        /** @type {import("./types.js").ACKTask} */ this[ACK_TASK];
-
         this.manager = manager;
 
         /** @type {string[]} a list of acknowledgements that need to be made */ this[ACK_QUEUE] = [];
 
 
         /** @type {string[]} Contains a list of id's of the last 512 function calls. This helps prevent double calling of a function, all in the name of transmission error */
+        this[PENDING_CALLS];
+
         this[PENDING_CALLS] = new Proxy([], {
 
             set: (target, property, value) => {
@@ -48,10 +47,10 @@ export default class TransmissionManager {
 
         });
 
-        /** @type {string[]} Calls that are going to the server */
+        /** @type {import("../types.js").JSONRPCMessage[]} Calls that are going to the server */
         this[OUTBOUND_CALLS] = [];
 
-        /** @type {function(JSONRPCMessage)} This method is used internally to prepare data and eventually send it*/ this[ON_OUTPUT]
+        /** @type {function(input:import("../types.js").JSONRPCMessage)} This method is used internally to prepare data and eventually send it*/ this[ON_OUTPUT]
         Object.defineProperty(this, ON_OUTPUT, {
             value: (d) => {
                 let error = new Error();
@@ -66,6 +65,10 @@ export default class TransmissionManager {
                     throw e
                 }
             }
+        });
+
+        manager.json_rpc.addEventListener('reinit', () => {
+            this[PENDING_CALLS].forEach(obj => this[ON_OUTPUT](obj))
         })
     }
 
@@ -78,41 +81,24 @@ export default class TransmissionManager {
 
         this[ACK_QUEUE].push(callID)
 
+        this[REAL_SEND_ACK]()
+    }
 
-        if (!this[ACK_TASK]) {
+    [REAL_SEND_ACK] = new DelayedAction(() => {
 
-            this[ACK_TASK] = {
-                time: {
-                    created: Date.now(),
-                    updated: Date.now()
+        const ids = new Set(JSON.parse(JSON.stringify(this[ACK_QUEUE])))
+        this.doOutput(
+            {
+                // id: uuid(),
+                // jsonrpc: '3.0',
+                ack: {
+                    ids: [...ids],
                 }
             }
-        }
-
-        //Now, if there's already a pending ACK task, cancel it (if at all we should cancel it)
-
-        const shouldCancel = () => (Date.now() - (this[ACK_TASK]?.time?.created || 0)) < TransmissionManager.expectedMethodTimeLocal
-
-        if (shouldCancel()) {
-            clearTimeout(this[ACK_TIMEOUT])
-            this[ACK_TASK].time.updated = Date.now()
-            this[ACK_TIMEOUT] = setTimeout(() => {
-                //Now, if we are finally here, it is time to send acknowledgements for real
-                const ids = new Set(this[ACK_QUEUE])
-                this.doOutput(
-                    {
-                        id: uuid(),
-                        // jsonrpc: '3.0',
-                        ack: {
-                            ids: [...ids],
-                        }
-                    }
-                );
-                // Remove the processed ACKs
-                this[ACK_QUEUE] = [... new Set(this[ACK_QUEUE].filter(x => !ids.has(x)))]
-            }, 150)
-        }
-    }
+        );
+        // Remove the processed ACKs from the queue
+        this[ACK_QUEUE] = [... new Set(this[ACK_QUEUE].filter(x => !ids.has(x)))]
+    }, TransmissionManager.expectedMethodTimeRemote * 0.4, TransmissionManager.expectedMethodTimeRemote * 0.7)
     /**
      * This method cancels the intention to send a particular ACK
      * @param {string} id 
@@ -129,7 +115,7 @@ export default class TransmissionManager {
      * This method limits the number of pending calls, ensures that ACKs are sent
      * 
      * The return of this method tells us if the manager should process this packet or not
-     * @param {JSONRPCMessage} object 
+     * @param {import("../types.js").JSONRPCMessage} object 
      * @returns {boolean}
      */
     accept(object) {
@@ -146,7 +132,7 @@ export default class TransmissionManager {
 
 
         // So, if the incoming message was denoting the returns of a function
-        if ((typeof object.return !== 'undefined') || (object.loop?.request)) {
+        if ((typeof object.return !== 'undefined') || (object.loop?.output)) {
             //Then we can send an ACK for the message return
             this.sendACK(object.id)
             //We don't need to try re-sending this ACK because if no RETURN_ACK is received by the server, then it will re-send the return, and we will re-send an ACK
@@ -199,7 +185,7 @@ export default class TransmissionManager {
         let startTime = Date.now();
 
         // First things first, let's not overwhelm the remote party with too many function calls
-        if ((typeof object.call !== 'undefined') && (this[OUTBOUND_CALLS].length > 32)) { //Let's not have too many concurrent calls
+        if ((typeof object.call !== 'undefined' || typeof object.loop?.request !== 'undefined') && (this[OUTBOUND_CALLS].length > 32)) { //Let's not have too many concurrent calls
             await new Promise((done, failed) => {
                 let interval = setInterval(() => {
                     if (this[OUTBOUND_CALLS].length < (this.manager.json_rpc.flags?.max_outbound_calls ?? Infinity)) {
@@ -227,10 +213,10 @@ export default class TransmissionManager {
 
 
         //Now, if what we just sent was a function call, we should be receiving an ACK, a resolve, or a reject in less than 5s
-        if (watchACK || (typeof object.call !== 'undefined') || (typeof object.return !== 'undefined')) {
+        if (watchACK || (typeof object.call !== 'undefined') || (typeof object.return !== 'undefined') || (typeof object.loop?.request !== 'undefined')) {
             const isCall = (typeof object.call !== 'undefined')
             if (object.call) {
-                this[OUTBOUND_CALLS].push(object.id)
+                this[OUTBOUND_CALLS].push(object)
             }
 
             new Promise((resolve, reject) => {
@@ -251,9 +237,7 @@ export default class TransmissionManager {
                     for (const event of events) {
                         this.manager.removeEventListener(`${event}-${object.id}`, cleanup)
                     }
-                    if (isCall) {
-                        this[OUTBOUND_CALLS] = this[OUTBOUND_CALLS].filter(x => x !== object.id);
-                    }
+                    this[OUTBOUND_CALLS] = this[OUTBOUND_CALLS].filter(x => x.id !== object.id);
 
                     //Done with cleanup
 
@@ -266,10 +250,15 @@ export default class TransmissionManager {
                     }
                 }
 
+                const fail = e => {
+                    reject(e)
+                    cleanup() // Even though cleanup() calls resolve(), we won't have a problem, as a promise is settled once.
+                }
+
                 for (const event of events) {
                     this.manager.addEventListener(`${event}-${object.id}`, cleanup, { once: true, cleanup })
                 }
-                setTimeout(reject, TransmissionManager.expectedMethodTimeRemote)
+                setTimeout(fail, TransmissionManager.expectedMethodTimeRemote)
 
             }).catch(() => {
                 //Now that no ACK was received, and we have neither a resolve or a reject, then well, the server didn't see the message
@@ -374,7 +363,7 @@ export default class TransmissionManager {
                             output: {
                                 data: buffer,
                                 done,
-                                message: event.detail.id
+                                message: event?.detail.id
                             }
                         }
                     },

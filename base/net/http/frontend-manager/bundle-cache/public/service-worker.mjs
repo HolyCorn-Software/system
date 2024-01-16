@@ -306,6 +306,12 @@ class SWControllerClient {
                     this.events.dispatchEvent(new Event('storage-set'))
                     break;
                 }
+
+                case 'forcedUpdate': {
+                    console.log(`Doing forced update of `, event.data.origin)
+                    grandUpdate(event.data.origin, false, true);
+                    break;
+                }
             }
 
         })
@@ -321,16 +327,13 @@ class SWControllerClient {
     }
 
     async setStorage() {
-        console.trace(`Sending entire storage from sw, as `, storageObject)
         this[channel].postMessage({ type: 'setStorage', data: storageObject })
     }
     async updateStorage() {
         this[channel].postMessage({ type: 'getStorage' })
         await new Promise(resolve => {
             this.events.addEventListener('storage-set', resolve, { once: true })
-            console.log(`What we requested for, has been given.`)
         })
-        // await new Promise(x => setTimeout(x, 5000))
     }
 
     /**
@@ -425,9 +428,10 @@ const grandUpdates = {}
  * It doesn't check if the update is deserved
  * @param {string} source 
  * @param {boolean} shouldLoad
+ * @param {boolean} ignoreCachedGrandVersionInfo
  * @returns {Promise<void>}
  */
-async function grandUpdate(source, shouldLoad) {
+async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
     const path = new URL(source).pathname
 
     await waitForAllGrandTasks()
@@ -504,7 +508,7 @@ async function grandUpdate(source, shouldLoad) {
         }
     }
 
-    if (await grandVersionOkay(source, shouldLoad)) {
+    if (await grandVersionOkay(source, shouldLoad, ignoreCachedGrandVersionInfo)) {
         return;
     }
 
@@ -853,15 +857,24 @@ const grandVersionCheckTasks = {}
  * that information to mitigate delays, by returning immediately
  * @param {string} origin 
  * @param {boolean} shouldLoad
+ * @param {boolean} ignoreCachedGrandVersionInfo
  * @returns {Promise<boolean>}
  */
-async function grandVersionOkay(origin, shouldLoad) {
+async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo) {
 
 
     const path = new URL(origin).pathname
 
 
-    if (((Date.now() - (lastGrandVersionCheck[path]?.time || 0)) < 20_000) && lastGrandVersionCheck[path].results == true) {
+    // Ignore new checks to the grand version, if
+    if (
+        // The last time we checked was not too long ago.
+        (
+            (Date.now() - (lastGrandVersionCheck[path]?.time || 0)) < ignoreCachedGrandVersionInfo ? 2000 : 20_000
+            // If we've been asked to ignore the cached grand version check, we'll do so, but only if the cached information is older than 2s
+        )
+        && lastGrandVersionCheck[path]?.results == true
+    ) {
         return lastGrandVersionCheck[path].results
     }
 
@@ -887,9 +900,11 @@ async function grandVersionOkay(origin, shouldLoad) {
         const checkPromise = (async () => {
 
 
-            const MAX_TIME = 1_000
 
             const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
+            // The maximum time to query the server about the grand version, is dependent on how far the last known server version is, from our current time, capped at 10s.
+            // However, we can allow up to 100s if we've been asked to ignore this info. At least, that's tantamount to ignoring it.
+            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.max((Date.now() - knownRemoteVersion) * 0.01, 10_000)
             const remoteVersion =
                 await Promise.race(
                     [
@@ -913,9 +928,6 @@ async function grandVersionOkay(origin, shouldLoad) {
 
             // We're up-to-date, when we know, that the local version is above the remote version, and remote version has really not changed
             const res = lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion)
-            if (!res) {
-                console.log(`remote version: ${remoteVersion}, known remote version: ${knownRemoteVersion}; localVersion: ${localVersion}`)
-            }
             return res
 
         })()

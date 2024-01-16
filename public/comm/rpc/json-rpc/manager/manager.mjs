@@ -7,7 +7,7 @@
 
 import JSONRPC from "../json-rpc.mjs";
 import TransmissionManager from "./transmission.mjs";
-import uuid from '../../../uuid/uuid.mjs'
+import uuid from '../uuid.mjs'
 import CleanEventTarget from "../clean-event-target.mjs";
 
 

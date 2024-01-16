@@ -33,7 +33,7 @@ async function init() {
             let updated = false
             for (const reg of await navigator.serviceWorker.getRegistrations()) {
                 updated = true
-                reg.update()
+                await reg.update()
             }
 
 
@@ -51,6 +51,8 @@ async function init() {
             // The service-worker will ask this page to continue loading normally
             //But, if it fails, we have a plan B
             setTimeout(() => loadNormally(), 500)
+
+            control.scheduleForcedUpdate()
 
         } catch (e) {
             console.error(`Could not install service worker\n`, e)
@@ -174,6 +176,21 @@ class SWControllerServer {
                 }
             }
         })
+    }
+
+    async scheduleForcedUpdate() {
+        // Put a task in the background, to forcefully get the latest version of the page
+        setTimeout(() => {
+            this[channel].postMessage(
+                {
+                    type: 'forcedUpdate',
+                    origin: window.location.href.replace(window.location.hash, "").replace(window.location.search, '')
+                }
+            );
+
+            // And then subsequently, check for updates every 10mins.
+            setTimeout(() => this.scheduleForcedUpdate(), 10 * 60_000)
+        }, 75_0) // 1min, 15s, after page load, we ask the service worker to forcefully check if there's an update
     }
 
     async sendUpdates() {
@@ -412,8 +429,8 @@ class ReloadConfirmWidget {
                     <div class='message'>Some things have changed. Please reload to enjoy the update.</div>
                 </div>
                 <div class='actions'>
-                    <div class='reload'>Reload</div>
-                    <div class='ignore'>Ignore</div>
+                    <div class='reload action'>Reload</div>
+                    <div class='ignore action'>Ignore</div>
                 </div>
             </div>
 

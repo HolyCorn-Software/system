@@ -10,7 +10,7 @@ import { JSONRPCManager } from './manager/manager.mjs';
 import JSONRPCRemote from './remote.mjs';
 import JSONRPCDefaultStub from './stub.mjs';
 
-import uuid from '../../uuid/uuid.mjs'
+import uuid from './uuid.mjs'
 import CleanEventTarget from './clean-event-target.mjs';
 import EventChannelServer from './event-channel/server/sever.mjs';
 import EventChannelClient from './event-channel/client.mjs';
@@ -264,7 +264,7 @@ export default class JSONRPC extends CleanEventTarget {
                  * This initializes an object that can be used on the frontend, like it was there.
                  * A consumer can call any of the functions on the object
                  * @param {T} object 
-                 * @param {ActiveObjectConfig} config 
+                 * @param {import('./types.js').ActiveObjectConfig} config 
                  */
                 constructor(object, config = {}) {
                     super()

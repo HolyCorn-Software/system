@@ -4,13 +4,3 @@
  * This module contains type definitions for the json-rpc/manager module
  */
 
-
-/**  */
-export interface ACKTask {
-
-    time: {
-        created: number
-        updated: number
-    }
-
-}

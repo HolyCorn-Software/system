@@ -110,8 +110,6 @@ export default class ClientJSONRPC extends JSONRPC {
         }
 
 
-        let old_socket_buffer = []
-
         //But, before reconnecting, intercept the messages from the old socket, so that once the new socket becomes created, the messages will be sent over
         let old_socket = this.socket
 
@@ -122,7 +120,6 @@ export default class ClientJSONRPC extends JSONRPC {
                     //If the same socket via which the data was sent (ev.target) is the same as the current socket (this.socket), 
                     //then we have not yet reconnected 
                     console.warn(`Not yet connected`)
-                    old_socket_buffer.push(ev.data)
                 } else {
                     //Else, the reconnection has already happened, so we can forward the data
                     if (this.socket) {
@@ -164,9 +161,14 @@ export default class ClientJSONRPC extends JSONRPC {
      * @returns {Promise<ClientJSONRPC>}
      */
     static async connect(url, cache) {
-        const client = new ClientJSONRPC(await this.socketConnect(url))
-        client.flags.cache = cache
-        return client
+        try {
+            const client = new ClientJSONRPC(await this.socketConnect(url))
+            client.flags.cache = cache
+            return client
+        } catch (e) {
+            e.accidental = true
+            throw e
+        }
     }
 
 

@@ -9,6 +9,12 @@ import { Faculty } from '../lib/libFaculty/faculty.mjs';
 
 const faculties = Symbol()
 
+const promiseTimeout = Symbol()
+
+const promises = Symbol()
+
+const initDoneResolve = Symbol()
+
 
 export class BasePlatformFacultiesAPI {
 
@@ -30,12 +36,33 @@ export class BasePlatformFacultiesAPI {
 
         this.events = new FacultiesEventAPI(this)
 
+
+        this.initDone = new Promise((resolve) => {
+            this[initDoneResolve] = resolve
+        })
+
+        /** @type {Promise[]} */
+        this[promises] = []
+
     }
 
     async add(path) {
         //Start a faculty
         let faculty = new Faculty(path);
-        await faculty.start(this.base);
+        const promise = faculty.start(this.base);
+
+
+        // Let's postpone the initDone promise to resolve after the this faculty has initialized
+        clearTimeout(this[promiseTimeout])
+        await promise
+        this[promises].push(faculty.initPromise)
+
+        // Let's postpone to it when all other faculties (including this), are done completely initializing
+        this[promiseTimeout] = setTimeout(() => {
+            Promise.all(this[promises]).then(() => {
+                this[initDoneResolve]()
+            })
+        }, 2000)
 
         faculty.descriptor.resolveVariables()
 

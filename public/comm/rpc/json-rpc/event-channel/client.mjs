@@ -22,7 +22,7 @@ export default class EventChannelClient {
     /**
      * 
      * @param {JSONRPC} json_rpc 
-     * @param {()=>Promise<void>} init A method that will be called when the client initializes
+     * @param {(this: EventChannelClient)=>Promise<void>} init A method that will be called when the client initializes
      */
     constructor(json_rpc, init) {
 

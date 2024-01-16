@@ -52,7 +52,7 @@ export class PublicRPCSessionAPI {
         }
 
 
-        return { cookieName: Session.cookieName, cookieValue: session.cookie, expires: await session.getExpiryTime() }
+        return { cookieValue: session.cookie == cookie ? undefined : session.cookie, expires: await session.getExpiryTime() }
     }
 
     /**

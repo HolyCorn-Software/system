@@ -11,8 +11,10 @@
 
 import { JSONRPCManager } from "./manager/manager.mjs";
 
-import uuid from '../../uuid/uuid.mjs'
+import uuid from './uuid.mjs'
 import JSONRPC from "./json-rpc.mjs";
+
+const callPromises = Symbol()
 
 
 
@@ -27,6 +29,8 @@ export default class JSONRPCRemote {
     constructor(manager) {
 
         let getter_stack = /^ *(.+)/s.exec(new Error().stack.split('\n').slice(3,).join('\n'))[1]
+
+        manager[callPromises] = {}
 
 
         return new Proxy({}, {
@@ -209,35 +213,54 @@ class JSONRPCRemoteObject {
 
                     }
 
+                    // Whatever the case is, let's deal with one function call at a time.
 
-                    // First things first, is our info found in the cache?
-                    let cachedData;
                     try {
-                        cachedData = await manager.json_rpc.flags.cache?.get(methodName, args)
+                        await (manager[callPromises][methodName])
+                    } catch { }
 
-                        if (!cachedData || cachedData.expiry < Date.now()) {
-                            return freshExec().then(value => {
-                                resolve(value)
-                            }).catch(e => {
-                                if (e.accidental && cachedData) {
-                                    return resolve(cachedData.value)
+
+                    const makeCall = async () => {
+
+                        // First things first, is our info found in the cache?
+                        let cachedData;
+                        try {
+                            cachedData = await manager.json_rpc.flags.cache?.get(methodName, args)
+
+                            if (!cachedData || cachedData.expiry < Date.now()) {
+                                return freshExec().then(value => {
+                                    resolve(value)
+                                }).catch(e => {
+                                    if (e.accidental && cachedData) {
+                                        return resolve(cachedData.value)
+                                    }
+                                    reject(e)
+                                })
+                            }
+
+                            // Now, if found in the cache, we return it.
+                            resolve(cachedData.value)
+
+                        } catch {
+                            freshExec().then(resolve, (error) => {
+                                if (error?.code == 'system' || error == timeoutError) {
+                                    console.warn(`${timeoutError ? 'Time out' : 'System'} Error when calling ${methodName}, so we returned cached data`)
+                                    resolve(cachedData.value)
                                 }
-                                reject(e)
+
                             })
                         }
 
-                        // Now, if found in the cache, we return it.
-                        resolve(cachedData.value)
-
-                    } catch {
-                        freshExec().then(resolve, (error) => {
-                            if (error?.code == 'system' || error == timeoutError) {
-                                console.warn(`${timeoutError ? 'Time out' : 'System'} Error when calling ${methodName}, so we returned cached data`)
-                                resolve(cachedData.value)
-                            }
-
-                        })
                     }
+
+
+                    try {
+                        return await (manager[callPromises][methodName] = makeCall())
+                    } finally {
+                        delete manager[callPromises][methodName]
+                    }
+
+
                 });
 
 

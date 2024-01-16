@@ -12,5 +12,6 @@ export declare interface WebSocketFrameHeader {
     mask: Buffer
     type: ('binary' | 'text' | 'continue' | 'close' | 'special')
     payloadLength: number
+    buffer: Buffer
 
 }
