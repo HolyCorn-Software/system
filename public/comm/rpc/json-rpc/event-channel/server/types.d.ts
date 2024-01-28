@@ -26,21 +26,39 @@ global {
              * 
              * Aggregation is the situation where only one event is fired when multiple events arrive almost at the same time.
              */
-            aggregation: {
+            aggregation?: {
                 /** 
-                 * This is how long we ought to wait, to see if another event is coming.
+                 * This is how long we ought to wait, to see if another call is coming.
+                 * 
+                 * If this is not set, then the {@link precallWait} property would be considered, or a default 500ms delay would be considered.
                  */
-                timeout: number
+                timeout?: number
                 /**
                  * This field tells us how to judge that two events of the same name are similar.
                  * 
                  * If true, then two events can only be similar, if they carry the same data, and event names.
                  */
                 sameData?: boolean
+
+                /**
+                 * There are times when a task meets another, that's already on the way, without the possibility of cancelation.
+                 * If that happens, do we continue with the current task? 
+                 */
+                allowDuplicate?: boolean
             }
-            exclude: string[]
+            exclude?: string[]
             timeout?: number
+            /**
+             * This field determines how long the server should wait, if clients have not been found
+             */
             precallWait?: number
+
+            /**
+             * This field tells us how many clients are expected to be reached. 
+             * We'll wait untill we've had this number of clients, or the {@link precallWait} time has reached.
+             */
+            expectedClientLen?: number
+
             retries?: number
             retryDelay?: number
         }

@@ -105,7 +105,7 @@ export default class EventChannelServer extends CleanEventTarget {
         for (const id of ids) {
             if (this[clients][id]) {
                 for (const client of this[clients][id]) {
-                    if (exclude?.every(id => this[clients][id] != client) ?? true) {
+                    if ((exclude?.length ?? 0) == 0 && exclude.every(id => this[clients][id] != client)) {
                         clientList.add(client)
                     }
                 }
@@ -243,7 +243,7 @@ class ClientsRemoteProxy {
                     function equal(a, b) {
                         if ((a instanceof Event) && (b instanceof Event)) {
                             if (a.type == b.type) {
-                                return (!(options.aggregation.sameData) || equal(a.detail, b.detail))
+                                return ((!options.aggregation.sameData) || equal(a.detail, b.detail))
                             }
                             return false
                         }
@@ -255,15 +255,30 @@ class ClientsRemoteProxy {
                     if (currentOperation) {
                         // If there's another similar operation, which is not abortable, then let's abort this one
                         if (!currentOperation.abortable) {
-                            return
+                            if (!(options.aggregation?.allowDuplicate ?? true)) {
+                                return
+                            }
+                        } else {
+                            currentOperation.abort()
                         }
-                        currentOperation.abort()
+                    }
+
+                    // Now, wait for any other similar operation to abort this
+                    const localAbort = new AbortController()
+                    await new Promise((resolve) => {
+                        setTimeout(() => localAbort.abort(), options.aggregation?.timeout || 500)
+                        localAbort.signal.addEventListener('abort', resolve, { once: true })
+                        abortController.signal.addEventListener('abort', () => localAbort.abort(), { once: true, signal: localAbort.signal })
+                    })
+
+                    if (abortController.signal.aborted) {
+                        return // During our aggregation, some other operation canceled this one.
                     }
                 }
 
 
                 const destroy = () => {
-                    server[operations].filter(x => x != callStatus)
+                    server[operations] = server[operations].filter(x => x != callStatus)
                 }
 
 
@@ -281,21 +296,22 @@ class ClientsRemoteProxy {
                     async function findClients(id) {
                         const start = Date.now()
                         let clients;
-                        while ((clients = server[getClients]([id], options.exclude || [])).length == 0 && !abortController.signal.aborted) {
+                        const timeoutDuration = options.precallWait || 500
+                        while ((clients = server[getClients]([id], options.exclude || [])).length < (options.expectedClientLen || 2) && !abortController.signal.aborted) {
                             // Wait for the clients to be available
                             // To prevent constant checks every 100ms, we have also made 
                             // the server wait for at least, x milliseconds, 1/10th <= x <= 500
                             await new Promise(x => {
                                 const cleanup = () => {
                                     x()
-                                    clearTimeout(timeout)
+                                    clearTimeout(timeoutKey)
                                 }
-                                let timeout = setTimeout(cleanup, Math.floor(Math.min(Math.max(100, options.precallWait / 10), 500)))
+                                let timeoutKey = setTimeout(cleanup, Math.floor(Math.min(Math.max(100, timeoutDuration / 10), 500)))
                             })
                             if (abortController.signal.aborted) {
                                 throw new Error(`Operation aborted`)
                             }
-                            if (Date.now() - start > options.precallWait) {
+                            if (Date.now() - start > timeoutDuration) {
                                 break
                             }
                         }

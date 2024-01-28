@@ -196,6 +196,7 @@ export class FacultyFacultyInterface {
 
             let doDescribe = async () => {
                 try {
+                    await new Promise(x => setTimeout(x, Math.random() * 10))
                     await this.remote.$faculty_describe(FacultyPlatform.get().descriptor)
                     this.sent_handshake = true
                 } catch (e) {
@@ -209,7 +210,7 @@ export class FacultyFacultyInterface {
                     label: `Sending description of ${FacultyPlatform.get().descriptor.label} to another faculty`,
                     callInterval: 200,
                     maxTries: 50,
-                    timeout: 500
+                    timeout: 1500
                 })
             } catch (e) {
                 failed(e);
