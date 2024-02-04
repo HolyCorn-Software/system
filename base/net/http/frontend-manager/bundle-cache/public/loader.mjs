@@ -6,13 +6,18 @@
 */
 
 let pageCompleteValue;
+let pageCompleteTime;
 function pageComplete() {
     const compute = () => {
         if ([...document.body.children].filter(x => (x.tagName !== 'SCRIPT') && x != loader.html).length > 0) {
             return pageCompleteValue = true
         }
     }
-    return pageCompleteValue || compute()
+    const value = pageCompleteValue || compute();
+    if (value && !pageCompleteTime) {
+        pageCompleteTime = Date.now()
+    }
+    return value
 }
 
 
@@ -46,16 +51,19 @@ async function init() {
             control.sendUpdates()
 
             if (updated) {
-                loadNormally()
+                setTimeout(() => loadNormally(), 2000)
+            } else {
+
+                // The service-worker will ask this page to continue loading normally
+                //But, if it fails, we have a plan B
+                setTimeout(() => loadNormally(), 500)
+
             }
-            // The service-worker will ask this page to continue loading normally
-            //But, if it fails, we have a plan B
-            setTimeout(() => loadNormally(), 500)
 
             control.scheduleForcedUpdate()
 
         } catch (e) {
-            console.error(`Could not install service worker\n`, e)
+            console.error(`Could not install service worker.\n`, e)
             loadNormally()
         }
     } else {
@@ -136,9 +144,12 @@ class SWControllerServer {
                 }
 
                 case 'reload': {
-                    console.log(`About to reload origin `, event.data.origin)
                     if (window.location.href !== event.data.origin) {
                         return
+                    }
+                    if ((Date.now() - pageCompleteTime) < 5000) {
+                        window.location.reload()
+                        return;
                     }
                     try {
                         reloadConfirm.show()
@@ -190,7 +201,7 @@ class SWControllerServer {
 
             // And then subsequently, check for updates every 10mins.
             setTimeout(() => this.scheduleForcedUpdate(), 10 * 60_000)
-        }, 75_0) // 1min, 15s, after page load, we ask the service worker to forcefully check if there's an update
+        }, 75_000) // 1min, 15s, after page load, we ask the service worker to forcefully check if there's an update
     }
 
     async sendUpdates() {

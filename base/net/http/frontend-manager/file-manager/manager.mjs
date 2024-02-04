@@ -18,6 +18,7 @@ const removeConfigInfo = Symbol()
 const collection = Symbol()
 const frontendConfig = Symbol()
 const firstUpdate = Symbol()
+const postPoneFileCheck = Symbol()
 
 export default class FileManager {
 
@@ -59,7 +60,16 @@ export default class FileManager {
 
             await firstUpdatePromise;
 
-            await new Promise(x => setTimeout(x, 12_000))
+            // Wait until all file info has been reported.
+            await new Promise(x => {
+                let timeout;
+                this[postPoneFileCheck] = () => {
+                    clearTimeout(timeout)
+                    timeout = setTimeout(() => {
+                        x()
+                    }, 5000)
+                }
+            })
 
             await BasePlatform.get().bootTasks.wait().then(() => {
                 BasePlatform.get().compat.allDone().then(
@@ -111,6 +121,7 @@ export default class FileManager {
         this[updateConfigInfo](url, path)
         this[scheduleUpdate]()
         this[firstUpdate]?.()
+        this[postPoneFileCheck]?.()
         this.events.dispatchEvent(
             new CustomEvent('files-change')
         )
@@ -156,11 +167,26 @@ export default class FileManager {
         this[map][url].size = size
         this[map][url].path = path
 
+        // If the file that changed, is an auto-run file, then all HTML files should change
+        let isConfigFile = /frontend\.config\.json$/.test(url)
+
 
         for (const item in this[map]) {
             try {
                 if ((this[map][item].links ||= []).findIndex(x => x == url) !== -1) {
                     this[map][item].version.grand = now
+                } else {
+                    if (isConfigFile && FileManager.isHTML(item)) {
+                        try {
+                            /** @type {soul.http.frontendManager.fileManager.FrontendConfig} */
+                            const config = JSON.parse(libFs.readFileSync(this[map][item].path))
+                            if (config.autorun?.length > 0) {
+                                this[map][item].version.grand = now
+                            }
+                        } catch (e) {
+                            console.log(`config file ${path} changed, but we could not update HTML file ${this[map][item].path}, because `, e)
+                        }
+                    }
                 }
             } catch (e) {
                 throw e
@@ -169,6 +195,15 @@ export default class FileManager {
 
         // Now that several url versions have updated, let's persist that information
         this[scheduleUpdate]()
+    }
+
+    /**
+     * This method determines if a particular resource is an HTML page
+     * @param {string} url 
+     * @returns {boolean}
+     */
+    static isHTML(url) {
+        return url.endsWith('/') || url.endsWith('html')
     }
 
     /**

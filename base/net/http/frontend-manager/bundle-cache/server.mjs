@@ -344,13 +344,55 @@ export default class BundleCacheServer {
             }
             const related = this.getRelated(urlPath)
 
-            const bundlePath = libPath.normalize(`${this[bundlesPath]}/${urlPath}.related.zip`)
+            const pathRoot = libPath.normalize(`${this[bundlesPath]}/${urlPath}`)
+            const bundlePath = `${pathRoot}.related.zip`
+            const otherPaths = req.headers['x-bundle-cache-other-paths']
+            let specialExclude = {
+                bundlePath: '',
+                /** @type {ReturnType<this['fileManager']['getRelated']>[number][]} */
+                urlPaths: []
+            }
+
+            const exclShouldIncludeURL = (_url) => {
+                let url = toSafeZipPath(_url)
+                const res = (specialExclude.urlPaths.length > 0) && (specialExclude.urlPaths.findIndex(x => {
+                    const res = toSafeZipPath(x.url) == url
+                    return res
+                }) == -1)
+                return res
+            }
+
+            // And now, let's give the user a special privilege of excluding certain files from the bundle
+            if (otherPaths) {
+                try {
+                    const others = JSON.parse(Buffer.from(otherPaths, 'base64'))
+                    for (const item in others) {
+                        specialExclude.urlPaths.push(
+                            ...this.fileManager.getRelated(item).filter(uItem => {
+                                // uItem, is a URL, that's related to the grand path item.
+                                // We can only include uItem in the ignore list, if it's less updated than item
+                                return uItem.version.emperical < others[item]
+                            })
+                        )
+
+                    }
+                    specialExclude.bundlePath = `${pathRoot}.exc.${shortUUID.generate().substring(0, 5)}.zip`
+                } catch (e) {
+                    console.warn(`Error preventing exclusion of certain paths, from bundle\n`, e, `\nHeader: `, otherPaths)
+                }
+            }
+
+            const specialZipStream = specialExclude.urlPaths.length > 0 ? archiver.create('zip', { store: true }) : undefined
+            const specialFileStream = specialZipStream ? libFs.createWriteStream(specialExclude.bundlePath) : undefined
+            specialFileStream ? specialZipStream.pipe(specialFileStream) && console.log(`piped special file stream to special zip stream`) : undefined
+
+
             await libFs.promises.mkdir(libPath.dirname(bundlePath), { recursive: true })
             const grandVersion = this.fileManager.getGrandVersion(urlPath)
 
             const fileExists = libFs.existsSync(bundlePath)
 
-            const toSafeZipPath = path => `/${path.endsWith('/') ? `${path}.index` : path}`
+            const toSafeZipPath = path => !path ? path : `${path.startsWith('/') ? "" : '/'}${path.endsWith('/') ? `${path}.index` : path}`
 
             /**
              * This method file data, about a frontend resource entry
@@ -392,12 +434,28 @@ export default class BundleCacheServer {
                                 }
 
                                 const results = await getData(entry)
+                                const safeURL = toSafeZipPath(entry.url)
+
+                                const promises = []
+
+                                /**
+                                 * 
+                                 * @param {archiver.Archiver} archive 
+                                 */
+                                function zipAppend1(archive) {
+                                    return zipAppend(archive, results, safeURL, entry.version?.emperical || -1)
+                                }
 
 
-                                return zipStream.append(
-                                    results,
-                                    { name: toSafeZipPath(entry.url), stats: { mtimeMs: entry.version?.emperical || -1, mode: 775 } }
-                                )
+                                promises.push(zipAppend1(zipStream))
+
+                                // If there's need for some files to be excluded for the current user, and this path doesn't qualify exclusion, then add it
+                                if (exclShouldIncludeURL(entry.url)) {
+                                    promises.push(zipAppend1(specialZipStream))
+                                }
+
+
+                                return await Promise.all(promises)
                             } catch (e) {
                                 console.error(`Ouch!\nCould not fetch ${entry.url}\n`, e)
                             }
@@ -407,27 +465,66 @@ export default class BundleCacheServer {
                 ).then(async () => {
 
                     await new Promise(resolve => {
+                        let zipOKCount = 0;
+                        let zipOKTarget = 1
+                        let fileOKCount = 0;
+                        let fileOKTarget = 1;
+
                         zipStream.finalize()
-                        let zipOK
-                        let fileOK
-                        const done = () => {
-                            if (zipOK && fileOK) {
+                        specialZipStream?.finalize()
+                        specialZipStream ? zipOKTarget++ && fileOKTarget++ : undefined;
+
+                        const check = () => {
+                            if ((fileOKCount >= fileOKTarget) && (zipOKCount >= zipOKTarget)) {
                                 resolve()
                                 zipStream.removeAllListeners()
                                 fileStream.removeAllListeners()
+                                specialFileStream?.removeAllListeners()
+                                specialZipStream?.removeAllListeners()
                             }
                         }
                         zipStream.once('end', () => {
-                            zipOK = true
-                            done()
+                            zipOKCount++
+                            check()
                         })
+
                         fileStream.once('finish', () => {
-                            fileOK = true
-                            done()
+                            fileOKCount++
+                            check()
+                        });
+
+                        specialFileStream?.once('finish', () => {
+                            fileOKCount++
+                            check()
                         })
+
+                        specialZipStream?.once('end', () => {
+                            zipOKCount++
+                            check()
+                        })
+                        check()
                     })
                 })
             }
+
+            /**
+             * 
+             * @param {archiver.Archiver} archive 
+             * @param {Buffer} buffer
+             * @param {string} itemPath
+             * @param {number} itemModified
+             */
+            function zipAppend(archive, buffer, itemPath, itemModified) {
+
+                return archive.append(buffer, {
+                    name: itemPath,
+                    stats: {
+                        mtimeMs: itemModified,
+                        mode: 775,
+                    }
+                })
+            }
+
 
 
 
@@ -478,13 +575,16 @@ export default class BundleCacheServer {
                     );
 
                     for (const item of keepZip) {
-                        tmpZip.append(await item.buffer(), {
-                            name: toSafeZipPath(item.path),
-                            stats: {
-                                mtimeMs: item.lastModifiedDateTime.getTime(),
-                                mode: 775,
-                            }
-                        })
+                        const buffer = await item.buffer()
+                        const itemPath = toSafeZipPath(item.path)
+                        const itemModified = item.lastModifiedDateTime.getTime()
+
+                        zipAppend(tmpZip, buffer, itemPath, itemModified)
+
+                        if (exclShouldIncludeURL(itemPath)) {
+                            zipAppend(specialZipStream, buffer, itemPath, itemModified)
+                        }
+
                     }
 
 
@@ -497,16 +597,15 @@ export default class BundleCacheServer {
                                 }
                                 const results = await getData(nw)
 
-                                tmpZip.append(
-                                    results,
-                                    {
-                                        name: toSafeZipPath(nw.url),
-                                        stats: {
-                                            mtimeMs: nw.version.emperical,
-                                            mode: 775
-                                        }
-                                    }
-                                )
+                                const safeURLPath = toSafeZipPath(nw.url)
+                                const modifiedTime = nw.version.emperical
+
+                                zipAppend(tmpZip, results, safeURLPath, modifiedTime)
+
+                                if (exclShouldIncludeURL(nw.url)) {
+                                    zipAppend(specialZipStream, results, safeURLPath, modifiedTime)
+                                }
+
                             } catch (e) {
                                 console.error(`Could not add ${nw.url}\nto the archive\n`, e, `\n`)
                             }
@@ -519,6 +618,7 @@ export default class BundleCacheServer {
                     // Let's finalize things
 
                     await new Promise(resolve => {
+                        specialZipStream?.finalize()
                         tmpZip.finalize().catch(e => {
                             console.log(`Finalize failed!! `, e)
                         })
@@ -535,7 +635,8 @@ export default class BundleCacheServer {
                     const modStream = await this[filecache].writeAsStream(bundlePath);
                     await new Promise(async (resolve, reject) => {
                         (await libFs.createReadStream(tmpPath)).pipe(
-                            modStream
+                            modStream,
+                            { end: true }
                         ).addListener('close', resolve).addListener('error', reject)
                     });
 
@@ -549,6 +650,8 @@ export default class BundleCacheServer {
                         })
                     })
 
+                    libFs.rmSync(tmpPath)
+
                     console.log(`${bundlePath.yellow} updated to contain ${related.length} paths, instead of ${results.files.length}`)
 
 
@@ -560,6 +663,8 @@ export default class BundleCacheServer {
                     console.warn(`${bundlePath.cyan} stays constant at ${results.files.length}==${related.length} paths, despite a request to update`)
                 }
             }
+
+            let nothingNew;
 
             /**
              * This function is used to provide a synchronous execution of
@@ -583,8 +688,34 @@ export default class BundleCacheServer {
 
                 }
                 res.setHeader('X-bundle-cache-version', grandVersion)
-                // We're not including any cache, because stream length information may be incorrect
-                await HTTPServer.serveFile(bundlePath, res, bundlePath)
+
+                if (nothingNew && specialExclude.urlPaths.length > 0) {
+                    console.log(`Making a special bundle for the client `)
+                    const archive = await unzipper.Open.file(bundlePath)
+                    // console.log(`The remainder that would be included in the special zip `, remainder)
+                    for (const entry of archive.files) {
+                        if (exclShouldIncludeURL(entry.path)) {
+                            console.log(`Including ${entry.path}, for special reasons.`)
+                            zipAppend(specialZipStream, await entry.buffer(), entry.path, entry.lastModifiedTime)
+                        }
+                    }
+                    await specialZipStream.finalize()
+                    await new Promise(r => specialFileStream.once('finish', r))
+                    console.log(`Finally finished the special zip at `, specialExclude.bundlePath)
+                }
+
+
+
+                const finalPath = specialExclude.urlPaths.length > 0 ? specialExclude.bundlePath : bundlePath
+                try {
+                    await HTTPServer.serveFile(finalPath, res, finalPath)
+                } finally {
+                    setTimeout(() => {
+                        try {
+                            libFs.rmSync(specialExclude.bundlePath)
+                        } catch { }
+                    }, 2_000)
+                }
             }
 
 
@@ -592,7 +723,7 @@ export default class BundleCacheServer {
             let bundleStat;
             await doTask(
                 // File exists, and it's updated
-                fileExists && ((bundleStat = await libFs.promises.stat(bundlePath)).mtimeMs >= grandVersion)
+                fileExists && ((bundleStat = await libFs.promises.stat(bundlePath)).mtimeMs >= grandVersion) && (nothingNew = true)
                     ? () => {
                         // Do nothing, and simply serve
                     }

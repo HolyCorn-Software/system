@@ -6,7 +6,7 @@
  */
 
 
-console.log(`Okay, service worker working (v2) `);
+console.log(`Okay, service worker working (v2.1) `);
 
 const CACHE_NAME = 'bundle_cache0'
 
@@ -80,12 +80,16 @@ self.addEventListener('fetch', (event) => {
 
             const promise = (async () => {
                 async function checkGrandVersion() {
-                    if (await grandVersionOkay(source, false)) {
+                    if (await grandVersionOkay(source, false, undefined, true)) {
                         return true
                     }
-                    await grandUpdate(source, false)
+                    await Promise.race([grandUpdate(source, false), new Promise(x => setTimeout(x, 10_000))])
                 }
                 const grandCheckPromise = checkGrandVersion()
+                try {
+                    await grandCheckPromise
+                } catch (e) { }
+
                 try {
                     const response = await findorFetchResource(request, source);
 
@@ -93,7 +97,7 @@ self.addEventListener('fetch', (event) => {
                     // We check if the response was from cache, and the grand version was not okay.
                     // And ask the user to reload
                     grandCheckPromise.then(result => {
-                        if (!result && response.inCache) {
+                        if (response.inCache && isHTML(request.url)) {
                             controller.reload(source)
                         }
                     })
@@ -307,8 +311,8 @@ class SWControllerClient {
                     break;
                 }
 
+
                 case 'forcedUpdate': {
-                    console.log(`Doing forced update of `, event.data.origin)
                     grandUpdate(event.data.origin, false, true);
                     break;
                 }
@@ -383,6 +387,7 @@ class SWLoaderClient {
 }
 
 const loader = new SWLoaderClient()
+let lastStorageUpdate = 0
 
 class SWStorageClient {
 
@@ -395,7 +400,10 @@ class SWStorageClient {
      * @returns {Promise<string|number>}
      */
     async getKey(key) {
-        controller.updateStorage();
+        if (Date.now() - lastStorageUpdate > 5000) {
+            controller.updateStorage();
+            lastStorageUpdate = Date.now()
+        }
         return storageObject[key]
     }
 
@@ -460,19 +468,24 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
             // by sending the server information of the files we already have in cache
 
 
+            const otherPathVersions = Object.fromEntries(
+                Reflect.ownKeys(storageObject).filter(x => x.startsWith('/') && x.endsWith('-version') && !x.endsWith('-remote-version')).map(x => [x.split('-version')[0], storageObject[x]])
+            )
+
             const response = await fetch('/$/system/frontend-manager/bundle-cache/grand', {
                 method: 'GET',
                 headers: {
                     'x-bundle-cache-path': path,
-                    'x-bundle-cache-version': await storage.getKey(`${path}-version`)
+                    'x-bundle-cache-version': await storage.getKey(`${path}-version`),
+                    'x-bundle-cache-other-paths': btoa(JSON.stringify(otherPathVersions))
                 }
             });
 
             const nwVersion = Date.now()
 
             const len = new Number(response.headers.get('Content-Length')).valueOf()
-            if (len > 0) {
 
+            if (len > 0) {
 
                 const unzipper = await ZipLoader.unzip(
                     await response.blob()
@@ -494,9 +507,6 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
 
                         }
                     )
-                    if (/bundle_cache/gi.test(file)) {
-                        console.log(`Why are we putting this in cache? ${file}`)
-                    }
                     await cache.put(file, response)
                 }
                 await storage.setKey(`${path}-version`, nwVersion)
@@ -866,14 +876,15 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
     const path = new URL(origin).pathname
 
 
+
     // Ignore new checks to the grand version, if
     if (
         // The last time we checked was not too long ago.
         (
-            (Date.now() - (lastGrandVersionCheck[path]?.time || 0)) < ignoreCachedGrandVersionInfo ? 2000 : 20_000
+            (Date.now() - (lastGrandVersionCheck[path]?.time || 0)) < (ignoreCachedGrandVersionInfo ? 2000 : 20_000)
             // If we've been asked to ignore the cached grand version check, we'll do so, but only if the cached information is older than 2s
         )
-        && lastGrandVersionCheck[path]?.results == true
+        && typeof lastGrandVersionCheck[path]?.results != 'undefined'
     ) {
         return lastGrandVersionCheck[path].results
     }
@@ -890,7 +901,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
 
     if (grandUpdates[path]) {
         await grandUpdates[path]
-        return true;
+        return true
     }
 
 
@@ -902,9 +913,10 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
 
 
             const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
+            const knownVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
             // The maximum time to query the server about the grand version, is dependent on how far the last known server version is, from our current time, capped at 10s.
             // However, we can allow up to 100s if we've been asked to ignore this info. At least, that's tantamount to ignoring it.
-            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.max((Date.now() - knownRemoteVersion) * 0.01, 10_000)
+            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - knownVersion) * 0.01, 10_000)
             const remoteVersion =
                 await Promise.race(
                     [
@@ -927,8 +939,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
 
             // We're up-to-date, when we know, that the local version is above the remote version, and remote version has really not changed
-            const res = lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion)
-            return res
+            return lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion)
 
         })()
 
@@ -939,12 +950,14 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
         return await checkPromise
     })()
 
+    const invalidate = () => delete grandVersionCheckTasks[path];
+
     try {
         const results = await grandVersionCheckTasks[path]
-        setTimeout(() => delete grandVersionCheckTasks[path], 5000)
+        setTimeout(invalidate, 5000)
         return results
     } catch {
-        delete grandVersionCheckTasks[path]
+        invalidate()
     }
 
 
