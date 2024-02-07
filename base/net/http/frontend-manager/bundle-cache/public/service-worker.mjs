@@ -83,25 +83,39 @@ self.addEventListener('fetch', (event) => {
                     if (await grandVersionOkay(source, false, undefined, true)) {
                         return true
                     }
-                    await Promise.race([grandUpdate(source, false), new Promise(x => setTimeout(x, 6_000))])
+                    await grandUpdate(source, true)
                 }
                 const grandCheckPromise = checkGrandVersion()
-                try {
-                    await grandCheckPromise
-                } catch (e) { }
 
                 try {
-                    const response = await findorFetchResource(request, source);
+                    let responsePromise = Promise.race([
+                        (async () => {
+
+                            try {
+                                await grandCheckPromise
+                            } catch (e) { }
+
+                            return await findorFetchResource(request, source);
+
+                        })(),
+                        new Promise(next => setTimeout(() => {
+                            if (isHTML(request.url)) {
+                                next(temporalPageResponse(1000))
+                            }
+                        }, 5000))
+                    ])
 
                     // After the grand checks were done, and the response is ready.
                     // We check if the response was from cache, and the grand version was not okay.
                     // And ask the user to reload
                     grandCheckPromise.then(result => {
-                        if (!result && response.inCache && isHTML(request.url)) {
-                            controller.reload(source)
-                        }
+                        responsePromise.then(response => {
+                            if (!result && response.inCache && isHTML(request.url)) {
+                                controller.reload(source)
+                            }
+                        })
                     })
-                    return response
+                    return await responsePromise
                 } catch (e) {
                     console.error(`Failed to perform service worker duties for url ${request.url}\n`, e)
 
