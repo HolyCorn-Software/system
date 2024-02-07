@@ -413,10 +413,6 @@ const loader = new LoadWidget()
 
 let hasLoaded = false
 async function loadNormally() {
-    if (hasLoaded) {
-        return;
-    }
-    loader.unload('sw')
     hasLoaded = true
     document.querySelectorAll('script').forEach(script => {
         const srd = script.getAttribute('srd')
@@ -425,6 +421,7 @@ async function loadNormally() {
             script.removeAttribute('srd')
         }
     })
+    setTimeout(() => loader.unload('sw'), 500)
 }
 
 

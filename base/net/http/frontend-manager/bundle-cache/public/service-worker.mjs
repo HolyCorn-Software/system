@@ -83,7 +83,7 @@ self.addEventListener('fetch', (event) => {
                     if (await grandVersionOkay(source, false, undefined, true)) {
                         return true
                     }
-                    await Promise.race([grandUpdate(source, false), new Promise(x => setTimeout(x, 10_000))])
+                    await Promise.race([grandUpdate(source, false), new Promise(x => setTimeout(x, 6_000))])
                 }
                 const grandCheckPromise = checkGrandVersion()
                 try {
@@ -97,7 +97,7 @@ self.addEventListener('fetch', (event) => {
                     // We check if the response was from cache, and the grand version was not okay.
                     // And ask the user to reload
                     grandCheckPromise.then(result => {
-                        if (response.inCache && isHTML(request.url)) {
+                        if (!result && response.inCache && isHTML(request.url)) {
                             controller.reload(source)
                         }
                     })
