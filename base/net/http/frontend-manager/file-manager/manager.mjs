@@ -19,6 +19,7 @@ const collection = Symbol()
 const frontendConfig = Symbol()
 const firstUpdate = Symbol()
 const postPoneFileCheck = Symbol()
+const dispatchFilesChanged = Symbol()
 
 export default class FileManager {
 
@@ -58,6 +59,14 @@ export default class FileManager {
         // Now, our way of detecting deleted links, is by checking on the app after 60s, to remove any paths that haven't been updated since
         BasePlatform.get().events.addListener('booted', async () => {
 
+
+
+
+            await BasePlatform.get().bootTasks.wait()
+            await BasePlatform.get().compat.allDone()
+
+
+
             await firstUpdatePromise;
 
             // Wait until all file info has been reported.
@@ -71,33 +80,28 @@ export default class FileManager {
                 }
             })
 
-            await BasePlatform.get().bootTasks.wait().then(() => {
-                BasePlatform.get().compat.allDone().then(
-                    async () => {
-                        for (const item in this[map]) {
-                            if (!(this[map][item].version?.emperical > startTime)) {
-                                console.log(`${item.magenta.bold} removed. Perhaps the file is no more. Last time was ${new Date(this[map][item].version?.emperical)}`)
-                                this.removeURL(item)
-                            }
-                        }
-                    }).then(() => {
-                        BasePlatform.get().faculties.events.dispatchEvent(
-                            new CustomEvent(
-                                'frontend-manager-files-ready',
-                            )
-                        )
-                    })
-            });
+            for (const item in this[map]) {
+                if (!(this[map][item].version?.emperical > startTime)) {
+                    console.log(`${item.magenta.bold} removed. Perhaps the file is no more. Last time was ${new Date(this[map][item].version?.emperical)}`)
+                    this.removeURL(item)
+                }
+            }
+
+            BasePlatform.get().faculties.events.dispatchEvent(
+                new CustomEvent(
+                    'frontend-manager-files-ready',
+                )
+            );
 
 
-            this.events.addEventListener('files-change', () => {
+            this.events.addEventListener('files-change', new DelayedAction(() => {
                 BasePlatform.get().faculties.events.dispatchEvent(
                     new CustomEvent(
                         'frontend-manager-files-change',
                     )
                 )
-            });
-
+            }, 250, 5000));
+            
         })
     }
 
@@ -122,9 +126,7 @@ export default class FileManager {
         this[scheduleUpdate]()
         this[firstUpdate]?.()
         this[postPoneFileCheck]?.()
-        this.events.dispatchEvent(
-            new CustomEvent('files-change')
-        )
+        this[dispatchFilesChanged]()
     }
     /**
      * This method links a url to other urls.
@@ -148,6 +150,7 @@ export default class FileManager {
         this[map][url].links = [...new Set([...this[map][url].links, ...urls])]
 
         this[scheduleUpdate]()
+        this[dispatchFilesChanged]()
     }
 
     /**
@@ -195,6 +198,7 @@ export default class FileManager {
 
         // Now that several url versions have updated, let's persist that information
         this[scheduleUpdate]()
+        this[dispatchFilesChanged]()
     }
 
     /**
@@ -229,10 +233,14 @@ export default class FileManager {
         delete this[map][url]
         this[scheduleUpdate]()
         this[removeConfigInfo](url)
+        this[dispatchFilesChanged]()
+    }
+
+    [dispatchFilesChanged] = new DelayedAction(() => {
         this.events.dispatchEvent(
             new CustomEvent('files-change')
         )
-    }
+    }, 250, 1000)
 
     /**
      * This method gets all the URLs that are seen to be requested when
@@ -288,9 +296,6 @@ export default class FileManager {
         try {
             await this[collection].deleteMany({})
             await this[collection].insertOne(data)
-            this.events.dispatchEvent(
-                new CustomEvent('files-change')
-            )
         } catch (e) {
             console.log(`Could not update database with map\n`, data)
         }

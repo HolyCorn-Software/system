@@ -53,16 +53,16 @@ export class BasePlatformFacultiesAPI {
 
 
         // Let's postpone the initDone promise to resolve after the this faculty has initialized
+        this[promises].push(faculty.initPromise)
         clearTimeout(this[promiseTimeout])
         await promise
-        this[promises].push(faculty.initPromise)
 
         // Let's postpone to it when all other faculties (including this), are done completely initializing
         this[promiseTimeout] = setTimeout(() => {
-            Promise.all(this[promises]).then(() => {
+            Promise.allSettled(this[promises]).then(() => {
                 this[initDoneResolve]()
             })
-        }, 2000)
+        }, 500)
 
         faculty.descriptor.resolveVariables()
 

@@ -61,6 +61,9 @@ global {
 
             retries?: number
             retryDelay?: number
+
+            /** If this is set, errors would be ignored */
+            noError?: boolean
         }
 
         type MassCallReturns<value> = Promise<{

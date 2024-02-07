@@ -329,7 +329,7 @@ class ClientsRemoteProxy {
                             // may be aborted right at the level of JSONRPC
                             () => Reflect.apply(client.remote[path], thisArg, [...argArray,]),
                             {
-                                label: path,
+                                label: `${path}\nWith args ${JSON.stringify(argArray)}`,
                                 callInterval: options.retryDelay,
                                 maxTries: options.retries,
                                 timeout: options.timeout,
@@ -371,6 +371,9 @@ class ClientsRemoteProxy {
                                         })
 
                                         promises.push(promise)
+                                        if (options.noError) {
+                                            promise.catch(() => undefined)
+                                        }
                                         return promise
                                     }
                                 )
@@ -378,7 +381,7 @@ class ClientsRemoteProxy {
                         ]
                     }))
 
-                    Promise.allSettled(promises).then(() => destroy())
+                    Promise.allSettled(promises).finally(() => destroy())
 
                     return result
                 }
