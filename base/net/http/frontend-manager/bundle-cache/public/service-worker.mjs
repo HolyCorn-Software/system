@@ -98,7 +98,16 @@ self.addEventListener('fetch', (event) => {
                             return await findorFetchResource(request, source);
 
                         })(),
-                        new Promise(next => setTimeout(() => {
+                        new Promise(next => setTimeout(async () => {
+                            // Now that this function is called before the main one completes, then it's timeout for main.
+                            // Therefore, we're trying to give the user something temporal to use.
+                            const entry = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
+                            // The best case scenario, just lookup something in the cache
+                            if (entry) {
+                                entry.inCache = true
+                                return next(entry)
+                            }
+                            // If that's not the case, send the user a temporal (loading) page, if applicable.
                             if (isHTML(request.url)) {
                                 next(temporalPageResponse(1000))
                             }

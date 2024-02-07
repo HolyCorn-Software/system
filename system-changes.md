@@ -1,3 +1,3 @@
 .
 
-Improved speed of frontend resource caching.
+Made frontend cache faster.
