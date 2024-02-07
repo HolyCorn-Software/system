@@ -275,11 +275,11 @@ self.addEventListener('activate', async (event) => {
 
     await event.waitUntil(
         caches.open(CACHE_NAME).then(async cache => {
-            const logoPath = '/$/shared/static/logo.png'
-            const promise = cache.add(logoPath);
-            if (!cache.match(logoPath)) {
-                await promise
-            }
+            // const logoPath = '/$/shared/static/logo.png'
+            // const promise = cache.add(logoPath);
+            // if (!cache.match(logoPath)) {
+            //     await Promise.race([promise, 1000])
+            // }
         })
     )
 

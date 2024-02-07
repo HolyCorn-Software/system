@@ -690,18 +690,15 @@ export default class BundleCacheServer {
                 res.setHeader('X-bundle-cache-version', grandVersion)
 
                 if (nothingNew && specialExclude.urlPaths.length > 0) {
-                    console.log(`Making a special bundle for the client `)
                     const archive = await unzipper.Open.file(bundlePath)
                     // console.log(`The remainder that would be included in the special zip `, remainder)
                     for (const entry of archive.files) {
                         if (exclShouldIncludeURL(entry.path)) {
-                            console.log(`Including ${entry.path}, for special reasons.`)
                             zipAppend(specialZipStream, await entry.buffer(), entry.path, entry.lastModifiedTime)
                         }
                     }
                     await specialZipStream.finalize()
                     await new Promise(r => specialFileStream.once('finish', r))
-                    console.log(`Finally finished the special zip at `, specialExclude.bundlePath)
                 }
 
 
