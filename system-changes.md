@@ -1,3 +1,3 @@
 .
 
-Made frontend cache faster.
+Fixed minor bug.

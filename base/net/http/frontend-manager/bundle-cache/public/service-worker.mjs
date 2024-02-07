@@ -101,6 +101,7 @@ self.addEventListener('fetch', (event) => {
                         new Promise(next => setTimeout(async () => {
                             // Now that this function is called before the main one completes, then it's timeout for main.
                             // Therefore, we're trying to give the user something temporal to use.
+                            const cache = await caches.open(CACHE_NAME)
                             const entry = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
                             // The best case scenario, just lookup something in the cache
                             if (entry) {
