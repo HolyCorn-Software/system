@@ -105,7 +105,7 @@ export default class EventChannelServer extends CleanEventTarget {
         for (const id of ids) {
             if (this[clients][id]) {
                 for (const client of this[clients][id]) {
-                    if ((exclude?.length ?? 0) == 0 && exclude.every(id => this[clients][id] != client)) {
+                    if ((exclude?.length ?? 0) == 0 || exclude.every(id => this[clients][id] != client)) {
                         clientList.add(client)
                     }
                 }
@@ -122,7 +122,7 @@ export default class EventChannelServer extends CleanEventTarget {
      * @returns {Promise<void>}
      */
     async inform(ids, event, options) {
-        this.clients(ids, { timeout: 3000, aggregation: { timeout: 5000 }, retryDelay: 5000, retries: 3, precallWait: 1000, ...options }).$rpc.events.emit(
+        this.clients(ids, { timeout: 5000, aggregation: { timeout: 2000 }, retryDelay: 250, retries: 3, expectedClientLen: 2, precallWait: 1000, ...options }).$rpc.events.emit(
             event.type,
             event.detail
         )

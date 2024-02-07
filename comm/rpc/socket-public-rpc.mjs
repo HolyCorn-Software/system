@@ -67,7 +67,7 @@ export class SocketPublicJSONRPC extends JSONRPC {
             let session = new Session({ id: this.meta.hcSessionId })
             return session;
         } catch (e) {
-            console.log(`because of \n`, e, '\nWe\'re creating a new session')
+            // console.log(`because of \n`, e, '\nWe\'re creating a new session')
             let session = await Session.startNew()
             return session;
         }
