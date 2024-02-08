@@ -31,6 +31,7 @@ global {
         type Task<T = {}, Ns = {}> = T & {
             '@worker-world-task': {
                 id: string
+                processor: string
                 stage: keyof Ns
                 hibernation: number
                 created: number

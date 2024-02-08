@@ -67,6 +67,7 @@ export default class FileManager {
 
 
 
+
             await firstUpdatePromise;
 
             // Wait until all file info has been reported.
@@ -80,6 +81,8 @@ export default class FileManager {
                 }
             })
 
+            await BasePlatform.get().faculties.initDone
+            
             for (const item in this[map]) {
                 if (!(this[map][item].version?.emperical > startTime)) {
                     console.log(`${item.magenta.bold} removed. Perhaps the file is no more. Last time was ${new Date(this[map][item].version?.emperical)}`)
@@ -101,7 +104,7 @@ export default class FileManager {
                     )
                 )
             }, 250, 5000));
-            
+
         })
     }
 

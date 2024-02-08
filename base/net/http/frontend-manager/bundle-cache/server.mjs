@@ -384,7 +384,7 @@ export default class BundleCacheServer {
 
             const specialZipStream = specialExclude.urlPaths.length > 0 ? archiver.create('zip', { store: true }) : undefined
             const specialFileStream = specialZipStream ? libFs.createWriteStream(specialExclude.bundlePath) : undefined
-            specialFileStream ? specialZipStream.pipe(specialFileStream) && console.log(`piped special file stream to special zip stream`) : undefined
+            specialFileStream ? specialZipStream.pipe(specialFileStream) : undefined
 
 
             await libFs.promises.mkdir(libPath.dirname(bundlePath), { recursive: true })

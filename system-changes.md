@@ -1,5 +1,5 @@
 .
 
-Improved frontend caching speed.
+Improved algorithm for removing frontend resources that are no longer in use.
 
-Reverted loading page experiment.
+Added features to the worker-world module for prevent duplicate processing of the same task.
