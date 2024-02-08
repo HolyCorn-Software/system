@@ -383,7 +383,7 @@ class TaskGroup {
         if (available) {
             const cursor = this[getCursor]();
             available.tick(cursor).then(async val => {
-                setTimeout(() => this[assign](), val ? 300 * Math.random() : 1000)
+                setTimeout(() => this[assign](), val ? 200 : 1000)
             }).catch(e => {
                 console.error(`Very fatal error\n`, e)
                 this[workers] = this[workers].filter(x => x == available)
@@ -518,7 +518,7 @@ class Worker {
             await update()
 
             // Randomly wait for a while
-            await new Promise(next => setTimeout(next, 100 * Math.random()))
+            await new Promise(next => setTimeout(next, 500 * Math.random()))
 
             // Now, if some other worker was busy doing the same thing as us, the randomness would favour one of us
             if (!await this[args].stages[this[args].stageIndex].collection.findOne({ '@worker-world-task.id': task['@worker-world-task'].id, '@worker-world-task.processor': task['@worker-world-task'].processor })) {
