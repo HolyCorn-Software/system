@@ -56,33 +56,32 @@ export default class FileManager {
         const firstUpdatePromise = new Promise(resolve => this[firstUpdate] = resolve)
 
 
-        // Now, our way of detecting deleted links, is by checking on the app after 60s, to remove any paths that haven't been updated since
+        // Now, our way of detecting deleted links, is by checking on the app after all frontend files have probably been reported, all vital startup tasks have been done. 
+        // After that happens, we simply delete the resources that haven't been updated since system startup.
         BasePlatform.get().events.addListener('booted', async () => {
-
-
-
-
-            await BasePlatform.get().bootTasks.wait()
-            await BasePlatform.get().compat.allDone()
-
-
-
 
             await firstUpdatePromise;
 
             // Wait until all file info has been reported.
-            await new Promise(x => {
-                let timeout;
-                this[postPoneFileCheck] = () => {
-                    clearTimeout(timeout)
-                    timeout = setTimeout(() => {
-                        x()
-                    }, 5000)
-                }
-            })
+            await Promise.allSettled([
+                new Promise(x => {
+                    let timeout;
+                    this[postPoneFileCheck] = () => {
+                        clearTimeout(timeout)
+                        timeout = setTimeout(() => {
+                            x()
+                        }, 5000)
+                    }
+                }),
+                // And all system startup tasks are done
+                BasePlatform.get().bootTasks.wait(),
+                // And all faculties have booted
+                BasePlatform.get().faculties.initDone,
+                // And all frontend files have compiled
+                BasePlatform.get().compat.allDone(),
+            ])
 
-            await BasePlatform.get().faculties.initDone
-            
+
             for (const item in this[map]) {
                 if (!(this[map][item].version?.emperical > startTime)) {
                     console.log(`${item.magenta.bold} removed. Perhaps the file is no more. Last time was ${new Date(this[map][item].version?.emperical)}`)
