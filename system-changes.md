@@ -1,3 +1,5 @@
 .
 
-Temporarily disabled logo at page loader, to test optimization.
+Improved frontend caching speed.
+
+Reverted loading page experiment.

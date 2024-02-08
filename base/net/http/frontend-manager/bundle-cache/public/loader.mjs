@@ -232,7 +232,7 @@ class LoadWidget {
                 
             </div>
             <div class='logo'>
-                <!-- <img src='/$/shared/static/logo.png'> -->
+                <img src='/$/shared/static/logo.png'>
             </div>
         `;
 
