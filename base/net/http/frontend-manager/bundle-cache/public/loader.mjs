@@ -108,6 +108,7 @@ class SWLoaderServer {
         /** @type {LoadWidget} */
         channel.addEventListener('message', (event) => {
             if (event.data?.origin != window.location.href) {
+                console.log(`Not loading based on command for `, event.data?.origin)
                 return;
             }
             if (event.data?.load) {

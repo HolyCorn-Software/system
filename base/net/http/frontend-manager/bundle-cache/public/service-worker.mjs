@@ -500,7 +500,7 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
                 method: 'GET',
                 headers: {
                     'x-bundle-cache-path': path,
-                    'x-bundle-cache-version': await storage.getKey(`${path}-version`),
+                    'x-bundle-cache-version': (await storage.getKey(`${path}-version`)) || -1,
                     'x-bundle-cache-other-paths': btoa(JSON.stringify(otherPathVersions))
                 }
             });

@@ -1,3 +1,5 @@
 .
 
-Updated to the latest version of html-hc, with better UI, and bug fixes.
+Improved frontend caching algorithm.
+
+Debugging loading UI issue.
