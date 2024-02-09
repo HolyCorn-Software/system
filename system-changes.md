@@ -1,3 +1,3 @@
 .
 
-Improved algorithm for detecting deleted resources, and fixed minor bug that caused a hang prior to the start of frontend event dispatching.
+Updated to the latest version of html-hc, with better UI, and bug fixes.
