@@ -166,8 +166,9 @@ export default class BaseCompatServer {
         if (!CompatFileServer.COMPAT_ACTIVE) {
             return;
         }
-        if (libFs.existsSync(path)) {
-            if (((await libFs.promises.stat(`${this.getCompatFilePath(path)}`)).mtimeMs >= (await libFs.promises.stat(path)).stat.mtimeMs)) {
+        let pathStats;
+        if (libFs.existsSync(path) && (pathStats = await libFs.promises.stat(path)).isFile()) {
+            if (((await libFs.promises.stat(`${this.getCompatFilePath(path)}`)).mtimeMs >= pathStats.mtimeMs)) {
                 return console.log(`No need to transpile ${path}`);
             }
         }

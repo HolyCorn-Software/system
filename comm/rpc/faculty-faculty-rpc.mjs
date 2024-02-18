@@ -365,6 +365,8 @@ export class FacultyFacultyJSONRPC extends JSONRPC {
 
         /** @type {{remoteDescriptor:import('system/lib/libFaculty/types.js').FacultyDescriptor}} */
         this.meta
+
+        this.flags.error_transform = x => x
     }
     get stub() {
         return (FacultyPlatform.get()).remote.internal

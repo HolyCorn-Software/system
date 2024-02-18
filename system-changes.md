@@ -1,3 +1,5 @@
 .
 
-Updated to the latest version of html-hc, with a minor utility bug fix.
+Fixed minor bug, related to compatibility.
+
+Improved error reporting in inter-faculty connections.
