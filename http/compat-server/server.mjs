@@ -80,6 +80,22 @@ export default class CompatFileServer {
         if (!CompatFileServer.COMPAT_ACTIVE) {
             return path
         }
+        return await CompatFileServer.getCompatFile(path)
+
+    }
+
+
+    /**
+     * This method returns the path to the file that's supposed to contain the transpiled version of the input file
+     * @param {string} path 
+     * @returns {Promise<string>}
+     */
+    static async getCompatFile(path) {
+
+        if (!this.COMPAT_ACTIVE) {
+            return path
+        }
+
 
         this[compatRoot] ||= await (async () => {
             if (FacultyPlatform.get() instanceof FacultyPlatform) {
@@ -94,7 +110,7 @@ export default class CompatFileServer {
         if (/^\.\./.test(relative)) {
             throw new Error(`The path ${path}, is out of the project's working directory`)
         }
-        const fin = `${this[compatRoot]}/${relative}.compat.babel`
+        const fin = `${compatRoot}/${relative}.compat.babel`
         return fin
 
     }

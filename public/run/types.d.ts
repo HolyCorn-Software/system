@@ -6,16 +6,18 @@
 
 
 import ''
+import { MyEventTarget } from "./lib.mjs"
 
 global {
     namespace soul.http.frontendManager.runManager.ui.event_based_extender {
         interface Params<EventName extends (keyof EventDataMap), AutoRunScope extends fScopes> {
             eventName: EventName
-            autoRunScope: AutoRunScope
+            runScope: AutoRunScope
         }
 
         interface FetchArgs<Input, Output> {
             data: Input
+            /** This function is called whenever a component is found */
             callback: (result: Promise<Output>) => void
             timeout: number
         }
@@ -44,9 +46,13 @@ global {
             data: Input
         }
 
-        type EventTarget = {
+        type EventTarget0 = {
             [K in keyof EventDataMap as 'addEventListener' | 'removeEventListener']: (event: K, callback: (event: CustomEvent<ResponseInterface<EventDataMap[K]['input'], EventDataMap[K]['output']>>) => void, opts?: AddEventListenerOptions) => void
         }
+
+
+        class EventTarget extends MyEventTarget { }
+
     }
 
 

@@ -162,16 +162,22 @@ export default class BaseCompatServer {
      * @param {boolean} wait This tells us, if we should wait for the transpiling to complete before returning
      * @returns {Promise<void>|undefined}
      */
-    transpile(path, wait) {
+    async transpile(path, wait) {
         if (!CompatFileServer.COMPAT_ACTIVE) {
             return;
         }
+        if (libFs.existsSync(path)) {
+            if (((await libFs.promises.stat(`${this.getCompatFilePath(path)}`)).mtimeMs >= (await libFs.promises.stat(path)).stat.mtimeMs)) {
+                return console.log(`No need to transpile ${path}`);
+            }
+        }
+
         this[list].add(path)
 
         this[loop]()
 
         if (wait) {
-            const promise = new Promise((resolve, reject) => {
+            await new Promise((resolve, reject) => {
                 const check = () => {
                     if (this[current].path = path) {
                         this[current].promise.then(resolve, reject)
@@ -180,7 +186,6 @@ export default class BaseCompatServer {
                 };
                 this[worker].addListener('message', check)
             })
-            return promise
         }
     }
 

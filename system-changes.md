@@ -1,5 +1,9 @@
 .
 
-Improved frontend caching algorithm.
+Fixed minor compatibility bugs.
 
-Debugging loading UI issue.
+Improved code-completion with the event-based-extender utility.
+
+Added fix to service-worker, to deal with issues of domain change that affect uniqueFileUpload.
+
+Updated to the latest version of html-hc, with a minor bug fix.

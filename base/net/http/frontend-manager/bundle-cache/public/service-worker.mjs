@@ -653,13 +653,15 @@ async function findorFetchResource(request, source) {
         if (!isUIFile(request.url) && !isUISecFile(request.url) && (Date.now() - new Number(inCache.headers.get("x-bundle-cache-version") || '0').valueOf()) > NON_UI_CACHE_TIME) {
             // Try a new fetch. If it fails, or times out return the cached copy.
             try {
+                const finalURL = /\/\$\/uniqueFileUpload\/download/gi.test(request.url) ? `https://${source}${new URL(request.url).pathname}` : request.url
+                
                 return await Promise.race(
                     [
-                        (fetchTasks[request.url] ||= (async () => {
+                        (fetchTasks[finalURL] ||= (async () => {
                             try {
                                 return await fetchNew(false)
                             } finally {
-                                delete fetchTasks[request.url]
+                                delete fetchTasks[finalURL]
                             }
                         })()),
                         new Promise((resolve) => {

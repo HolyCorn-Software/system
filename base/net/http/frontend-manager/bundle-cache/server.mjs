@@ -405,8 +405,13 @@ export default class BundleCacheServer {
 
                     await Promise.race(
                         [
-                            libFs.promises.readFile(entry.path),
-                            new Promise((resolve, reject) => {
+                            (async () => {
+                                return await libFs.promises.readFile(
+                                    await CompatFileServer.getCompatFile(entry.path)
+                                )
+                            })(),
+
+                            new Promise((_, reject) => {
                                 setTimeout(() => {
                                     reject(new Error(`The url ${entry.url} too too long to fetch`))
                                 }, 5000)
@@ -474,14 +479,20 @@ export default class BundleCacheServer {
                         specialZipStream?.finalize()
                         specialZipStream ? zipOKTarget++ && fileOKTarget++ : undefined;
 
+                        function cleanup() {
+                            zipStream.removeAllListeners()
+                            fileStream.removeAllListeners()
+                            specialFileStream?.removeAllListeners()
+                            specialZipStream?.removeAllListeners()
+                        }
+
                         const check = () => {
                             if ((fileOKCount >= fileOKTarget) && (zipOKCount >= zipOKTarget)) {
                                 resolve()
-                                zipStream.removeAllListeners()
-                                fileStream.removeAllListeners()
-                                specialFileStream?.removeAllListeners()
-                                specialZipStream?.removeAllListeners()
+                                cleanup()
+                                return true
                             }
+
                         }
                         zipStream.once('end', () => {
                             zipOKCount++
@@ -503,6 +514,17 @@ export default class BundleCacheServer {
                             check()
                         })
                         check()
+
+                        setTimeout(() => {
+                            if (!check()) {
+                                console.warn(`Stuck waiting for the streams to drain!!\nWe'll just force close them`)
+                                if ((zipOKCount >= zipOKTarget)) {
+                                    console.log(`And the ZIPs had finished!`)
+                                }
+                                cleanup()
+                                resolve()
+                            }
+                        }, 5000)
                     })
                 })
             }
@@ -675,7 +697,14 @@ export default class BundleCacheServer {
             const doTask = async (task) => {
 
                 if (this[bundlingTasks][urlPath]) {
+                    let taskDone;
+                    setTimeout(() => {
+                        if (!taskDone) {
+                            console.log(`And, we're still waiting for the task on ${urlPath} to complete.`)
+                        }
+                    }, 5000)
                     await this[bundlingTasks][urlPath]
+                    taskDone = true
                 } else {
                     try {
                         await (this[bundlingTasks][urlPath] = task())

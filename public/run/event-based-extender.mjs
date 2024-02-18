@@ -37,7 +37,8 @@ export default class EventBasedExtender {
     async fetch(params) {
 
         // Before we even start any preparations, let's make sure that the components that are to respond to this event are already there
-        this[args].autoRunScope && await runMan.addScope(this[args].autoRunScope) && await new Promise(x => setTimeout(x, 100 * Math.random()))
+        const scope = this[args].runScope || this[args].autoRunScope
+        scope && await runMan.addScope(scope) && await new Promise(x => setTimeout(x, 100 * Math.random()))
 
 
         // These variables control the process, and making it last for a short-enough time period

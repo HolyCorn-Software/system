@@ -42,6 +42,20 @@ class RunManager {
 }
 
 
+export class MyEventTarget {
+
+    /**
+     * @template {keyof soul.http.frontendManager.runManager.ui.event_based_extender.EventDataMap} K
+     * @param {K} event 
+     * @param {(event: CustomEvent<soul.http.frontendManager.runManager.ui.event_based_extender.ResponseInterface<soul.http.frontendManager.runManager.ui.event_based_extender.EventDataMap[K]['input'], soul.http.frontendManager.runManager.ui.event_based_extender.EventDataMap[K]['output']>>) => void} callback 
+     * @param {AddEventListenerOptions} opts 
+     */
+    addEventListener(event, callback, opts) {
+
+    }
+}
+
+
 const runMan = new RunManager()
 
 export default runMan
