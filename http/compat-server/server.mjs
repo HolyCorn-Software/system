@@ -110,7 +110,7 @@ export default class CompatFileServer {
         if (/^\.\./.test(relative)) {
             throw new Error(`The path ${path}, is out of the project's working directory`)
         }
-        const fin = `${compatRoot}/${relative}.compat.babel`
+        const fin = `${this[compatRoot]}/${relative}.compat.babel`
         return fin
 
     }
