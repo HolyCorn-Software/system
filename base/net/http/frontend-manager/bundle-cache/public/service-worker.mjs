@@ -293,6 +293,10 @@ self.addEventListener('install', async (event) => {
 self.addEventListener('activate', async (event) => {
     await event.waitUntil(self.clients.claim().then(async () => {
         await controller.updateStorage()
+        const paths = Reflect.ownKeys(storageObject).filter(x => x.endsWith('-version'));
+        if (paths.length == 0 || paths.every(path => (Date.now() - storageObject[path]) > 7 * 24 * 60 * 60 * 100)) {
+            caches.delete(CACHE_NAME)
+        }
         controller.continueLoad();
         console.log(`Activated!!!`)
     }))
@@ -549,7 +553,7 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
     if (grandUpdates[path]) {
         await Promise.race([
             grandUpdates[path],
-            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeout performing grand updates')), 5 * 60_000))
+            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeout performing grand updates')), 2 * 60_000))
         ]).catch(e => freshUpdate())
     } else {
         await freshUpdate();
@@ -654,7 +658,7 @@ async function findorFetchResource(request, source) {
             // Try a new fetch. If it fails, or times out return the cached copy.
             try {
                 const finalURL = /\/\$\/uniqueFileUpload\/download/gi.test(request.url) ? `https://${source}${new URL(request.url).pathname}` : request.url
-                
+
                 return await Promise.race(
                     [
                         (fetchTasks[finalURL] ||= (async () => {
@@ -937,9 +941,8 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
         const checkPromise = (async () => {
 
 
-
-            const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
-            const knownVersion = new Number(await storage.getKey(`${path}-remote-version`) || -1).valueOf()
+            const knownRemoteVersion = new Number(await storage.getKey(`${path}-remote-version`) || Date.now()).valueOf()
+            const knownVersion = new Number(await storage.getKey(`${path}-version`) || -1).valueOf()
             // The maximum time to query the server about the grand version, is dependent on how far the last known server version is, from our current time, capped at 10s.
             // However, we can allow up to 100s if we've been asked to ignore this info. At least, that's tantamount to ignoring it.
             const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - knownVersion) * 0.01, 10_000)

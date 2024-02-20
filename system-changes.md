@@ -1,3 +1,3 @@
 .
 
-Fixed minor bug related to compatibility.
+Improved the frontend cache integrity.
