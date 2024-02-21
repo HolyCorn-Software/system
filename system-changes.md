@@ -1,3 +1,3 @@
 .
 
-Improved the frontend cache integrity.
+Updated to the latest version of html-hc, with bug fixes.
