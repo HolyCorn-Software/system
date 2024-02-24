@@ -279,6 +279,7 @@ class ClientsRemoteProxy {
 
                 const destroy = () => {
                     server[operations] = server[operations].filter(x => x != callStatus)
+                    abortController.signal.removeEventListener('abort', destroy)
                 }
 
 
@@ -357,7 +358,6 @@ class ClientsRemoteProxy {
                                             }
                                             const cleanup = () => {
                                                 resolve()
-                                                abortController.signal.removeEventListener('abort', cleanup)
                                             }
                                             abortController.signal.addEventListener('abort', onAbort, { once: true })
 
@@ -381,7 +381,7 @@ class ClientsRemoteProxy {
                         ]
                     }))
 
-                    Promise.allSettled(promises).finally(() => destroy())
+                    Promise.allSettled(promises).finally(() => abortController.abort())
 
                     return result
                 }
