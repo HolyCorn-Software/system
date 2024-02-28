@@ -945,7 +945,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             const knownVersion = new Number(await storage.getKey(`${path}-version`) || -1).valueOf()
             // The maximum time to query the server about the grand version, is dependent on how far the last known server version is, from our current time, capped at 10s.
             // However, we can allow up to 100s if we've been asked to ignore this info. At least, that's tantamount to ignoring it.
-            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - knownVersion) * 0.01, 10_000)
+            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - knownVersion) * 0.01, 5_000)
             const remoteVersion =
                 await Promise.race(
                     [
@@ -968,7 +968,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
 
             // We're up-to-date, when we know, that the local version is above the remote version, and remote version has really not changed
-            return lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion)
+            return lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion) && (localVersion != -1) && (remoteVersion != -1)
 
         })()
 
@@ -983,7 +983,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
 
     try {
         const results = await grandVersionCheckTasks[path]
-        setTimeout(invalidate, 5000)
+        setTimeout(invalidate, 15000)
         return results
     } catch {
         invalidate()

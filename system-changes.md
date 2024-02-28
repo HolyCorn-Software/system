@@ -1,5 +1,3 @@
 .
 
-Updated to the latest version of html-hc, which is more efficient.
-
-Improved code-completion.
+Improved speed of front-end caching algorithm.
