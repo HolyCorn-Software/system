@@ -357,7 +357,7 @@ class LoadWidget {
         if (document.body.classList.contains('hidden')) {
             document.body.classList.remove('hidden')
             document.body.classList.add('showing')
-            setTimeout(() => document.body.classList.remove('showing'), 5_000)
+            setTimeout(() => document.body.classList.remove('showing'), 2_000)
         }
     }
 
@@ -395,7 +395,7 @@ class LoadWidget {
                     window.addEventListener('transitionend', resolve, { once: true, passive: true })
                     window.addEventListener('animationend', resolve, { once: true, passive: true })
                 }),
-                new Promise(x => setTimeout(x, 500))
+                new Promise(x => setTimeout(x, 300))
             ]
         ).then(() => {
             LoadWidget.showBody()
@@ -403,7 +403,7 @@ class LoadWidget {
             setTimeout(() => {
                 this.html.remove()
                 this.html.classList.remove('removing')
-            }, 500)
+            }, 300)
         }).finally(() => this.unloading = false))
 
     }

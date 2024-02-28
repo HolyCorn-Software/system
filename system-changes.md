@@ -1,3 +1,3 @@
 .
 
-Improved speed of the frontend caching algorithm.
+Improved UX of the frontend loader.
