@@ -1,5 +1,5 @@
 .
 
-Updated to the latest version of html-hc, with more performance improvements.
+Updated to the latest version of html-hc, which is more efficient.
 
-Improved efficiency of the event-channel server module.
+Improved code-completion.

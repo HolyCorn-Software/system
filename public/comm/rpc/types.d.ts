@@ -16,7 +16,7 @@ export type GeneralPublicRPC = import('system/comm/rpc/faculty-public-methods.mj
 type AggregateRPCTransform<T> = {
     [K in keyof T]: {
         $jsonrpc: ClientJSONRPC
-    } & Promisify<Merge$0<T[K]>>
+    } & Promisify<T[K]>
 }
 
 
@@ -27,9 +27,9 @@ type Primitive = string | number | boolean | symbol | undefined | AsyncGenerator
  * This type ensures that all functions in the input parameter return a promise
  */
 type Promisify<T> =
+    T extends (...args: infer Input) => Promise ? T :
+
     T extends Primitive ? T
-    :
-    T extends (...args: infer Input) => Promise<infer Ret> ? (...args: Input) => Promise<Promisify<Awaited<Ret>>>
     :
     T extends (...args: infer Input) => infer Ret ? (...args: Input) => Promise<Promisify<Ret>>
     :
