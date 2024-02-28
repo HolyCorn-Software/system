@@ -112,7 +112,7 @@ self.addEventListener('fetch', (event) => {
                             if (isHTML(request.url)) {
                                 next(temporalPageResponse(1000))
                             }
-                        }, 5000))
+                        }, 2000))
                     ])
 
                     // After the grand checks were done, and the response is ready.
@@ -654,7 +654,7 @@ async function findorFetchResource(request, source) {
                 4 * 60 * 60 * 1000 // 4 hours for our stuff
                 : 20 * 60 * 1000 // 20 mins for other's stuff
 
-        if (!isUIFile(request.url) && !isUISecFile(request.url) && (Date.now() - new Number(inCache.headers.get("x-bundle-cache-version") || '0').valueOf()) > NON_UI_CACHE_TIME) {
+        if (!isUIFile(request.url) && !isUISecFile(request.url) && ((Date.now() - new Number(inCache.headers.get("x-bundle-cache-version") || '0').valueOf()) > NON_UI_CACHE_TIME)) {
             // Try a new fetch. If it fails, or times out return the cached copy.
             try {
                 const finalURL = /\/\$\/uniqueFileUpload\/download/gi.test(request.url) ? `https://${source}${new URL(request.url).pathname}` : request.url
