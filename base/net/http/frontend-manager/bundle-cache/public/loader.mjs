@@ -34,7 +34,7 @@ async function init() {
             const control = new SWControllerServer()
             new SWLoaderServer(loader)
 
-            const maxTime = (promise, time) => Promise.race([new Promise(x, setTimeout(x, time)), promise])
+            const maxTime = (promise, time) => Promise.race([new Promise(x => setTimeout(x, time)), promise])
 
 
             let updated = false

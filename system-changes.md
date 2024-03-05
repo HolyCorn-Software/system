@@ -1,3 +1,3 @@
 .
 
-Fixed minor compatibility bug.
+Fixed minor bug, related to frontend resource loading.
