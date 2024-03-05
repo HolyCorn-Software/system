@@ -52,7 +52,7 @@ export default class BaseSettingsPublicMethods {
         return new JSONRPC.MetaObject(await theFaculty.comm_interface.serverRemote.management.settings.get({ name, namespace }), {
             cache: {
                 expiry: 10 * 60 * 1000,
-                tag: `faculty.managedsettings.${namespace}.${name}`
+                tag: `faculty.managedsettings.${faculty}.${namespace}.${name}`
             }
         })
     }
