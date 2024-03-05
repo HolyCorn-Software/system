@@ -1,3 +1,3 @@
 .
 
-Fixed minor caching bug.
+Fixed minor compatibility bug.
