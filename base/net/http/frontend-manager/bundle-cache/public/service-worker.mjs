@@ -22,12 +22,17 @@ function isHTML(url) {
 }
 
 function isUIFile(url) {
-    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || /\/shared\/static\/logo.png/.test(url) || url.endsWith('/$/system/maps/errors')
+    return isUISecFile(url) || isMainUIFile(url) || /\/shared\/static\/logo.png/.test(url) || url.endsWith('/$/system/maps/errors')
+}
+
+
+function isMainUIFile(url) {
+    return /\.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || isHTML(url)
 }
 
 
 function isUISecFile(url) {
-    return /.((jpeg)|(png)|(jpg)|(otf)|(ttf))$/.test(url)
+    return /\.((jpeg)|(png)|(jpg)|(otf)|(ttf))$/.test(url)
 }
 
 /**
@@ -50,11 +55,8 @@ function isCachable(request, response) {
     return (
         (
 
-            (
-                isUIFile(request.url)
-                ||
-                isUISecFile(request.url)
-            )
+
+            isUIFile(request.url)
             && (!/^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url))
             && request.method.toLowerCase() == 'get'
             && new URL(request.url).origin == self.origin
@@ -134,7 +136,7 @@ self.addEventListener('fetch', (event) => {
 
             })();
 
-            if (isUIFile(request.url) && isHTML(source)) {
+            if (isMainUIFile(request.url) && isHTML(source)) {
                 loader.load(source, promise)
             }
             return await promise
@@ -724,7 +726,7 @@ async function findorFetchResource(request, source) {
     }
 
 
-    if (isUIFile(request.url)) {
+    if (isMainUIFile(request.url)) {
         loader.load(source, nwPromise)
     }
 
