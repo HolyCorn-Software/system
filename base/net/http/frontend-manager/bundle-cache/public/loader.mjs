@@ -283,11 +283,6 @@ class LoadWidget {
                 background-color:white;
                 border-radius:100%;
             }
-            .hc-sw-spinner >.logo >img{
-                width:100%;
-                height:100%;
-                object-fit:contain;
-            }
 
 
             .hc-sw-spinner .container .unit {

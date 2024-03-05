@@ -470,7 +470,7 @@ const grandUpdates = {}
 async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
     const path = new URL(source).pathname
 
-    await waitForAllGrandTasks()
+    // await waitForAllGrandTasks()
 
     async function freshUpdate() {
         try {
@@ -681,11 +681,11 @@ async function findorFetchResource(request, source) {
     }
 
 
-    const gTsks = waitForAllGrandTasks()
-    if (isUIFile(request.url)) {
-        loader.load(source, gTsks)
-    }
-    await gTsks
+    // const gTsks = waitForAllGrandTasks()
+    // if (isUIFile(request.url)) {
+    //     loader.load(source, gTsks)
+    // }
+    // await gTsks
 
     const isTestReq = request.headers.get('x-bundle-cache-test-request');
 
@@ -766,9 +766,7 @@ function temporalPageResponse(timing = 100) {
                         <div class='unit'></div>
                         <div class='unit'></div>
                     </div>
-                    <div class='logo'>
-                        <img src='/$/shared/static/logo.png'>
-                    </div>
+                    <div class='logo'></div>
                 </div>
             </body>
 
@@ -799,22 +797,17 @@ function temporalPageResponse(timing = 100) {
             }
 
             .hc-sw-spinner >.logo{
-                position:absolute;
-                left:calc(50% - 1.25em);
-                top: calc(50% - 1.25em);
-                width:2em;
+                position: absolute;
+                left: calc(50% - 1.25em);
+                top:  calc(50% - 1.25em);
+                width: 2.5em;
+                height: 2.5em;
+                background-image: url('/$/shared/static/logo.png');
+                background-position: center;
+                background-size: cover;
                 aspect-ratio:1/1;
                 background-color:white;
                 border-radius:100%;
-                padding-left:0.25em;
-                padding-right:0.25em;
-                padding-top:0.25em;
-                padding-bottom:0.25em;
-            }
-            .hc-sw-spinner >.logo >img{
-                width:100%;
-                height:100%;
-                object-fit:contain;
             }
 
 
@@ -926,7 +919,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
         }
     }
 
-    await waitForAllGrandTasks()
+    // await waitForAllGrandTasks()
 
 
     if (grandUpdates[path]) {
