@@ -539,7 +539,8 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
                     )
                     await cache.put(file, response)
                 }
-                await storage.setKey(`${path}-version`, nwVersion)
+                await storage.setKey(`${path}-version`, nwVersion);
+                (lastGrandVersionCheck[path] ||= {}).results = true
             }
 
         } catch (e) {
