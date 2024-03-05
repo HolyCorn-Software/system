@@ -34,24 +34,26 @@ async function init() {
             const control = new SWControllerServer()
             new SWLoaderServer(loader)
 
+            const maxTime = (promise, time) => Promise.race([new Promise(x, setTimeout(x, time)), promise])
+
 
             let updated = false
             for (const reg of await navigator.serviceWorker.getRegistrations()) {
                 updated = true
-                await reg.update()
+                await maxTime(reg.update(), 1000)
             }
 
 
             if (!updated) {
-                await navigator.serviceWorker.register('/$/system/frontend-manager/bundle-cache/public/service-worker.mjs', {
+                await maxTime(navigator.serviceWorker.register('/$/system/frontend-manager/bundle-cache/public/service-worker.mjs', {
                     scope: "/",
-                });
+                }), 5000);
             }
 
             control.sendUpdates()
 
             if (updated) {
-                setTimeout(() => loadNormally(), 2000)
+                loadNormally()
             } else {
 
                 // The service-worker will ask this page to continue loading normally
@@ -79,7 +81,7 @@ async function init() {
                             window.addEventListener('transitionend', resolve, { signal: abort.signal, once: true })
                             window.addEventListener('animationend', resolve, { signal: abort.signal, once: true })
                         }),
-                        new Promise(resolve => setTimeout(resolve, 3000))
+                        new Promise(resolve => setTimeout(resolve, 2000))
                     ]
                 ).then(() => {
                     loader.unload('page-content')

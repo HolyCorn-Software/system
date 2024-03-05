@@ -1,3 +1,3 @@
 .
 
-Improved loading times, of frontend components.
+Improved speed of loading frontend pages.
