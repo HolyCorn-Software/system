@@ -229,12 +229,8 @@ class LoadWidget {
         this.html = document.createElement('div')
         this.html.classList.add('hc-sw-spinner')
         this.html.innerHTML = `
-            <div class='container'>
-                
-            </div>
-            <div class='logo'>
-                <img src='/$/shared/static/logo.png'>
-            </div>
+            <div class='container'></div>
+            <div class='logo'></div>
         `;
 
         for (let i = 0; i < 7; i++) {
@@ -275,17 +271,17 @@ class LoadWidget {
             }
 
             .hc-sw-spinner >.logo{
-                position:absolute;
-                left:calc(50% - 1.25em);
-                top: calc(50% - 1.25em);
-                width:2em;
+                position: absolute;
+                left: calc(50% - 1.25em);
+                top:  calc(50% - 1.25em);
+                width: 2.5em;
+                height: 2.5em;
+                background-image: url('/$/shared/static/logo.png');
+                background-position: center;
+                background-size: cover;
                 aspect-ratio:1/1;
                 background-color:white;
                 border-radius:100%;
-                padding-left:0.25em;
-                padding-right:0.25em;
-                padding-top:0.25em;
-                padding-bottom:0.25em;
             }
             .hc-sw-spinner >.logo >img{
                 width:100%;
