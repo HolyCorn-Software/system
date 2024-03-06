@@ -1,3 +1,3 @@
 .
 
-Improved efficiency of json-rpc, by better handling duplicate function calls.
+Updated to the latest version of html-hc, with better UI.
