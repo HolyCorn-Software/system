@@ -16,7 +16,7 @@ export type GeneralPublicRPC = import('system/comm/rpc/faculty-public-methods.mj
 type AggregateRPCTransform<T> = {
     [K in keyof T]: {
         $jsonrpc: ClientJSONRPC
-    } & Promisify<T[K]>
+    } & Merge$0<Promisify<T[K]>>
 }
 
 
