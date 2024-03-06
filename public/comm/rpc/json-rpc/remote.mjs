@@ -108,6 +108,7 @@ class JSONRPCRemoteObject {
 
                 const timeoutError = new Error(`Timeout reaching server. Could not call ${methodName}`);
                 timeoutError.accidental = true
+                timeoutError.donotReport = true;
 
                 return new Promise(async (resolve, reject) => {
 
@@ -215,9 +216,17 @@ class JSONRPCRemoteObject {
 
                     // Whatever the case is, let's deal with one function call at a time.
 
-                    try {
-                        await (manager[callPromises][methodName])
-                    } catch { }
+                    const pending = (manager[callPromises][methodName])
+                    if (pending) {
+                        try {
+                            await pending
+                        } finally {
+                            // This random wait, is to give time for any pending call to have been cached.
+                            await new Promise(x => setTimeout(x, 1000 * Math.random()))
+                        }
+
+                    }
+
 
 
                     const makeCall = async () => {
