@@ -541,6 +541,7 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
                 }
                 await storage.setKey(`${path}-version`, nwVersion);
                 (lastGrandVersionCheck[path] ||= {}).results = true
+                lastGrandVersionCheck[path].time = Date.now()
             }
 
         } catch (e) {
@@ -900,8 +901,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
 
 
     const path = new URL(origin).pathname
-
-
+    let useOkayCache = false;
 
     // Ignore new checks to the grand version, if
     if (
@@ -910,16 +910,29 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             (Date.now() - (lastGrandVersionCheck[path]?.time || 0)) < (ignoreCachedGrandVersionInfo ? 2000 : 20_000)
             // If we've been asked to ignore the cached grand version check, we'll do so, but only if the cached information is older than 2s
         )
-        && typeof lastGrandVersionCheck[path]?.results != 'undefined'
+
     ) {
-        return lastGrandVersionCheck[path].results
+        // However, we only directly return something, when the last grand version check was okay
+        if (lastGrandVersionCheck[path]?.results) {
+            return true
+        }
+        useOkayCache = true
     }
 
 
+
+    // If it was not okay, we wait to see if there was another pending grand update
     if (grandVersionCheckTasks[path]) {
         if (await grandVersionCheckTasks[path]) {
+            // And if that grand update succeeded, then we can say the grand version is okay
             return true
         }
+    }
+
+    // It is at this point that we check again if the last update was not too far, and then return whatever the results were
+    // Of course, the results at this point can only be false
+    if (useOkayCache && lastGrandVersionCheck[path]) {
+        return lastGrandVersionCheck[path].results
     }
 
     // await waitForAllGrandTasks()
@@ -941,7 +954,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             const knownVersion = new Number(await storage.getKey(`${path}-version`) || -1).valueOf()
             // The maximum time to query the server about the grand version, is dependent on how far the last known server version is, from our current time, capped at 10s.
             // However, we can allow up to 100s if we've been asked to ignore this info. At least, that's tantamount to ignoring it.
-            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - knownVersion) * 0.01, 5_000)
+            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - lastGrandVersionCheck[path].time || knownVersion) * 0.01, 5_000)
             const remoteVersion =
                 await Promise.race(
                     [

@@ -1,3 +1,3 @@
 .
 
-Fixed minor bug, related to frontend resource loading.
+Made frontend caching faster.
