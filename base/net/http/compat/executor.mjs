@@ -45,11 +45,29 @@ async function transpile(path) {
         try {
             const data = await babel.transformFileAsync(info.path,
                 {
+                    minified: true,
+                    compact: true,
+                    // sourceMaps: true,
+                    comments: false,
                     presets: [
                         [
                             '@babel/preset-env',
-                            { modules: false }
-                        ]
+                            {
+                                modules: false,
+                                exclude: [
+                                    "babel-plugin-transform-async-to-generator",
+                                    "babel-plugin-transform-regenerator"
+                                ]
+                            }
+                        ],
+                        [
+                            "minify",
+                            {
+                                builtIns: true,
+                                evaluate: true,
+                                mangle: true,
+                            }
+                        ],
                     ]
                 }
             )

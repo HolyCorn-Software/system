@@ -59,16 +59,17 @@ const strings = Symbol()
 const lang = Symbol()
 const languages = Symbol()
 
+const promise = Symbol()
+
 class StringDictionary {
 
-    /**
-     * 
-     * @param {import("../types.js").SummedLanguageStrings} _strings 
-     * @param {import("../types.js").LanguageConfig[]} langs
-     */
-    constructor(_strings, langs) {
-        this[strings] = _strings
-        this[languages] = langs || {}
+
+
+    constructor() {
+        /** @type {import("../../base/lang/types.js").SummedLanguageStrings} */
+        this[strings] = {}
+        /** @type {import("../../base/lang/types.js").LanguageConfig} */
+        this[languages] = {}
 
 
 
@@ -83,10 +84,18 @@ class StringDictionary {
             console.log(e)
             this[lang] = superDefaultLanguage
         }
+
+
+        this[promise] = (async () => {
+            this[strings] = await getStringMap()
+            this[languages] = await getLanguages()
+        })()
+
     }
 
 
     /**
+     * @deprecated use {@link get} instead
      * This method is used to get the value of a string
      * @param {object} param0 
      * @param {string} param0.code The code of the string
@@ -94,17 +103,29 @@ class StringDictionary {
      * @returns {string}
      */
     getString({ code, nullValue }) {
-        nullValue ??= `${code} missing`
+        console.warn(`This method is deprecated. Use get(), instead`)
+        return this[strings]?.[this[lang]]?.[code] || (nullValue ?? `${code}`)
+    }
+
+    /**
+     * This method returns the value of a code
+     * @param {object} param0 
+     * @param {string} param0.code
+     * @param {string} param0.nullValue
+     * @returns {Promise<string>}
+     */
+    async get({ code, nullValue }) {
+        await this[promise]
         const realValue = this[strings]?.[this[lang]]?.[code]
         if (!realValue) {
             report_error_direct(new Error(`Unfortunately, there's no value for string ${code} in language ${this[lang]}`, `\nInvoked from\n`, new Error().stack.split('\n').slice(1).join('\n')))
         }
-        return realValue || nullValue
+        return realValue || (nullValue ?? `${code}`)
     }
 }
 
 
-const dictionary = new StringDictionary(await getStringMap(), await getLanguages())
+const dictionary = new StringDictionary()
 
 
 export default dictionary
