@@ -1,5 +1,7 @@
 .
 
-Updated to the latest version of html-hc, with more performance improvements.
+Improved event dispatch features of the event-channel module.
 
-Improved efficiency of the event-channel server module.
+Fixed minor bug related to frontend configuration files, and versioning.
+
+Updated to the latest version of html-hc, with new features.

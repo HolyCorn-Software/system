@@ -174,6 +174,7 @@ export default class FileManager {
 
         // If the file that changed, is an auto-run file, then all HTML files should change
         let isConfigFile = /frontend\.config\.json$/.test(url)
+        const config = this.frontendConfig[url]
 
 
         for (const item in this[map]) {
@@ -183,8 +184,7 @@ export default class FileManager {
                 } else {
                     if (isConfigFile && FileManager.isHTML(item)) {
                         try {
-                            /** @type {soul.http.frontendManager.fileManager.FrontendConfig} */
-                            const config = JSON.parse(libFs.readFileSync(this[map][item].path))
+
                             if (config.autorun?.length > 0) {
                                 this[map][item].version.grand = now
                             }

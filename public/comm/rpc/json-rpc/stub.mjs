@@ -57,8 +57,11 @@ class JSONRPCEventsStub extends WildcardEventEmitter {
      */
     emit(type, data) {
 
-        super.dispatchEvent(new CustomEvent(`$remote-event`, { detail: { type, data } }))
-        super.dispatchEvent(new CustomEvent(type, { detail: data }))
+        for (const subType of type.split(",")) {
+            super.dispatchEvent(new CustomEvent(`$remote-event`, { detail: { type: subType, data } }))
+            super.dispatchEvent(new CustomEvent(subType, { detail: data }))
+
+        }
 
     }
     /**

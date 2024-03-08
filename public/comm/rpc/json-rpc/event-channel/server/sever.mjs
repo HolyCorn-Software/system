@@ -39,7 +39,7 @@ export default class EventChannelServer extends CleanEventTarget {
         /** @type {(event: "client-add"|"client-destroy", cb: (event: CustomEvent<{client: JSONRPC, ids: string[]}>)=> void )=> void} */ this.addEventListener
 
         /**
-         * @type {({input: any[], abortable: boolean, abort: ()=> void})[]}
+         * @type {({input: any[], abortable: boolean, abort: ()=> void, promise: Promise<void>})[]}
          */
         this[operations] = []
 
@@ -122,7 +122,7 @@ export default class EventChannelServer extends CleanEventTarget {
      * @returns {Promise<void>}
      */
     async inform(ids, event, options) {
-        this.clients(ids, { timeout: 5000, aggregation: { timeout: 2000 }, retryDelay: 250, retries: 3, expectedClientLen: 2, precallWait: 1000, ...options }).$rpc.events.emit(
+        this.clients(ids, { timeout: 5000, aggregation: { timeout: 2000 }, retryDelay: 250, retries: 3, expectedClientLen: 2, precallWait: 1000, noError: true, ...options }).$rpc.events.emit(
             event.type,
             event.detail
         )
@@ -229,17 +229,27 @@ class ClientsRemoteProxy {
              */
             apply: async (_target, thisArg, argArray) => {
 
+                const stack = new Error().stack.split('\n').slice(1).join('\n')
 
                 const abortController = new AbortController()
+                let internallyAborted = false;
 
                 const callStatus = {
                     abortable: true,
-                    abort: abortController.abort,
-                    input: argArray
+                    abort: () => {
+                        internallyAborted = true
+                        abortController.abort({ internalAbort: true })
+                    },
+                    input: argArray,
+                    promise: undefined
                 }
 
-                if (options?.aggregation) {
-                    // If there's already another call in the pipeline, abort it (if it's abortable)
+
+
+                /**
+                 * This function returns a similar operation, which is already ongoing, which can be done in exchange for this one.
+                 */
+                function getSimilarOperation() {
                     function equal(a, b) {
                         if ((a instanceof Event) && (b instanceof Event)) {
                             if (a.type == b.type) {
@@ -250,13 +260,19 @@ class ClientsRemoteProxy {
 
                         return (a == b) || (JSON.stringify(a) == JSON.stringify(b))
                     }
+                    return server[operations].find(x => equal(x.input, argArray))
+                }
 
-                    const currentOperation = server[operations].find(x => equal(x.input, argArray))
+                if (options?.aggregation) {
+                    // If there's already another call in the pipeline, abort it (if it's abortable)
+
+
+                    const currentOperation = getSimilarOperation()
                     if (currentOperation) {
-                        // If there's another similar operation, which is not abortable, then let's abort this one
+                        // If there's another similar operation, which is not abortable, then let's take it's results to be ours
                         if (!currentOperation.abortable) {
                             if (!(options.aggregation?.allowDuplicate ?? true)) {
-                                return
+                                return currentOperation.promise
                             }
                         } else {
                             currentOperation.abort()
@@ -310,7 +326,9 @@ class ClientsRemoteProxy {
                                 let timeoutKey = setTimeout(cleanup, Math.floor(Math.min(Math.max(100, timeoutDuration / 10), 500)))
                             })
                             if (abortController.signal.aborted) {
-                                throw new Error(`Operation aborted`)
+                                const error = new Error(`Operation ${path}(), aborted\n${stack}\nStack:\n`)
+                                error.internallyAborted = internallyAborted
+                                throw error
                             }
                             if (Date.now() - start > timeoutDuration) {
                                 break
@@ -338,52 +356,118 @@ class ClientsRemoteProxy {
                         )
                     }
 
-                    const promises = []
+                    /** @type {Promise[]} */
+                    const adultPromises = []
 
-                    const result = Object.fromEntries(ids.map(id => {
+                    /**
+                     * @type {([string, Promise])[]}
+                     */
+                    const results = Object.fromEntries(ids.map(id => {
                         return [
                             id,
                             (async () => {
-                                const theClients = await findClients(id)
-                                if (abortController.signal.aborted) {
-                                    return;
-                                }
-                                callStatus.abortable = false
-                                return theClients.map(
-                                    client => {
-                                        const promise = new Promise((resolve, reject) => {
-                                            const onAbort = () => {
-                                                cleanup()
-                                                reject(new Error(`Operation aborted.`))
-                                            }
-                                            const cleanup = () => {
-                                                resolve()
-                                            }
-                                            abortController.signal.addEventListener('abort', onAbort, { once: true })
 
-                                            callClient(client).then((value) => {
-                                                resolve(value)
-                                                cleanup()
-                                            }).catch(e => {
-                                                reject(e)
-                                                cleanup()
-                                            })
-                                        })
-
-                                        promises.push(promise)
-                                        if (options.noError) {
-                                            promise.catch(() => undefined)
-                                        }
-                                        return promise
+                                try {
+                                    const theClients = await findClients(id)
+                                    if (abortController.signal.aborted) {
+                                        return;
                                     }
-                                )
+                                    callStatus.abortable = false
+                                    return theClients.map(
+                                        client => {
+                                            const promise = new Promise((resolve, reject) => {
+                                                const onAbort = () => {
+                                                    cleanup()
+                                                    reject(new Error(`Operation aborted.`))
+                                                }
+                                                const cleanup = () => {
+                                                    resolve()
+                                                }
+                                                abortController.signal.addEventListener('abort', onAbort, { once: true })
+
+                                                callClient(client).then((value) => {
+                                                    resolve(value)
+                                                    cleanup()
+                                                }).catch(e => {
+                                                    reject(e)
+                                                    cleanup()
+                                                })
+                                            })
+
+                                            adultPromises.push(promise)
+                                            if (options.noError) {
+                                                promise.catch(() => undefined)
+                                            }
+                                            promise.finally(() => {
+                                                promise.done = true
+
+                                                if (findPhaseDone && adultPromises.every(prom => prom.done)) {
+                                                    abortController.abort()
+                                                }
+
+                                            })
+                                            return promise
+                                        }
+                                    )
+
+                                } catch (e) {
+                                    if (e.internallyAborted && findPhaseDone) {
+                                        // No need to throw this error, because our main goal of throwing "internallAborted" errors, is so that the higher logic knows when it's time to stop
+                                        // Apparently, by  now, it should have stopped
+
+                                        return;
+                                    }
+
+                                    throw e
+                                }
+
                             })()
                         ]
                     }))
 
-                    Promise.allSettled(promises).finally(() => abortController.abort())
 
-                    return result
+                    /* This promise tracks whether the phase where we simply look for clients, is done.*/
+                    const findPhasePromise = Promise.all(Object.entries(results).map(x => x[1][1]))
+                    let findPhaseDone = false
+                    findPhasePromise.finally(() => findPhaseDone = true)
+
+
+                    callStatus.promise = (async () => {
+
+                        // We need to manage this task's promise in such a way that interrupting the task would simply make the task
+                        // wait for another similar task
+
+                        const catchInterrupted = async () => {
+
+
+                            try {
+                                // After this phase, we can tell if the operation was internally aborted at any level.
+                                await findPhasePromise
+                            } catch (e) {
+                                if (e.internallyAborted) {
+                                    // And if so, then return the data coming from the overriding task
+                                    return await getSimilarOperation().promise
+                                } else {
+                                    throw e
+                                }
+
+                            }
+
+                        }
+
+
+                        // Well, if the first whole promise completes without an error
+                        await catchInterrupted()
+
+                        // Then we can go ahead to return things as they should
+
+                        return results
+
+                    })();
+
+
+
+                    return callStatus.promise
                 }
             }
         })
