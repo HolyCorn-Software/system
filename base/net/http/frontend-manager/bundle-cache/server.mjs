@@ -162,7 +162,7 @@ export default class BundleCacheServer {
 
                             origWrite.call(
                                 res,
-                                /html/gi.test(res.getHeader('content-type')) ? Buffer.from(args[0]).toString().replaceAll(/(<script.*)src/gi, `$1srd`) : args[0],
+                                /html/gi.test(res.getHeader('content-type')) ? Buffer.from(args[0]).toString().replaceAll(/(<script[^>]*)src/gi, `$1srd`) : args[0],
                                 ...args.slice(1)
                             )
                             return;

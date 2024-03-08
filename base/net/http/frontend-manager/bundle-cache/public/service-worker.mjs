@@ -22,12 +22,17 @@ function isHTML(url) {
 }
 
 function isUIFile(url) {
-    return isHTML(url) || /.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || /\/shared\/static\/logo.png/.test(url) || url.endsWith('/$/system/maps/errors')
+    return isUISecFile(url) || isMainUIFile(url) || /\/shared\/static\/logo.png/.test(url) || url.endsWith('/$/system/maps/errors')
+}
+
+
+function isMainUIFile(url) {
+    return /\.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || isHTML(url)
 }
 
 
 function isUISecFile(url) {
-    return /.((jpeg)|(png)|(jpg)|(otf)|(ttf))$/.test(url)
+    return /\.((jpeg)|(png)|(jpg)|(otf)|(ttf))$/.test(url)
 }
 
 /**
@@ -50,11 +55,8 @@ function isCachable(request, response) {
     return (
         (
 
-            (
-                isUIFile(request.url)
-                ||
-                isUISecFile(request.url)
-            )
+
+            isUIFile(request.url)
             && (!/^\/\$\/system\/frontend-manager\/bundle-cache/gi.test(request.url))
             && request.method.toLowerCase() == 'get'
             && new URL(request.url).origin == self.origin
@@ -112,7 +114,7 @@ self.addEventListener('fetch', (event) => {
                             if (isHTML(request.url)) {
                                 next(temporalPageResponse(1000))
                             }
-                        }, 5000))
+                        }, 2000))
                     ])
 
                     // After the grand checks were done, and the response is ready.
@@ -134,7 +136,7 @@ self.addEventListener('fetch', (event) => {
 
             })();
 
-            if (isUIFile(request.url) && isHTML(source)) {
+            if (isMainUIFile(request.url) && isHTML(source)) {
                 loader.load(source, promise)
             }
             return await promise
@@ -470,7 +472,7 @@ const grandUpdates = {}
 async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
     const path = new URL(source).pathname
 
-    await waitForAllGrandTasks()
+    // await waitForAllGrandTasks()
 
     async function freshUpdate() {
         try {
@@ -537,7 +539,9 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
                     )
                     await cache.put(file, response)
                 }
-                await storage.setKey(`${path}-version`, nwVersion)
+                await storage.setKey(`${path}-version`, nwVersion);
+                (lastGrandVersionCheck[path] ||= {}).results = true
+                lastGrandVersionCheck[path].time = Date.now()
             }
 
         } catch (e) {
@@ -654,7 +658,7 @@ async function findorFetchResource(request, source) {
                 4 * 60 * 60 * 1000 // 4 hours for our stuff
                 : 20 * 60 * 1000 // 20 mins for other's stuff
 
-        if (!isUIFile(request.url) && !isUISecFile(request.url) && (Date.now() - new Number(inCache.headers.get("x-bundle-cache-version") || '0').valueOf()) > NON_UI_CACHE_TIME) {
+        if (!isUIFile(request.url) && !isUISecFile(request.url) && ((Date.now() - new Number(inCache.headers.get("x-bundle-cache-version") || '0').valueOf()) > NON_UI_CACHE_TIME)) {
             // Try a new fetch. If it fails, or times out return the cached copy.
             try {
                 const finalURL = /\/\$\/uniqueFileUpload\/download/gi.test(request.url) ? `https://${source}${new URL(request.url).pathname}` : request.url
@@ -681,11 +685,11 @@ async function findorFetchResource(request, source) {
     }
 
 
-    const gTsks = waitForAllGrandTasks()
-    if (isUIFile(request.url)) {
-        loader.load(source, gTsks)
-    }
-    await gTsks
+    // const gTsks = waitForAllGrandTasks()
+    // if (isUIFile(request.url)) {
+    //     loader.load(source, gTsks)
+    // }
+    // await gTsks
 
     const isTestReq = request.headers.get('x-bundle-cache-test-request');
 
@@ -724,7 +728,7 @@ async function findorFetchResource(request, source) {
     }
 
 
-    if (isUIFile(request.url)) {
+    if (isMainUIFile(request.url)) {
         loader.load(source, nwPromise)
     }
 
@@ -766,9 +770,7 @@ function temporalPageResponse(timing = 100) {
                         <div class='unit'></div>
                         <div class='unit'></div>
                     </div>
-                    <div class='logo'>
-                        <img src='/$/shared/static/logo.png'>
-                    </div>
+                    <div class='logo'></div>
                 </div>
             </body>
 
@@ -799,22 +801,17 @@ function temporalPageResponse(timing = 100) {
             }
 
             .hc-sw-spinner >.logo{
-                position:absolute;
-                left:calc(50% - 1.25em);
-                top: calc(50% - 1.25em);
-                width:2em;
+                position: absolute;
+                left: calc(50% - 1.25em);
+                top:  calc(50% - 1.25em);
+                width: 2.5em;
+                height: 2.5em;
+                background-image: url('/$/shared/static/logo.png');
+                background-position: center;
+                background-size: cover;
                 aspect-ratio:1/1;
                 background-color:white;
                 border-radius:100%;
-                padding-left:0.25em;
-                padding-right:0.25em;
-                padding-top:0.25em;
-                padding-bottom:0.25em;
-            }
-            .hc-sw-spinner >.logo >img{
-                width:100%;
-                height:100%;
-                object-fit:contain;
             }
 
 
@@ -904,8 +901,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
 
 
     const path = new URL(origin).pathname
-
-
+    let useOkayCache = false;
 
     // Ignore new checks to the grand version, if
     if (
@@ -914,19 +910,32 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             (Date.now() - (lastGrandVersionCheck[path]?.time || 0)) < (ignoreCachedGrandVersionInfo ? 2000 : 20_000)
             // If we've been asked to ignore the cached grand version check, we'll do so, but only if the cached information is older than 2s
         )
-        && typeof lastGrandVersionCheck[path]?.results != 'undefined'
+
     ) {
-        return lastGrandVersionCheck[path].results
+        // However, we only directly return something, when the last grand version check was okay
+        if (lastGrandVersionCheck[path]?.results) {
+            return true
+        }
+        useOkayCache = true
     }
 
 
+
+    // If it was not okay, we wait to see if there was another pending grand update
     if (grandVersionCheckTasks[path]) {
         if (await grandVersionCheckTasks[path]) {
+            // And if that grand update succeeded, then we can say the grand version is okay
             return true
         }
     }
 
-    await waitForAllGrandTasks()
+    // It is at this point that we check again if the last update was not too far, and then return whatever the results were
+    // Of course, the results at this point can only be false
+    if (useOkayCache && lastGrandVersionCheck[path]) {
+        return lastGrandVersionCheck[path].results
+    }
+
+    // await waitForAllGrandTasks()
 
 
     if (grandUpdates[path]) {
@@ -945,7 +954,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             const knownVersion = new Number(await storage.getKey(`${path}-version`) || -1).valueOf()
             // The maximum time to query the server about the grand version, is dependent on how far the last known server version is, from our current time, capped at 10s.
             // However, we can allow up to 100s if we've been asked to ignore this info. At least, that's tantamount to ignoring it.
-            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - knownVersion) * 0.01, 10_000)
+            const MAX_TIME = ignoreCachedGrandVersionInfo ? 100_000 : Math.min((Date.now() - lastGrandVersionCheck[path].time || knownVersion) * 0.01, 5_000)
             const remoteVersion =
                 await Promise.race(
                     [
@@ -968,7 +977,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
             const localVersion = new Number((await storage.getKey(`${path}-version`)) || -1).valueOf()
 
             // We're up-to-date, when we know, that the local version is above the remote version, and remote version has really not changed
-            return lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion)
+            return lastGrandVersionCheck[path].results = (localVersion >= remoteVersion) && (knownRemoteVersion >= remoteVersion) && (localVersion != -1) && (remoteVersion != -1)
 
         })()
 
@@ -983,7 +992,7 @@ async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo
 
     try {
         const results = await grandVersionCheckTasks[path]
-        setTimeout(invalidate, 5000)
+        setTimeout(invalidate, 15000)
         return results
     } catch {
         invalidate()

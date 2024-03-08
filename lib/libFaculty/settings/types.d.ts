@@ -81,14 +81,28 @@ global {
 
         }
 
-        type SettingsUpdateType<FacultyNameEnum = string, T = all> = GetKeys<{
-            [K in keyof T]: T[K]['faculty'] extends FacultyNameEnum ? {
-                name: K
-                namespace: T[K]['namespace']
-                value: T[K]['data']
-            } : never
+        type FilterByFacultyAndName<Faculty, Name extends keyof all> = {
+            [K in keyof all[Name]]: all[Name]['faculty'] extends Faculty ? all[Name][K] : never
+        }['data']
+
+        type SettingsUpdateType<FacultyNameEnum extends keyof faculty.faculties, Setting, Namespace> = GetKeys<{
+            [K in keyof all]: K extends Setting ? (
+                all[K]['faculty'] extends FacultyNameEnum ? {
+                    name: K
+                    namespace: Namespace
+                    value: all[K]['data']
+                } : never
+            ) : never
+        },>
+
+        type Namespaces<FacultyName> = GetKeys<{
+            [K in keyof all]: all[K]['faculty'] extends FacultyName ? all[K]['namespace'] : never
         }>
 
-        type GetKeys<T> = T[keyof T]
+        type Names<FacultyName, Namespace = any> = GetKeys<{
+            [K in keyof all]: all[K]['faculty'] extends FacultyName ? all[K]['namespace'] extends Namespace ? K : never : never
+        }>
+
+        type GetKeys<T, K = keyof T> = T[K]
     }
 }

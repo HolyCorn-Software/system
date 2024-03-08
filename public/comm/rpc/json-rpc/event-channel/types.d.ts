@@ -28,7 +28,7 @@ global {
         } & {
                 [K in keyof T as 'addEventListener' | 'removeEventListener']: (
 
-                    (type: 'init', callback: (event: CustomEvent<T[K]>) => void, opts?: K extends 'removeEventListener' ? never : AddEventListenerOptions) => void
+                    (type: 'init' | 'disconnect', callback: (event: CustomEvent<T[K]>) => void, opts?: K extends 'removeEventListener' ? never : AddEventListenerOptions) => void
 
                 )
             } & EventTarget

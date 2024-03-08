@@ -32,6 +32,10 @@ export default class EventChannelClient {
 
         this[jsonrpc].addEventListener('reinit', () => this.forceInit().catch(e => console.error(e)))
 
+        this[jsonrpc].addEventListener('destroy', () => {
+            this.events.dispatchEvent('disconnect')
+        })
+
     }
     /** 
      * @returns {soul.comm.rpc.event_channel.EventClientEventTarget<T>}

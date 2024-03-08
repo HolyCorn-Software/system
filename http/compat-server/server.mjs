@@ -92,9 +92,10 @@ export default class CompatFileServer {
      */
     static async getCompatFile(path) {
 
-        if (!this.COMPAT_ACTIVE) {
+        if (!this.COMPAT_ACTIVE || !CompatFileServer.fileIsJS(path)) {
             return path
         }
+
 
 
         this[compatRoot] ||= await (async () => {

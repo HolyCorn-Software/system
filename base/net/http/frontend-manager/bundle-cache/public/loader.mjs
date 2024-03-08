@@ -34,24 +34,26 @@ async function init() {
             const control = new SWControllerServer()
             new SWLoaderServer(loader)
 
+            const maxTime = (promise, time) => Promise.race([new Promise(x => setTimeout(x, time)), promise])
+
 
             let updated = false
             for (const reg of await navigator.serviceWorker.getRegistrations()) {
                 updated = true
-                await reg.update()
+                await maxTime(reg.update(), 1000)
             }
 
 
             if (!updated) {
-                await navigator.serviceWorker.register('/$/system/frontend-manager/bundle-cache/public/service-worker.mjs', {
+                await maxTime(navigator.serviceWorker.register('/$/system/frontend-manager/bundle-cache/public/service-worker.mjs', {
                     scope: "/",
-                });
+                }), 5000);
             }
 
             control.sendUpdates()
 
             if (updated) {
-                setTimeout(() => loadNormally(), 2000)
+                loadNormally()
             } else {
 
                 // The service-worker will ask this page to continue loading normally
@@ -79,7 +81,7 @@ async function init() {
                             window.addEventListener('transitionend', resolve, { signal: abort.signal, once: true })
                             window.addEventListener('animationend', resolve, { signal: abort.signal, once: true })
                         }),
-                        new Promise(resolve => setTimeout(resolve, 3000))
+                        new Promise(resolve => setTimeout(resolve, 2000))
                     ]
                 ).then(() => {
                     loader.unload('page-content')
@@ -229,12 +231,8 @@ class LoadWidget {
         this.html = document.createElement('div')
         this.html.classList.add('hc-sw-spinner')
         this.html.innerHTML = `
-            <div class='container'>
-                
-            </div>
-            <div class='logo'>
-                <img src='/$/shared/static/logo.png'>
-            </div>
+            <div class='container'></div>
+            <div class='logo'></div>
         `;
 
         for (let i = 0; i < 7; i++) {
@@ -275,22 +273,17 @@ class LoadWidget {
             }
 
             .hc-sw-spinner >.logo{
-                position:absolute;
-                left:calc(50% - 1.25em);
-                top: calc(50% - 1.25em);
-                width:2em;
+                position: absolute;
+                left: calc(50% - 1.25em);
+                top:  calc(50% - 1.25em);
+                width: 2.5em;
+                height: 2.5em;
+                background-image: url('/$/shared/static/logo.png');
+                background-position: center;
+                background-size: cover;
                 aspect-ratio:1/1;
                 background-color:white;
                 border-radius:100%;
-                padding-left:0.25em;
-                padding-right:0.25em;
-                padding-top:0.25em;
-                padding-bottom:0.25em;
-            }
-            .hc-sw-spinner >.logo >img{
-                width:100%;
-                height:100%;
-                object-fit:contain;
             }
 
 
@@ -357,7 +350,7 @@ class LoadWidget {
         if (document.body.classList.contains('hidden')) {
             document.body.classList.remove('hidden')
             document.body.classList.add('showing')
-            setTimeout(() => document.body.classList.remove('showing'), 5_000)
+            setTimeout(() => document.body.classList.remove('showing'), 2_000)
         }
     }
 
@@ -395,7 +388,7 @@ class LoadWidget {
                     window.addEventListener('transitionend', resolve, { once: true, passive: true })
                     window.addEventListener('animationend', resolve, { once: true, passive: true })
                 }),
-                new Promise(x => setTimeout(x, 500))
+                new Promise(x => setTimeout(x, 300))
             ]
         ).then(() => {
             LoadWidget.showBody()
@@ -403,7 +396,7 @@ class LoadWidget {
             setTimeout(() => {
                 this.html.remove()
                 this.html.classList.remove('removing')
-            }, 500)
+            }, 300)
         }).finally(() => this.unloading = false))
 
     }
