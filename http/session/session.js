@@ -66,7 +66,7 @@ export class Session {
         return await Session.sessionAPI.setVar({ sessionID: this.id, varname, value })
     }
     async rmVar(varname) {
-        return await Session.sessionAPI.rmVar({ sessionID: this.id, varname })
+        return await Session.sessionAPI.rmVar(this.id, varname)
     }
 
     /**

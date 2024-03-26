@@ -35,7 +35,6 @@ export class BaseSessionStorageAPI {
      * @param {object} param0
      * @param {string} param0.sessionID
      * @param {string} param0.varname
-     * @returns {Promise<any>}
      */
     async getVar(param0) {
 
@@ -61,10 +60,12 @@ export class BaseSessionStorageAPI {
 
     /**
      * This method is called when a faculty wishes to delete a session variable (not setting it to null)
-     * @param {string} varname
+     * @param {object} param0
+     * @param {string} param0.sessionID
+     * @param {string} param0.varname
      * @returns {Promise<void>}
      */
-    async rmVar(sessionID, varname) {
+    async rmVar({ sessionID, varname }) {
         // Remote methods usually have the attribute that their first arguments are always a handle to the calling client, therefore all other arguments are shifted by one place. Reason why signature is different from implementation
         sessionID = arguments[1]
         varname = arguments[2]

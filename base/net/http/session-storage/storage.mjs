@@ -104,7 +104,6 @@ export class SessionStorage {
      * This method is owned and called at the BasePlatform in order to retrieve a session variable
      * @param {string} id The id of the session to be read
      * @param {string} key The key to be read from the session
-     * @returns {Promise<any>}
      */
     async getVar(id, key) {
         let value = (await this.getSessionById(id)).store[key]
@@ -131,7 +130,7 @@ export class SessionStorage {
      */
     async rmVar(id, key) {
         delete (await this.getSessionById(id)).store[key]
-        collections.sessionStorage.updateOne({ id: { $eq: id } }, { $unset: key, $set: { expires: Date.now() + SessionStorage.defaultDuration } })
+        collections.sessionStorage.updateOne({ id: { $eq: id } }, { $unset: { key: true }, $set: { expires: Date.now() + SessionStorage.defaultDuration } })
     }
 
     /**
@@ -194,6 +193,7 @@ export class SessionStorage {
         let session = await collections.sessionStorage.findOne({ id })
 
         if (!session) {
+            console.log(`id is `, id)
             throw new Exception(`The session with id '${id}' was not found`, { code: `${SessionStorage.#errorNamespace}.session_not_found("${id}")` })
         }
         //Now if the client's session has expired
