@@ -1,5 +1,5 @@
 .
 
-Fixed minor bugs with session management.
+Corrected minor error with typing information.
 
-Updated to the latest version of the html-hc, with bug fixes.
+Updated to the latest version of html-hc with better UI, and more efficiency.

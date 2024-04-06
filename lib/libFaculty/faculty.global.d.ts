@@ -59,7 +59,7 @@ declare global {
         declare var FacultyConnectionManagerEventEmitter: {
 
             new(): {
-                [K in keyof (faculty.FacultyEvents & base.rpc.BaseToFacultyEvents) as 'addListener' | 'on' | 'once']: (event: K, cb: (faculty: FacultyFacultyInterface<{}>, ...args: faculty.FacultyEvents[K]) => void) => void
+                [K in keyof (faculty.FacultyEvents & base.rpc.BaseToFacultyEvents) as 'addListener' | 'on' | 'once']: (event: K, cb: (...args: faculty.FacultyEvents[K]) => void) => void
 
             }
         }
