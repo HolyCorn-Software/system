@@ -105,11 +105,12 @@ export default class WorkerWorld {
          * This method 'purifies' data extracted from a database, by removing other now unncessary data, that was used to manage its task-execution process
          * @template Input
          * @param {Input} record 
-         * @returns {Omit<Input, "@worker-world-task">}
+         * @returns {Omit<Input, "@worker-world-task"|"_id">}
          */
         this.trim = (record) => {
             if (record) {
                 delete record["@worker-world-task"]
+                delete record._id
             }
             return record
         }

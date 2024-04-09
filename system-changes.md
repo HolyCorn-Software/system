@@ -1,5 +1,5 @@
 .
 
-Corrected minor error with typing information.
+Improved efficiency of worker-world module.
 
-Updated to the latest version of html-hc with better UI, and more efficiency.
+Updated to the latest version of html-hc, with bug fixes.
