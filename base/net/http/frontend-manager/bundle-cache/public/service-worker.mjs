@@ -905,7 +905,7 @@ const grandVersionCheckTasks = {}
 async function grandVersionOkay(origin, shouldLoad, ignoreCachedGrandVersionInfo) {
 
 
-    if (!isHTML(source)) {
+    if (!isHTML(origin)) {
         return true;
     }
 
