@@ -1,7 +1,3 @@
 .
 
-Updated to the latest version of html-hc, with new features.
-
-Fixed minor bug with service-worker component.
-
-Improved typing.
+Issued a fix for download issues, caused by the service-worker.

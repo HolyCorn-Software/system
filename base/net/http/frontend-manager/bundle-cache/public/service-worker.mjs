@@ -74,16 +74,17 @@ self.addEventListener('fetch', (event) => {
 
     /** @type {Request} */const request = event.request
 
+    // Here's how we deal with download issues
+    if (source == request.url && !isHTML(request.url)) {
+        return
+    }
+
     event.respondWith(
         (async () => {
 
             const theClient = await self.clients.get(event.clientId)
             const source = theClient?.url || request.referrer || request.url
 
-            // Here's how we deal with download issues
-            if (source == request.url && !isHTML(request.url)) {
-                return fetch(request)
-            }
 
             const promise = (async () => {
                 async function checkGrandVersion() {
