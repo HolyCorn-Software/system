@@ -1,3 +1,5 @@
 .
 
-Issued a fix for download issues, caused by the service-worker.
+Fixed minor bug with service-worker.
+
+Updated to the latest version of html-hc with bug fixes, and better UI.

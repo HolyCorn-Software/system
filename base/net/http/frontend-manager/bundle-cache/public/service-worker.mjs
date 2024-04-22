@@ -70,9 +70,12 @@ function isCachable(request, response) {
 
 
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', async (event) => {
 
     /** @type {Request} */const request = event.request
+
+    const theClient = await self.clients.get(event.clientId)
+    const source = theClient?.url || request.referrer || request.url
 
     // Here's how we deal with download issues
     if (source == request.url && !isHTML(request.url)) {
@@ -82,8 +85,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         (async () => {
 
-            const theClient = await self.clients.get(event.clientId)
-            const source = theClient?.url || request.referrer || request.url
 
 
             const promise = (async () => {
