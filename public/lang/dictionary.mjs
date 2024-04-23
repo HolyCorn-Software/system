@@ -73,22 +73,23 @@ class StringDictionary {
 
 
 
-        //Here, we are all about retrieving the user's preferred language
-        let superDefaultLanguage = this[languages][0]?.code
-        try {
-            const chosenLanguage = localStorage.getItem('system.lang.userLanguage')
-            this[lang] = chosenLanguage ?? superDefaultLanguage
-            //TODO: Ask the user to select his language, if the chosen language is undefined
-        } catch (e) {
-            report_error_direct(e)
-            console.log(e)
-            this[lang] = superDefaultLanguage
-        }
-
 
         this[promise] = (async () => {
             this[strings] = await getStringMap()
             this[languages] = await getLanguages()
+
+            //Here, we are all about retrieving the user's preferred language
+            let superDefaultLanguage = this[languages][0]?.code
+            try {
+                const chosenLanguage = localStorage.getItem('system.lang.userLanguage')
+                this[lang] = chosenLanguage ?? superDefaultLanguage
+                //TODO: Ask the user to select his language, if the chosen language is undefined
+            } catch (e) {
+                report_error_direct(e)
+                console.log(e)
+                this[lang] = superDefaultLanguage
+            }
+
         })()
 
     }

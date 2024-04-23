@@ -6,6 +6,7 @@
  */
 
 import shortUUID from 'short-uuid'
+import nodeUtil from 'node:util'
 
 
 
@@ -536,9 +537,19 @@ class Worker {
 
             if (results?.error) {
                 (task['@worker-world-task'].retries ||= []).push({
-                    error: `${results.error}`,
+                    error: {
+                        message: results.error.message,
+                        stack: `${nodeUtil.inspect(results.error.stack, { colors: true, depth: null })}`,
+                        fatal: results.error.fatal,
+                    },
                     time: Date.now()
-                })
+                });
+
+                task['@worker-world-task'].retries = task['@worker-world-task'].retries.reverse().slice(0, 5)
+
+                if (results.ignored) {
+                    task['@worker-world-task'].hibernation = results.ignored
+                }
 
                 if (results.error.fatal) {
                     task['@worker-world-task'].expires = Math.min(Date.now() + (24 * 60 * 60 * 1000), task['@worker-world-task'].expires || Infinity)

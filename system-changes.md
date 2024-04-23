@@ -1,5 +1,8 @@
 .
 
-Fixed minor bug with service-worker.
+Fixed minor bug with plugin manager.
 
-Updated to the latest version of html-hc with bug fixes, and better UI.
+Fixed minor bug with languages and translation.
+
+Improved error-handling, and fixed minor bug with worker-world module.
+

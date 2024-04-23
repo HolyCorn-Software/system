@@ -42,7 +42,7 @@ global {
         }
         interface Retry {
             time: number
-            error: string
+            error: TaskResults['error']
         }
         type ExecuteFunction<T = {}, Ns = {}> = (input: Task<T, Ns>) => Promise<TaskResults<Ns>>
 
@@ -56,6 +56,8 @@ global {
                 message: string
                 /** Is it impossible to retry */
                 fatal: boolean
+
+                stack: string
             }
             /**
              * Was the task simply ignored, so that we can get back to it later? The value of this field tells us
