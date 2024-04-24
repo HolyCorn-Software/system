@@ -1,8 +1,3 @@
 .
 
-Fixed minor bug with plugin manager.
-
-Fixed minor bug with languages and translation.
-
-Improved error-handling, and fixed minor bug with worker-world module.
-
+Updated to the latest version of html-hc, with better handling of the OS's back button.
