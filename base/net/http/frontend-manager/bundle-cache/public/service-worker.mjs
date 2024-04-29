@@ -692,7 +692,7 @@ async function findorFetchResource(request, source) {
                                 // Add this source to the list of 'slow' origins
                                 // From now on (untill 2 mins), requests from this origin would be loaded from cache
                                 slowSources.add(source)
-                                setTimeout(() => slowSources.delete(source), 2000)
+                                setTimeout(() => slowSources.delete(source), 2 * 60 * 1000)
                             }, 5_000)
                         })
                     ]

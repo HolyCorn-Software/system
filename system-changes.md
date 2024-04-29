@@ -1,3 +1,3 @@
 .
 
-Improved caching algorithm for frontend resources.
+Fixed minor bug with caching algorithm.
