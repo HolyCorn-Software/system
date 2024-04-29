@@ -577,6 +577,8 @@ async function grandUpdate(source, shouldLoad, ignoreCachedGrandVersionInfo) {
 
 const fetchTasks = {}
 
+const slowSources = new Set()
+
 
 /**
  * This method loads a single resource, whether from the cache, or not
@@ -658,6 +660,11 @@ async function findorFetchResource(request, source) {
 
     if (inCache) {
         inCache.inCache = true
+        if (slowSources.has(source)) {
+            // So, if a source is marked slow, all requests will be served from the cache
+            // In that case, when a page takes too long to load, we'll easily know, and prevent it from continuing like this.
+            return inCache
+        }
         // Sometimes, those secondary files, get added to the cache; not because the file itself was a UI file, but because it's Mime returned UI
         // If that's the case, let's only cache this for a given period
         const NON_UI_CACHE_TIME =
@@ -682,6 +689,10 @@ async function findorFetchResource(request, source) {
                         new Promise((resolve) => {
                             setTimeout(() => {
                                 resolve(inCache)
+                                // Add this source to the list of 'slow' origins
+                                // From now on (untill 2 mins), requests from this origin would be loaded from cache
+                                slowSources.add(source)
+                                setTimeout(() => slowSources.delete(source), 2000)
                             }, 5_000)
                         })
                     ]
