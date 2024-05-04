@@ -1,3 +1,3 @@
 .
 
-Fixed minor bug with caching algorithm.
+Improved error handling with the event-channel module.

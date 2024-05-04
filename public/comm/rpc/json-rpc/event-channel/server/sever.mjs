@@ -225,7 +225,7 @@ class ClientsRemoteProxy {
              * @param {any} target 
              * @param {any} thisArg 
              * @param {any[]} argArray 
-             * @returns {import("./types").MassCallReturns<any>}
+             * @returns {soul.comm.rpc.event_channel.MassCallReturns<any>}
              */
             apply: async (_target, thisArg, argArray) => {
 
@@ -304,7 +304,15 @@ class ClientsRemoteProxy {
 
                 abortController.signal.addEventListener('abort', destroy, { once: true })
 
-                return makeCall()
+                try {
+                    return await makeCall()
+                } catch (e) {
+                    if (e.internallyAborted) {
+                        console.log(`The operation was aborted internally`)
+                        return {}
+                    }
+                    throw e
+                }
 
 
                 async function makeCall() {
@@ -412,11 +420,13 @@ class ClientsRemoteProxy {
 
                                 } catch (e) {
                                     if (e.internallyAborted && findPhaseDone) {
-                                        // No need to throw this error, because our main goal of throwing "internallAborted" errors, is so that the higher logic knows when it's time to stop
+                                        // No need to throw this error, because our main goal of throwing "internallyAborted" errors, is so that the higher logic knows when it's time to stop
                                         // Apparently, by  now, it should have stopped
 
                                         return;
                                     }
+
+                                    console.log(`e.internallyAborted `, e.internallyAborted)
 
                                     throw e
                                 }
