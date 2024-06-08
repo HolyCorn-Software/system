@@ -121,7 +121,7 @@ export function checkArgs(args, structure, argName, error_callback, flags = []) 
             }
 
             if (!isOkay) {
-                throw new Exception(`${fieldName} was supposed to be a ${type} but ${obj ?? 'nothing' ? 'nothing' : `a(n) ${typeof obj}`} was passed`, {
+                throw new Exception(`${fieldName} was supposed to be a ${type} but ${obj ? typeof obj : 'nothing'} was passed`, {
                     code: `error.input.validation("${fieldName} was supposed to be a ${type} but a(n) ${typeof obj} `
                         + `was passed")`
                 })
@@ -290,9 +290,10 @@ export function getCaller({ hideFunction = true, hideFileURL, offset = 0 } = {})
 
 
 /**
+ * @template DataType
  * This method picks a selected number of fields from an object, if and only if the object has those fields
- * @param {object} object 
- * @param {string[]} fields 
+ * @param {DataType} object 
+ * @param {(keyof DataType)[]} fields 
  * @param {(field:string)=>string} transform
  * @returns {object}
  */

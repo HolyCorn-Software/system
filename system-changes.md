@@ -1,3 +1,3 @@
 .
 
-Improved error handling with the event-channel module.
+Fixed minor bug with the `checkArgs()` utility.
