@@ -71,13 +71,32 @@ export default class ClientJSONRPC extends JSONRPC {
             //In case the last disconnected...
             //Wait till we have a new one
             if (typeof this.socket === 'undefined') {
-                await new Promise(x => {
-                    setInterval(() => {
-                        if (typeof this.socket !== 'undefined') {
-                            x();
+                if (
+                    await new Promise(x => {
+
+                        let interval = setInterval(() => {
+                            if (typeof this.socket !== 'undefined') {
+                                x();
+                                cleanup()
+                            }
+                        }, 100)
+
+
+                        const cleanup = () => {
+                            this.removeEventListener('destroy', oncomplete)
+                            clearInterval(interval);
                         }
-                    }, 100)
-                });
+
+                        const oncomplete = () => {
+                            x(true)
+                            cleanup()
+                        }
+
+                        this.addEventListener('destroy', oncomplete)
+                    })
+                ) {
+                    return
+                }
             }
 
             this.socket.send(d);

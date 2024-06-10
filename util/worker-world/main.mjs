@@ -61,6 +61,7 @@ export default class WorkerWorld {
                     created: Date.now(),
                     id: shortUUID.generate(),
                     stage: params.stages[0].name,
+                    updated: Date.now()
                 }
             }
         )
@@ -105,11 +106,11 @@ export default class WorkerWorld {
         /**
          * This method 'purifies' data extracted from a database, by removing other now unncessary data, that was used to manage its task-execution process
          * @template Input
-         * @param {Input} record 
-         * @returns {Omit<Input, "@worker-world-task"|"_id">}
+         * @param {soul.util.workerworld.Task<Input>} record 
          */
         this.trim = (record) => {
             if (record) {
+                record.$modified = record['@worker-world-task'].updated || record['@worker-world-task'].created
                 delete record["@worker-world-task"]
                 delete record._id
             }
@@ -120,6 +121,34 @@ export default class WorkerWorld {
 
 
     [internal] = {
+
+        parseFilter: (filter) => {
+            let once$updated
+            /**
+             * 
+             * @param {soul.util.workerworld.Filter<T, Ns>} filter 
+             */
+            function parse(filter) {
+
+                if (filter.$modified) {
+                    filter['@worker-world-task.updated'] = filter.$modified
+                    once$updated = true
+                    delete filter.$modified
+                }
+                if (filter.$or) {
+                    for (const item of filter.$or) {
+                        parse(item)
+                    }
+                }
+            }
+
+
+            parse(filter)
+
+            return filter
+        },
+
+
         /** 
          * This method returns the collections that would be potentially affected by, or needed by, a database operation involving a given filter.
          * This is based on the fact that, certain filters specify the $stages parameter, which tells us which collections we're dealing with.
@@ -208,8 +237,7 @@ export default class WorkerWorld {
         singularCollectionRaceOperation: async (filter, params, methodName, checkProperty) => {
 
 
-            const nwFilter = { ...filter }
-            delete nwFilter.$stages;
+            const { $stages, ...nwFilter } = this[internal].parseFilter(filter)
 
             return await this[internal].raceOperation(
                 async collection => {
@@ -231,8 +259,7 @@ export default class WorkerWorld {
     async findOne(filter) {
         const collections = this[internal].getCollectionsFromFilter(filter)
 
-        const nwFilter = { ...filter }
-        delete nwFilter.$stages;
+        const { $stages, ...nwFilter } = this[internal].parseFilter(filter)
 
         return await this[internal].raceOperation(
             collection => collection.findOne(nwFilter).then(x => WorkerWorld.trim(x)),
@@ -246,9 +273,10 @@ export default class WorkerWorld {
      * @param {import('mongodb').FindOptions<T>} options
      */
     async* find(filter, options) {
+
+        const { $stages, ...nwFilter } = this[internal].parseFilter(filter)
+
         for (const collection of await this[internal].getCollectionsFromFilter(filter)) {
-            const nwFilter = { ...filter }
-            delete nwFilter.$stages;
 
             const cursor = collection.find(nwFilter, options)
             while ((await cursor.hasNext())) {
@@ -284,8 +312,10 @@ export default class WorkerWorld {
      */
     async deleteMany(filter, updateData, options) {
 
+        const { $stages, ...nwFilter } = this[internal].parseFilter(filter)
+
         return await Promise.all(
-            this[internal].getCollectionsFromFilter(filter).map(col => col.deleteMany(filter, updateData, options))
+            this[internal].getCollectionsFromFilter(filter).map(col => col.deleteMany(nwFilter, updateData, options))
         )
     }
 
@@ -298,6 +328,8 @@ export default class WorkerWorld {
      * @returns {Promise<import('mongodb').UpdateResult>}
      */
     async updateOne(filter, updateData, options) {
+        (updateData.$set ||= {})['@worker-world-task.updated'] = Date.now();
+
         return await this[internal].singularCollectionRaceOperation(
             filter,
             [
@@ -313,15 +345,20 @@ export default class WorkerWorld {
 
     /**
      * This method updates all records that match a given filter
-     * @param {soul.util.workerworld.Filter<T,Ns>} filter 
+     * @param {soul.util.workerworld.Filter<{name: 'goat'}&T,Ns>} filter 
      * @param {import('mongodb').UpdateFilter<T>} updateData 
      * @param {import('mongodb').UpdateOptions} options 
      * @returns {Promise<import('mongodb').UpdateResult>}
      */
     async updateMany(filter, updateData, options) {
         // Usually, when updating many records, matches would be found in multiple collections.
+
+        (updateData.$set ||= {})['@worker-world-task.updated'] = Date.now();
+
+        const { $stages, ...nwFilter } = this[internal].parseFilter(filter)
+
         return await Promise.all(
-            this[internal].getCollectionsFromFilter(filter).map(col => col.updateMany(filter, updateData, options))
+            this[internal].getCollectionsFromFilter(filter).map(col => col.updateMany(nwFilter, updateData, options))
         )
     }
 
@@ -531,9 +568,18 @@ class Worker {
 
             task['@worker-world-task'].stage = this[args].stages[this[args].stageIndex].name
 
+
             const initial = JSON.stringify(task)
 
+
             const results = await this[args].execute(task)
+
+
+
+            if (results?.ignored) {
+                task['@worker-world-task'].hibernation = results.ignored
+            }
+
 
             if (results?.error) {
                 (task['@worker-world-task'].retries ||= []).push({
@@ -547,16 +593,21 @@ class Worker {
 
                 task['@worker-world-task'].retries = task['@worker-world-task'].retries.reverse().slice(0, 5)
 
-                if (results.ignored) {
-                    task['@worker-world-task'].hibernation = results.ignored
-                }
 
                 if (results.error.fatal) {
                     task['@worker-world-task'].expires = Math.min(Date.now() + (24 * 60 * 60 * 1000), task['@worker-world-task'].expires || Infinity)
                     task['@worker-world-task'].dead = true
                 }
+            }
 
-                return await update()
+
+            const hasChanged = () => JSON.stringify(task) != initial
+
+
+
+            if (results?.delete) {
+                await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
+                await stage?.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
             } else {
 
                 // In case we're moving to a different stage abruptly..
@@ -565,35 +616,28 @@ class Worker {
                     stage = this[args].stages.find(x => x.name == results.newStage)
                     if (!stage) {
                         console.warn(`After execution of task ${task['@worker-world-task'].id.magenta}, the executor asked for movement to a non-existent stage: ${(results.newStage || 'undefined').red}`)
-                        stage = this[args].stages[this[args].stageIndex + 1]
+                        stage = this[args].stages[Math.min(this[args].stageIndex + 1, this[args].stages.length - 1)]
                     }
                 }
 
-                const hasChanged = () => JSON.stringify(task) != initial
+                const currentStage = this[args].stages[this[args].stageIndex]
 
-                if (results?.ignored) {
-                    task['@worker-world-task'].hibernation = results.ignored
-                    if (hasChanged()) {
-                        (await update())
-                    }
-                    return true;
-                }
 
-                if (results?.delete) {
-                    await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
-                    await stage?.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
-                } else {
-                    const currentStage = this[args].stages[this[args].stageIndex]
-
-                    if (hasChanged() || (currentStage.name !== (results?.newStage || currentStage.name))) {
+                if (hasChanged() || currentStage.name !== (results?.newStage || currentStage.name)) {
+                    if (stage) {
                         await currentStage.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
-                        await stage?.collection.insertOne(task)
+                        await stage.collection.insertOne(task)
+                    } else {
+                        await currentStage.collection.replaceOne({ "@worker-world-task.id": task['@worker-world-task'].id }, task)
                     }
+
                 }
 
-
-                return true;
             }
+
+
+            return true;
+
 
         }
 

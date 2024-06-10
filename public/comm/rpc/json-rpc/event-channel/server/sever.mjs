@@ -229,7 +229,7 @@ class ClientsRemoteProxy {
              */
             apply: async (_target, thisArg, argArray) => {
 
-                const stack = new Error().stack.split('\n').slice(1).join('\n')
+                const stack = new Error().stack.split('\n').slice(2).join('\n')
 
                 const abortController = new AbortController()
                 let internallyAborted = false;
@@ -275,6 +275,7 @@ class ClientsRemoteProxy {
                                 return currentOperation.promise
                             }
                         } else {
+                            console.trace(`Calling an abort() somehow internally.`)
                             currentOperation.abort()
                         }
                     }
@@ -410,7 +411,7 @@ class ClientsRemoteProxy {
                                                 promise.done = true
 
                                                 if (findPhaseDone && adultPromises.every(prom => prom.done)) {
-                                                    abortController.abort()
+                                                    callStatus.abort()
                                                 }
 
                                             })

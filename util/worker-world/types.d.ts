@@ -35,10 +35,12 @@ global {
                 stage: keyof Ns
                 hibernation: number
                 created: number
+                updated: number
                 expires: number
                 dead: boolean
                 retries: Retry[]
             }
+            $modified: number
         }
         interface Retry {
             time: number
@@ -80,7 +82,7 @@ global {
 
         }
 
-        type Filter<T, Ns = {}> = import("mongodb").Filter<T> & {
+        type Filter<T, Ns = {}> = import("mongodb").Filter<Omit<Task<T, Ns>, "@worker-world-task">> & {
             /** If this is set, the system would ignore the other collections, and just query the collections of the steps here listed. */
             $stages: (keyof Ns)[]
         }
