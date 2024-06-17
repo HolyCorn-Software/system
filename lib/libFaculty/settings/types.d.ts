@@ -95,13 +95,15 @@ global {
             ) : never
         },>
 
-        type Namespaces<FacultyName> = GetKeys<{
-            [K in keyof all]: all[K]['faculty'] extends FacultyName ? all[K]['namespace'] : never
+        type Namespaces<FacultyName, Name = string> = GetKeys<{
+            [K in keyof all]: K extends Name ? all[K]['faculty'] extends FacultyName ? all[K]['namespace'] : never : never
         }>
 
-        type Names<FacultyName, Namespace = any> = GetKeys<{
+        type Names<FacultyName, Namespace = string> = GetKeys<{
             [K in keyof all]: all[K]['faculty'] extends FacultyName ? all[K]['namespace'] extends Namespace ? K : never : never
         }>
+
+        type Values<FacultyName, Name, Namespace> = SettingsUpdateType<FacultyName, Name, Namespace>['value']
 
         type GetKeys<T, K = keyof T> = T[K]
     }

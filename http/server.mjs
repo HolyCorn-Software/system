@@ -91,13 +91,14 @@ export class HTTPServer extends Server {
                     if (e.code === 'error.system.unplanned') {
                         console.error(e);
                     }
-                    return res.endJSON(e.userObject, {}, e.userObject.httpCode) || true
+                    return res.endJSON(e.userObject.message || e.userObject, {}, e.userObject.httpCode || 500) || true
                 }
 
-                console.warn(`\n\nInstead of throwing an Error object, throw an Exception with a specific code name, as defined in the faculty.json. For example user.error.authError`)
-                let exception = new Exception(`Unhandled Error during HTTP serving\n${e.stack}`, { code: 'error.system.unplanned' });
-                console.error(exception)
-                return res.endJSON(exception.userObject, {}, exception.userObject.httpCode) || true
+
+
+                let exception = new Exception(`Unhandled Error during HTTP serving\n${e instanceof Exception ? e.message : ''}`, { code: 'error.system.unplanned', httpCode: 500 });
+                console.error(exception, `\nComing from\n`, e)
+                return res.endJSON(exception.userObject.message || e.userObject, {}, exception.userObject.httpCode || 500) || true
 
             }
         }

@@ -19,12 +19,16 @@ export default class BaseSettingsPublicMethods {
     }
 
     /**
-     * This method is used to retrieve a setting
+     * This method reads a single setting
      * @template {keyof faculty.faculties} FacultyName
      * @template {faculty.managedsettings.Namespaces<FacultyName>} Namespace
-     * @template {faculty.managedsettings.Names<FacultyName, Namespace>} SettingName
-     * @param {{faculty: FacultyName, name: SettingName, namespace: Namespace}& Omit<faculty.managedsettings.SettingsUpdateType<FacultyName, SettingName, Namespace>, "value"|"name"|"namespace">} param0 
-     * @returns {Promise<faculty.managedsettings.FilterByFacultyAndName<FacultyName, SettingName>>}
+     * @template {faculty.managedsettings.Names<FacultyName>} Name
+     * 
+     * @param {object} param0
+     * @param {FacultyName} param0.faculty
+     * @param {Namespace} param0.namespace
+     * @param {Name} param0.name
+     * @returns {faculty.managedsettings.Values<FacultyName, Name, Namespace>}
      */
     async get({ faculty, namespace, name }) {
         faculty = arguments[1]?.faculty

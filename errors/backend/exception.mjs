@@ -22,9 +22,10 @@ export class Exception extends Error {
      * @param {object} param1.flags
      * @param {boolean} param1.flags.showNodeTraces This is normally turned off. But if you turn it on, it'll include stack traces from internal node.js methods
      * @param {number} param1.flags.stackIndex Use this parameter to cut out some parts of the stack trace. For example, setting it to 3 will exclude all stack traces before line (3+1) 4
+     * @param {number} param1.flags.httpCode
      * @param {Error} param1.cause
      */
-    constructor(message, { code, cause, flags: { showNodeTraces = false, stackIndex = 0 } = { showNodeTraces: false, stackIndex: 0 } } = {}) {
+    constructor(message, { code, cause, flags: { showNodeTraces = false, stackIndex = 0, httpCode } = { showNodeTraces: false, stackIndex: 0, httpCode: 400 } } = {}) {
         super(message, { cause });
 
 
@@ -45,6 +46,9 @@ export class Exception extends Error {
 
 
         this.stack = this.stack.replace(/^Error: /, `${'Exception'.bold.red}\n`)
+        this.message ||= message
+        this.httpCode ||= httpCode
+        
         if (!showNodeTraces) {
             this.stack = this.stack.replaceAll(/\n.*\(node:internal.*/g, '')
         }
@@ -61,7 +65,7 @@ export class Exception extends Error {
      * @returns {{id:string, code:string, httpCode: number, message:string, version:2}}
      */
     get userObject() {
-        return this
+        return { message: this.message, httpCode: this.httpCode, code: this.code }
     }
 
 }
