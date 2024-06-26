@@ -35,6 +35,8 @@ global {
     namespace base.rpc {
         interface BaseToFacultyEvents {
             'platform-ready': undefined
+            /** Fired when the platform starts accepting HHTP requests */
+            'platform-connected': undefined
         }
     }
 }

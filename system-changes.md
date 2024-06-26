@@ -1,5 +1,3 @@
 .
 
-Improved error handling, especially with HTTP.
-
-Improved typing.
+Added 'platform-connected' event feature, for components to know when to start processing client requests.

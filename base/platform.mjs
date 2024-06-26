@@ -200,6 +200,7 @@ export class BasePlatform extends Platform {
                     this.faculties.initDone.then(() => {
                         this.http_manager.platform_http.isHalted = false
                         console.log(`The server has started accepting HTTP requests`.cyan)
+                        this.faculties.events.dispatchEvent(new CustomEvent('platform-connected'))
                     })
                 })
             })
