@@ -102,8 +102,7 @@ export function checkArgs(args, structure, argName, error_callback, flags = []) 
             let isOkay = false;
 
             for (let subType of subTypes) {
-
-                const enumRegExp = /^['"](.+)['"]$/
+                const enumRegExp = /^['"]([^'"]+)['"]$/
                 if (enumRegExp.test(subType)) {
                     const enumValue = enumRegExp.exec(subType)[1]
                     if (obj === enumValue) {
