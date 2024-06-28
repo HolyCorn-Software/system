@@ -604,16 +604,18 @@ class Worker {
             const hasChanged = () => JSON.stringify(task) != initial
 
 
+            let stage = this[args].stages[this[args].stageIndex]
 
             if (results?.delete) {
-                await this[args].stages[this[args].stageIndex].collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
+                await stage.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
                 await stage?.collection.deleteMany({ '@worker-world-task.id': task['@worker-world-task'].id })
             } else {
 
                 // In case we're moving to a different stage abruptly..
-                let stage;
+                
                 if (results?.newStage) {
                     stage = this[args].stages.find(x => x.name == results.newStage)
+                    
                     if (!stage) {
                         console.warn(`After execution of task ${task['@worker-world-task'].id.magenta}, the executor asked for movement to a non-existent stage: ${(results.newStage || 'undefined').red}`)
                         stage = this[args].stages[Math.min(this[args].stageIndex + 1, this[args].stages.length - 1)]

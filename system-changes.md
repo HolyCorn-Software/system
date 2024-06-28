@@ -1,3 +1,3 @@
 .
 
-Improved the checkArgs() utility.
+Fixed minor bug.
