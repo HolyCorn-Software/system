@@ -1,3 +1,3 @@
 .
 
-Added feature for securely exposing database collections to public interfaces.
+Updated to the latest version of html-hc, with minor UI adjustments.
