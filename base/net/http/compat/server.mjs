@@ -9,11 +9,10 @@ import worker_threads from 'node:worker_threads'
 import libFs from 'node:fs'
 import libOs from 'node:os'
 import libPath from 'node:path'
-import shortUUID from "short-uuid";
 import { BasePlatform } from "../../../platform.mjs";
 import libUrl from 'node:url'
 import CompatFileServer from "../../../../http/compat-server/server.mjs";
-
+import chokidar from 'chokidar'
 
 
 
@@ -24,6 +23,7 @@ const isLooping = Symbol()
 const worker = Symbol()
 const compatRoot = Symbol()
 const workerCleanTimeout = Symbol()
+const watcher = Symbol()
 
 export default class BaseCompatServer {
 
@@ -32,6 +32,16 @@ export default class BaseCompatServer {
         this[list] = new WaitList()
         /** @type {{path:string, promise:Promise<void>}} The path we are currently transpiling */
         this[current];
+
+        this[watcher] = new chokidar.FSWatcher({
+            depth: Infinity,
+        });
+
+        this[watcher].on('change', (path, stats) => {
+            if (path.endsWith('js') && stats.isFile()) {
+                this.transpile(path, true)
+            }
+        })
 
     }
 
@@ -51,8 +61,8 @@ export default class BaseCompatServer {
         if (this[compatRoot]) {
             return this[compatRoot]
         }
-        this[compatRoot] = `${libOs.tmpdir()}/${shortUUID.generate()}${shortUUID.generate()}`
-        libFs.mkdirSync(this[compatRoot])
+        this[compatRoot] = `${libOs.tmpdir()}/${FacultyPlatform.get().server_domains.secure}-compat/`
+        if (!libFs.existsSync(this[compatRoot])) libFs.mkdirSync(this[compatRoot], { recursive: true })
         const destroy = () => {
             this[worker]?.terminate().finally(() => {
                 libFs.rmSync(this[compatRoot], { recursive: true, force: true })
@@ -166,14 +176,26 @@ export default class BaseCompatServer {
         if (!CompatFileServer.COMPAT_ACTIVE) {
             return;
         }
-        let pathStats;
-        if (libFs.existsSync(path) && (pathStats = await libFs.promises.stat(path)).isFile()) {
+        let pathStats = libFs.existsSync(path) ? await libFs.promises.stat(path) : undefined;
+
+
+        const watchedPath = pathStats.isFile() ? libPath.dirname(path) : path;
+
+        if (!this[watcher].getWatched()[watchedPath]) {
+            this[watcher].add(
+                watchedPath,
+            );
+            console.log(`Watching `, watchedPath)
+        }
+
+        if (pathStats && pathStats.isFile()) {
             if (libFs.existsSync(this.getCompatFilePath(path)) && ((await libFs.promises.stat(`${this.getCompatFilePath(path)}`)).mtimeMs >= pathStats.mtimeMs)) {
                 return console.log(`No need to transpile ${path}`);
             }
         }
 
         this[list].add(path)
+
 
         this[loop]()
 
