@@ -185,7 +185,6 @@ export default class BaseCompatServer {
             this[watcher].add(
                 watchedPath,
             );
-            console.log(`Watching `, watchedPath)
         }
 
         if (pathStats && pathStats.isFile()) {

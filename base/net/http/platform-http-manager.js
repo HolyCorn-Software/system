@@ -6,6 +6,7 @@ This general processing involves aspects like handling websockets
 */
 
 import tls from 'node:tls'
+import libPath from 'node:path'
 
 
 import platform_credentials from '../../../secure/credentials.mjs'
@@ -30,11 +31,13 @@ export class BasePlatformHTTPManager {
         let port = this.http_port; //Heroku and other hosting platforms tell us which port to bind to
 
         //The default HTTP server that everthing goes through
-        this.platform_http = new (await import('./platform-http.mjs')).default(this.base, port);
+        this.platform_http = new (await import('./platform-http.mjs')).default(this.base, (x => x ? libPath.normalize(`${x}/socket`) : x)(process.env['GATEWAY_PATH']) || port);
 
 
         //The TLS server that forwards all requests back to the default HTTP server
-        this.createTLSServer(this.https_port).catch(e => console.error(e));
+        if (!process.env['GATEWAY_PATH']) {
+            this.createTLSServer(this.https_port).catch(e => console.error(e));
+        }
 
 
         //Now enforce SSL according to system policies

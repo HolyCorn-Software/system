@@ -1,5 +1,3 @@
 .
 
-Improved http routing.
-
-Made file compat more efficient, and reactive.
+Made soul system compatible with hosting gateway.
