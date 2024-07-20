@@ -11,9 +11,9 @@ import { Collection, Filter, UpdateFilter } from "mongodb"
 global {
     namespace soul.util.secure_db_query {
 
-        type Search<Input> = Filter<T>
+        type Search<Input> = Filter<Input>
 
-        type Update<Input> = UpdateFilter<T>
+        type Update<Input> = UpdateFilter<Input>
 
         interface Options<Input = {}> {
             fields: {
