@@ -102,7 +102,7 @@ export default class SecureDBQuery {
 
             check(filter)
 
-            await this[options]?.transformQuery({
+            await this[options].transformQuery?.({
                 search: filter,
                 intent,
             })
@@ -127,7 +127,7 @@ export default class SecureDBQuery {
                     }
                 });
 
-                await this[options].dataCheck({ data: obj, intent: 'update' })
+                await this[options].dataCheck?.({ data: obj, intent: 'update' })
             }
             const checks = ['$set', '$setOnInsert', '$unset']
             const finalUpdate = {}
@@ -139,7 +139,7 @@ export default class SecureDBQuery {
                 }
             }
 
-            await this[options].transformQuery({ update: finalUpdate, intent: 'update' })
+            await this[options].transformQuery?.({ update: finalUpdate, intent: 'update' })
 
             return update = finalUpdate
         },
@@ -166,7 +166,13 @@ export default class SecureDBQuery {
 
         await this[internal].checkFields(data)
 
-        await this[options].dataCheck({ data, intent: 'create' });
+
+        await this[options].dataCheck?.({ data, intent: 'create' });
+
+        await this[options].transformQuery?.({
+            intent: 'create',
+            update: data
+        })
 
         await this[options].collection.insertOne(data)
 
