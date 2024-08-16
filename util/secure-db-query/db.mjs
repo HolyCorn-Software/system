@@ -158,6 +158,8 @@ export default class SecureDBQuery {
      */
     async create(data) {
 
+        const original = JSON.parse(JSON.stringify(data))
+
         if (this[options].disableUpdate) {
             throw new Exception(`You're not allowed to update this database, please.`)
         }
@@ -167,6 +169,16 @@ export default class SecureDBQuery {
         await this[options].dataCheck({ data, intent: 'create' });
 
         await this[options].collection.insertOne(data)
+
+        // Return the new fields
+        const changes = {}
+        for (const key in data) {
+            if (typeof original[key] == 'undefined') {
+                changes[key] = data[key]
+            }
+        }
+
+        return changes
 
     }
 
