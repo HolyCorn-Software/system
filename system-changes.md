@@ -1,3 +1,3 @@
 .
 
-Improved usability of the secure-db-query module.
+Fixed minor bugs related to websocket management.

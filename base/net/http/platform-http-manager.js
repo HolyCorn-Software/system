@@ -19,7 +19,7 @@ export class BasePlatformHTTPManager {
      * @param {import('../../platform.mjs').BasePlatform} base
      * @param {{http_port:number, https_port:number}} 
      */
-    constructor(base, args) {
+    constructor(base, args = {}) {
         /** @type {import('../../platform.mjs').BasePlatform} */
         this.base = base;
         Object.assign(this, args);
@@ -28,15 +28,15 @@ export class BasePlatformHTTPManager {
     }
     init = async () => {
 
-        let port = this.http_port; //Heroku and other hosting platforms tell us which port to bind to
+        let port = this.base.ports.gateway ? this.base.ports.gateway : this.base.ports.http;
 
         //The default HTTP server that everthing goes through
-        this.platform_http = new (await import('./platform-http.mjs')).default(this.base, (x => x ? libPath.normalize(`${x}/socket`) : x)(process.env['GATEWAY_PATH']) || port);
+        this.platform_http = new (await import('./platform-http.mjs')).default(this.base, port);
 
 
         //The TLS server that forwards all requests back to the default HTTP server
-        if (!process.env['GATEWAY_PATH']) {
-            this.createTLSServer(this.https_port).catch(e => console.error(e));
+        if (!this.base.ports.gateway) {
+            this.createTLSServer(this.base.ports.https).catch(e => console.error(e));
         }
 
 
@@ -57,13 +57,13 @@ export class BasePlatformHTTPManager {
         //Now Log
         console.log(`
         ${'HTTP server running on port '.cyan}${port.toString().blue}
-        ${`${'HTTPS'.blue} server running on port `.cyan}${this.https_port.toString().blue}
+        ${`${this.base.ports.gateway ? '' : `${`${'HTTPS'.blue} server running on port `.cyan}${this.https_port.toString().blue}`}
         The server is not yet open to receiving requests
-        `)
+        `}`)
 
         console.log(`
         ${'System related features on SystemHTTP\n\tare running on port '.cyan}${this.system_http.port.toString().blue}, ${'routed to '.cyan}${this.system_http.system_path.green}
-        `)
+            `)
     }
 
     enforceSSL() {

@@ -21,6 +21,8 @@ import { BasePlatformHTTPManager } from "./net/http/platform-http-manager.js";
 import LanguageController from "./lang/controller.mjs";
 import BaseCompatServer from "./net/http/compat/server.mjs";
 import FrontendManager from "./net/http/frontend-manager/manager.mjs";
+import libPath from 'node:path'
+import libFs from 'node:fs'
 
 const startHTTP = Symbol()
 const init0 = Symbol()
@@ -95,7 +97,17 @@ export class BasePlatform extends Platform {
 
         }
 
-        let returns = await this[init0]({ port, key: platform_credentials.tls_key, cert: platform_credentials.tls_cert, database_credentials: platform_credentials.database_config, http_port: new Number(process.env.HTTP_PORT).valueOf(), https_port: new Number(process.env.HTTPS_PORT).valueOf(), server_domains })
+        const GATEWAY_PATH = process.env.GATEWAY_PATH;
+        let returns = await this[init0]({
+            port,
+            key: platform_credentials.tls_key,
+            cert: platform_credentials.tls_cert,
+            database_credentials: platform_credentials.database_config,
+            gateway_path: GATEWAY_PATH,
+            http_port: GATEWAY_PATH ? undefined : new Number(process.env.HTTP_PORT).valueOf(),
+            https_port: GATEWAY_PATH ? undefined : new Number(process.env.HTTPS_PORT).valueOf(),
+            server_domains
+        })
         setTimeout(() => this.events.emit('booted'), 3000)
         return returns;
     }
@@ -109,14 +121,15 @@ export class BasePlatform extends Platform {
      * @param {Buffer} param0.key The system TLS private key
      * @param {Buffer} param0.cert The system TLS certificate
      * @param {Buffer} param0.ca The system certificate authority
-     * @param {number} param0.http_port
-     * @param {number} param0.https_port
+     * @param {number|undefined} param0.http_port
+     * @param {number|undefined} param0.https_port
      * @param {object} param0.server_domains
      * @param {string} param0.server_domains.plaintext
      * @param {string} param0.server_domains.secure
+     * @param {string|undefined} param0.gateway_path
      * 
      */
-    async [init0]({ port, key, cert, ca, database_credentials, http_port, https_port, server_domains } = {}) {
+    async [init0]({ port, key, cert, ca, database_credentials, http_port, https_port, server_domains, gateway_path } = {}) {
 
         await this.waitForPreInit()
 
@@ -166,7 +179,18 @@ export class BasePlatform extends Platform {
         //Then the channel via which faculties can communicate back to the server
         this.faculty_remote_methods = new BaseToFacultyRemoteMethods(this)
 
-        await this[startHTTP](http_port, https_port);
+        if (gateway_path && !libFs.existsSync(gateway_path)) {
+            throw new Error(`The gateway path ${gateway_path.red} doesn't exist.`)
+        }
+
+        this.ports = {
+            http: http_port,
+            https: https_port,
+            main: port,
+            gateway: libPath.normalize(`${gateway_path}/socket`),
+        }
+
+        await this[startHTTP]();
 
         /** This is an api available to faculties that provides features related to HTTP */
         this.faculty_http_api = new BasePlatformHTTPAPI(this);
@@ -176,6 +200,7 @@ export class BasePlatform extends Platform {
 
         this.lang = new LanguageController()
 
+
     }
 
 
@@ -184,8 +209,8 @@ export class BasePlatform extends Platform {
      * @param {number|undefined} http_port
      * @param {number|undefined} https_port
      */
-    async [startHTTP](http_port = 4141, https_port = 4142) {
-        let http_manager = new BasePlatformHTTPManager(this, { http_port, https_port })
+    async [startHTTP]() {
+        let http_manager = new BasePlatformHTTPManager(this)
         await http_manager.init()
         this.http_manager = http_manager;
         this.frontendManager = new FrontendManager()
