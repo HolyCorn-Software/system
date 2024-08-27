@@ -187,8 +187,10 @@ export class BasePlatform extends Platform {
             http: http_port,
             https: https_port,
             main: port,
-            gateway: libPath.normalize(`${gateway_path}/socket`),
+            gateway: gateway_path ? libPath.normalize(`${gateway_path}/socket`) : undefined,
         }
+
+        if (gateway_path) libFs.promises.rm(this.ports.gateway).catch(() => undefined)
 
         await this[startHTTP]();
 

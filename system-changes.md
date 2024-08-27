@@ -1,3 +1,7 @@
 .
 
-Fixed minor bugs related to websocket management.
+Improved interoperability with the node-gateway.
+
+Fixed minor bug with the service-worker.
+
+Added service-worker fallback for SSL errors.

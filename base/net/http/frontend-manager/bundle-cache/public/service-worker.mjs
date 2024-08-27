@@ -70,21 +70,27 @@ function isCachable(request, response) {
 
 
 
-self.addEventListener('fetch', async (event) => {
+self.addEventListener('fetch', (event) => {
 
-    /** @type {Request} */const request = event.request
 
-    const theClient = await self.clients.get(event.clientId)
-    const source = theClient?.url || request.referrer || request.url
-
-    // Here's how we deal with download issues
-    if (source == request.url && !isHTML(request.url)) {
-        return
-    }
 
     event.respondWith(
         (async () => {
+            /** @type {Request} */
+            let request = event.request
 
+            const theClient = await self.clients.get(event.clientId)
+            const source = theClient?.url || request.referrer || request.url
+
+            // Here's how we deal with download issues
+            if (source == request.url && !isHTML(request.url)) {
+                return
+            }
+
+            if (!source.startsWith('http')) {
+                console.log(`Not dealing with request ${request.url}`)
+                return
+            }
 
 
             const promise = (async () => {
@@ -96,50 +102,64 @@ self.addEventListener('fetch', async (event) => {
                 }
                 const grandCheckPromise = checkGrandVersion()
 
-                try {
-                    let responsePromise = Promise.race([
-                        (async () => {
+                const execMain = async function () {
+                    try {
+                        let responsePromise = Promise.race([
+                            (async () => {
 
-                            try {
-                                await grandCheckPromise
-                            } catch (e) { }
+                                try {
+                                    await grandCheckPromise
+                                } catch (e) { }
 
-                            return await findorFetchResource(request, source);
+                                return await findorFetchResource(request, source);
 
-                        })(),
-                        new Promise(next => setTimeout(async () => {
-                            // Now that this function is called before the main one completes, then it's timeout for main.
-                            // Therefore, we're trying to give the user something temporal to use.
-                            const cache = await caches.open(CACHE_NAME)
-                            const entry = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
-                            // The best case scenario, just lookup something in the cache
-                            if (entry) {
-                                entry.inCache = true
-                                return next(entry)
-                            }
-                            // If that's not the case, send the user a temporal (loading) page, if applicable.
-                            if (isHTML(request.url)) {
-                                next(temporalPageResponse(1000))
-                            }
-                        }, 2000))
-                    ])
+                            })(),
+                            new Promise(next => setTimeout(async () => {
+                                // Now that this function is called before the main one completes, then it's timeout for main.
+                                // Therefore, we're trying to give the user something temporal to use.
+                                const cache = await caches.open(CACHE_NAME)
+                                const entry = await cache.match(request, { ignoreMethod: true, ignoreVary: true })
+                                // The best case scenario, just lookup something in the cache
+                                if (entry) {
+                                    entry.inCache = true
+                                    return next(entry)
+                                }
+                                // If that's not the case, send the user a temporal (loading) page, if applicable.
+                                if (isHTML(request.url)) {
+                                    next(temporalPageResponse(1000))
+                                }
+                            }, 2000))
+                        ])
 
-                    // After the grand checks were done, and the response is ready.
-                    // We check if the response was from cache, and the grand version was not okay.
-                    // And ask the user to reload
-                    grandCheckPromise.then(result => {
-                        responsePromise.then(response => {
-                            if (!result && response.inCache && isHTML(request.url)) {
-                                controller.reload(source)
-                            }
+                        // After the grand checks were done, and the response is ready.
+                        // We check if the response was from cache, and the grand version was not okay.
+                        // And ask the user to reload
+                        grandCheckPromise.then(result => {
+                            responsePromise.then(response => {
+                                if (!result && response.inCache && isHTML(request.url)) {
+                                    controller.reload(source)
+                                }
+                            })
                         })
-                    })
-                    return await responsePromise
-                } catch (e) {
-                    console.error(`Failed to perform service worker duties for url ${request.url}\n`, e)
+                        return await responsePromise
+                    } catch (e) {
 
-                    return await safeFetch(request)
+                        // Now, if this is an SSL issue, retry with http
+
+                        if (request.url.startsWith('https') && !source.startsWith('https')) {
+                            request = new Request(request.url.replace('https', 'http'), request);
+                            // console.error(`Failed to perform service worker duties for url ${request.url}\n`, e, `\nRetrying with URL ${request.url}`)
+                            return await execMain()
+                        } else {
+                            console.error(`Failed to perform service worker duties for url ${request.url}\n`, e)
+                        }
+
+                        return await safeFetch(request)
+                    }
+
                 }
+
+                return await execMain();
 
             })();
 
