@@ -248,7 +248,11 @@ export default class BundleCacheServer {
 
                             // Let's remember, that the given request, 
                             // is associated to it's referrer
-                            this.fileManager.link(refURL.pathname, [url])
+                            if (url.indexOf("bundle-cache-ignore") == -1) {
+                                this.fileManager.link(refURL.pathname, [url])
+                            } else {
+                                console.log(`Ignoring linking of URL `, url)
+                            }
                         } catch (e) {
                             console.error(`Could not process request map because: \n`, e)
                         }

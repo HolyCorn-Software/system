@@ -1,7 +1,5 @@
 .
 
-Improved interoperability with the node-gateway.
+Fixed minor bug with service-worker.
 
-Fixed minor bug with the service-worker.
-
-Added service-worker fallback for SSL errors.
+Added feature to intentionally exclude certain requests from the cache.

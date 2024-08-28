@@ -11,27 +11,39 @@ console.log(`Okay, service worker working (v2.1) `);
 const CACHE_NAME = 'bundle_cache0'
 
 
+/**
+ * 
+ * @param {string} url 
+ */
+function normalizeURL(url) {
+    return url.split('?')[0].split('#')[0]
+}
+
 
 /**
  * This method checks if a URL path is pointing to an HTML source
  * @param {string} url 
  * @returns {boolean}
  */
-function isHTML(url) {
+function isHTML(url0) {
+    const url = normalizeURL(url0);
     return url.endsWith('/') || /\.[a-zA-Z]{0,1}html$/i.test(url)
 }
 
-function isUIFile(url) {
+function isUIFile(url0) {
+    const url = normalizeURL(url0);
     return isUISecFile(url) || isMainUIFile(url) || /\/shared\/static\/logo.png/.test(url) || url.endsWith('/$/system/maps/errors')
 }
 
 
-function isMainUIFile(url) {
+function isMainUIFile(url0) {
+    const url = normalizeURL(url0);
     return /\.((mjs)|(js)|(css)|(css3)|(svg))$/.test(url) || isHTML(url)
 }
 
 
-function isUISecFile(url) {
+function isUISecFile(url0) {
+    const url = normalizeURL(url0);
     return /\.((jpeg)|(png)|(jpg)|(otf)|(ttf))$/.test(url)
 }
 
@@ -72,25 +84,22 @@ function isCachable(request, response) {
 
 self.addEventListener('fetch', (event) => {
 
+    /** @type {Request} */
+    let request = event.request
 
+    if (!request.url.startsWith('http')) return
 
     event.respondWith(
         (async () => {
-            /** @type {Request} */
-            let request = event.request
 
             const theClient = await self.clients.get(event.clientId)
             const source = theClient?.url || request.referrer || request.url
 
             // Here's how we deal with download issues
             if (source == request.url && !isHTML(request.url)) {
-                return
+                return await safeFetch(request)
             }
 
-            if (!source.startsWith('http')) {
-                console.log(`Not dealing with request ${request.url}`)
-                return
-            }
 
 
             const promise = (async () => {
