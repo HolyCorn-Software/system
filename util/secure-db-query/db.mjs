@@ -249,4 +249,9 @@ export default class SecureDBQuery {
         return await this[options].collection.updateMany(await this[internal].checkFilter(search), await this[internal].checkUpdate(update, 'update'))
     }
 
+    /** @readonly */
+    get fields() {
+        return this[options].fields
+    }
+
 }
