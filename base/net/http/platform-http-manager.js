@@ -57,7 +57,7 @@ export class BasePlatformHTTPManager {
         //Now Log
         console.log(`
         ${'HTTP server running on port '.cyan}${port.toString().blue}
-        ${`${this.base.ports.gateway ? '' : `${`${'HTTPS'.blue} server running on port `.cyan}${this.base.ports.http.toString().blue}`}
+        ${`${this.base.ports.gateway ? '' : `${`${'HTTPS'.blue} server running on port `.cyan}${this.base.ports.https.toString().blue}`}
         The server is not yet open to receiving requests
         `}`)
 
