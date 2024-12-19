@@ -45,9 +45,11 @@ async function init() {
 
 
             if (!updated) {
-                await maxTime(navigator.serviceWorker.register('/$/system/frontend-manager/bundle-cache/public/service-worker.mjs', {
-                    scope: "/",
-                }), 5000);
+                if (!window.ignoreServiceWorker) {
+                    await maxTime(navigator.serviceWorker.register('/$/system/frontend-manager/bundle-cache/public/service-worker.mjs', {
+                        scope: "/",
+                    }), 5000);
+                }
             }
 
             control.sendUpdates()

@@ -87,7 +87,8 @@ self.addEventListener('fetch', (event) => {
     /** @type {Request} */
     let request = event.request
 
-    if (!request.url.startsWith('http')) return
+
+    if (!request.url.startsWith('http') || self.ignoreServiceWorker) return
 
     event.respondWith(
         (async () => {
