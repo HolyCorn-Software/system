@@ -231,6 +231,10 @@ class JSONRPCRemoteObject {
 
                     const makeCall = async () => {
 
+                        if (manager.json_rpc.destroyed) {
+                            throw new Error(`Connection closed!`)
+                        }
+
                         // First things first, is our info found in the cache?
                         let cachedData;
                         try {

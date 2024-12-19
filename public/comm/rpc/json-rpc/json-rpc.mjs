@@ -134,6 +134,7 @@ export default class JSONRPC extends CleanEventTarget {
     }
 
     destroy() {
+        this.destroyed = true;
         this.dispatchEvent(new CustomEvent('destroy'))
     }
 

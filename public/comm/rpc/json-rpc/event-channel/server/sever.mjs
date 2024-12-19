@@ -337,6 +337,7 @@ class ClientsRemoteProxy {
                             if (abortController.signal.aborted) {
                                 const error = new Error(`Operation ${path}(), aborted\n${stack}\nStack:\n`)
                                 error.internallyAborted = internallyAborted
+                                error.ignore = true;
                                 throw error
                             }
                             if (Date.now() - start > timeoutDuration) {
@@ -355,7 +356,13 @@ class ClientsRemoteProxy {
                         return soulUtils.callWithRetries(
                             // TODO: Find a way to pass the abort signal, so that a call operation
                             // may be aborted right at the level of JSONRPC
-                            () => Reflect.apply(client.remote[path], thisArg, [...argArray,]),
+                            async () => {
+                                try {
+                                    return await Reflect.apply(client.remote[path], thisArg, [...argArray,])
+                                } catch (e) {
+                                    throw e
+                                }
+                            },
                             {
                                 label: `${path}\nWith args ${JSON.stringify(argArray)}`,
                                 callInterval: options.retryDelay,

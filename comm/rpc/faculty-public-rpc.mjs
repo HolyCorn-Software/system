@@ -18,10 +18,6 @@ export class FacultyPublicJSONRPC extends SocketPublicJSONRPC {
     constructor(client, stub) {
 
         super(client, stub || FacultyPlatform.get().remote.public)
-
-        client.once('end', () => {
-            this.destroy()
-        })
     }
 }
 

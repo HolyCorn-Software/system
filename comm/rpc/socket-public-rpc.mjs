@@ -38,6 +38,10 @@ export class SocketPublicJSONRPC extends JSONRPC {
             }
         })
 
+        client.on('end', () => {
+            this.destroy()
+        })
+
 
         this.flags.expose_stack_traces = false;
 
